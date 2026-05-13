@@ -25,10 +25,10 @@ See `docs/PHASE_1_MIGRATION_GUIDE.md` for the details of what changed.
 ## Quick start
 
 ```bash
-pnpm install         # install dependencies
-pnpm dev             # start dev server with hot reload
-pnpm test            # run the test suite
-pnpm build:all       # produce all four bundle flavors
+npm install         # install dependencies
+npm run dev         # start dev server with hot reload
+npm test            # run the test suite
+npm run build:all   # produce all four bundle flavors
 ```
 
 Output bundles land in `dist/`:
