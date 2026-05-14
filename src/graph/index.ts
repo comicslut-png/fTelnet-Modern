@@ -1,14 +1,20 @@
 /**
  * Public exports for the graph module.
  *
- * Delta 1 (this file currently): supporting types only — enums,
- * settings dataclasses, the Rectangle utility, and the bitmap/stroke
- * font registries. Graph.ts (the main BGI-emulation class) and the
- * rip/ subdirectory are migrated in later deltas.
+ * Delta 1 added supporting types: enums, settings dataclasses,
+ * Rectangle, BitmapFont/StrokeFont registries, and the
+ * IPutPixelFunction callback shape.
+ *
+ * Delta 2 (this update) adds Graph itself — the BGI-emulation class
+ * that consumes the supporting types and renders to a canvas.
+ *
+ * Delta 3 (still pending) will add the rip/ subdirectory: the
+ * RIPscrip parser and its supporting types.
  */
 export { BitmapFont } from './BitmapFont.js';
 export { FillSettings } from './FillSettings.js';
 export { FillStyle } from './FillStyle.js';
+export { Graph } from './Graph.js';
 export type { IPutPixelFunction } from './IPutPixelFunction.js';
 export { LineSettings } from './LineSettings.js';
 export { LineStyle } from './LineStyle.js';
