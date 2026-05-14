@@ -5,11 +5,14 @@
  * Rectangle, BitmapFont/StrokeFont registries, and the
  * IPutPixelFunction callback shape.
  *
- * Delta 2 (this update) adds Graph itself — the BGI-emulation class
- * that consumes the supporting types and renders to a canvas.
+ * Delta 2 added Graph itself — the BGI-emulation class that
+ * consumes the supporting types and renders to a canvas.
  *
- * Delta 3 (still pending) will add the rip/ subdirectory: the
- * RIPscrip parser and its supporting types.
+ * Delta 3 (this update) adds the rip/ subdirectory: the RIPscrip
+ * parser and its supporting types (ButtonStyle, MouseButton,
+ * RIPParserState, RIP).
+ *
+ * After this delta the graph/ module is complete.
  */
 export { BitmapFont } from './BitmapFont.js';
 export { FillSettings } from './FillSettings.js';
@@ -26,3 +29,6 @@ export { TextOrientation } from './TextOrientation.js';
 export { TextSettings } from './TextSettings.js';
 export { ViewPortSettings } from './ViewPortSettings.js';
 export { WriteMode } from './WriteMode.js';
+
+// rip/ subdirectory — RIPscrip parser
+export { ButtonStyle, MouseButton, RIP, RIPParserState } from './rip/index.js';
