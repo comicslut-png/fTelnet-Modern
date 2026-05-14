@@ -1,10 +1,12 @@
 /**
  * Public exports for the crt module.
  *
- * Phase 1, Delta 3a: support files and primitives.
- * (Delta 3b will add Ansi; Delta 3c will add Crt itself.)
+ * Phase 1, Delta 3b: ANSI parser added.
+ * (Delta 3c will add Crt itself.)
  */
+export { Ansi } from './Ansi.js';
 export { AnsiParserState } from './AnsiParserState.js';
+export type { AnsiTarget } from './AnsiTarget.js';
 export { BlinkState } from './BlinkState.js';
 export { CharInfo } from './CharInfo.js';
 export { ANSI_COLOURS, Color, PETSCII_COLOURS, PETSCIIColor } from './Colors.js';
