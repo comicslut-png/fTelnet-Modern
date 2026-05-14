@@ -17,6 +17,7 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     include: ['tests/**/*.test.ts'],
+    setupFiles: ['./tests/setup/canvas-mock.ts'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'lcov'],
