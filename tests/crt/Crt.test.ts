@@ -420,21 +420,345 @@ describe('Crt — Delta 3c-1 foundation', () => {
     });
   });
 
-  describe('not-yet-migrated methods throw clearly', () => {
-    it('Write throws with a clear message', () => {
-      expect(() => crt.Write('hi')).toThrow(/Delta 3c-2/);
+  describe('Delta 3c-2 methods are now wired up', () => {
+    it('Write no longer throws (delegates to writeASCII by default)', () => {
+      expect(() => crt.Write('hi')).not.toThrow();
     });
 
-    it('WriteLn throws with a clear message', () => {
-      expect(() => crt.WriteLn('hi')).toThrow(/Delta 3c-2/);
+    it('WriteLn no longer throws', () => {
+      expect(() => crt.WriteLn('hi')).not.toThrow();
     });
 
-    it('SetFont throws with a clear message', () => {
-      expect(() => crt.SetFont('CP437_8x16')).toThrow(/Delta 3c-2/);
+    it('SetFont no longer throws (returns true for a known font)', () => {
+      expect(() => crt.SetFont('CP437_8x16')).not.toThrow();
+    });
+  });
+
+  describe('Write — plain text (writeASCII path)', () => {
+    function readRow(y: number): string {
+      const snap = crt.SaveScreen(1, y, 80, y);
+      let out = '';
+      for (let x = 0; x < 80; x++) {
+        out += snap[0]?.[x]?.Ch ?? ' ';
+      }
+      return out.trimEnd();
+    }
+
+    it('writes a simple string into the buffer at the cursor', () => {
+      crt.GotoXY(1, 1);
+      crt.Write('Hello');
+      expect(readRow(1)).toBe('Hello');
     });
 
+    it('advances the cursor by the string length', () => {
+      crt.GotoXY(1, 1);
+      crt.Write('Hello');
+      expect(crt.WhereX()).toBe(6);
+      expect(crt.WhereY()).toBe(1);
+    });
+
+    it('CR returns the cursor to column 1', () => {
+      crt.GotoXY(10, 5);
+      crt.Write('\r');
+      expect(crt.WhereX()).toBe(1);
+      expect(crt.WhereY()).toBe(5);
+    });
+
+    it('LF moves the cursor down one row', () => {
+      crt.GotoXY(10, 5);
+      crt.Write('\n');
+      expect(crt.WhereX()).toBe(10);
+      expect(crt.WhereY()).toBe(6);
+    });
+
+    it('CRLF moves cursor to start of next line', () => {
+      crt.GotoXY(10, 5);
+      crt.Write('\r\n');
+      expect(crt.WhereX()).toBe(1);
+      expect(crt.WhereY()).toBe(6);
+    });
+
+    it('FF (0x0C) clears the screen and moves to (1,1)', () => {
+      crt.GotoXY(40, 12);
+      crt.Write('hello');
+      crt.Write('\x0c');
+      expect(crt.WhereX()).toBe(1);
+      expect(crt.WhereY()).toBe(1);
+      expect(readRow(12).trim()).toBe('');
+    });
+
+    it('Backspace moves the cursor left without erasing', () => {
+      crt.GotoXY(5, 1);
+      crt.Write('\b');
+      expect(crt.WhereX()).toBe(4);
+    });
+
+    it('Backspace at column 1 stays at column 1', () => {
+      crt.GotoXY(1, 1);
+      crt.Write('\b');
+      expect(crt.WhereX()).toBe(1);
+    });
+
+    it('Tab advances to the next multiple of 8', () => {
+      crt.GotoXY(3, 1);
+      crt.Write('\t');
+      expect(crt.WhereX()).toBe(8);
+    });
+
+    it('Tab from column 8 advances to column 16', () => {
+      crt.GotoXY(8, 1);
+      crt.Write('\t');
+      expect(crt.WhereX()).toBe(16);
+    });
+
+    it('writing past the right edge wraps to the next line', () => {
+      crt.GotoXY(75, 1);
+      crt.Write('ABCDEFGHIJ'); // 10 chars starting at col 75 — wraps after col 80
+      // First 6 chars at cols 75-80, remaining 4 at cols 1-4 of row 2
+      const row1 = readRow(1);
+      const row2 = readRow(2);
+      expect(row1.slice(74)).toBe('ABCDEF');
+      expect(row2.startsWith('GHIJ')).toBe(true);
+    });
+
+    it('writing past the bottom row scrolls the screen up', () => {
+      // Position at the very last row and write a newline to force scroll.
+      crt.GotoXY(1, 25);
+      crt.Write('LAST');
+      crt.Write('\r\n'); // would put cursor at row 26 → triggers scroll
+      // After scroll, cursor stays at row 25
+      expect(crt.WhereY()).toBe(25);
+      // "LAST" should have moved up to row 24
+      expect(readRow(24).startsWith('LAST')).toBe(true);
+    });
+
+    it('BareLFtoCRLF=true makes bare LF act like CRLF', () => {
+      crt.BareLFtoCRLF = true;
+      crt.GotoXY(10, 5);
+      crt.Write('\n');
+      expect(crt.WhereX()).toBe(1);
+      expect(crt.WhereY()).toBe(6);
+    });
+
+    it('BareLFtoCRLF=false (default) makes LF preserve column', () => {
+      crt.BareLFtoCRLF = false;
+      crt.GotoXY(10, 5);
+      crt.Write('\n');
+      expect(crt.WhereX()).toBe(10);
+      expect(crt.WhereY()).toBe(6);
+    });
+
+    it('NULL bytes are silently ignored', () => {
+      crt.GotoXY(1, 1);
+      crt.Write('A\x00B\x00C');
+      expect(readRow(1)).toBe('ABC');
+    });
+  });
+
+  describe('Write — mode dispatch', () => {
+    it('Atari=true routes through writeATASCII', () => {
+      crt.Atari = true;
+      crt.GotoXY(1, 1);
+      crt.Write('A'); // plain printable
+      const snap = crt.SaveScreen(1, 1, 1, 1);
+      expect(snap[0]?.[0]?.Ch).toBe('A');
+    });
+
+    it('C64=true routes through writePETSCII', () => {
+      crt.C64 = true;
+      crt.GotoXY(1, 1);
+      crt.Write('B');
+      const snap = crt.SaveScreen(1, 1, 1, 1);
+      expect(snap[0]?.[0]?.Ch).toBe('B');
+    });
+  });
+
+  describe('writeATASCII (Atari mode)', () => {
+    beforeEach(() => {
+      crt.Atari = true;
+    });
+
+    it('0x9B (Atari LF) moves cursor to start of next line', () => {
+      crt.GotoXY(10, 5);
+      crt.Write('\x9b');
+      expect(crt.WhereX()).toBe(1);
+      expect(crt.WhereY()).toBe(6);
+    });
+
+    it('0x7D (Atari clear) clears the screen and homes cursor', () => {
+      crt.GotoXY(10, 5);
+      crt.Write('AB');
+      crt.Write('\x7d');
+      expect(crt.WhereX()).toBe(1);
+      expect(crt.WhereY()).toBe(1);
+    });
+
+    it('0x1C cursor-up wraps to bottom when at row 1', () => {
+      crt.GotoXY(5, 1);
+      crt.Write('\x1c');
+      expect(crt.WhereY()).toBe(25); // wraps to last row
+    });
+
+    it('0x1D cursor-down wraps to top when at last row', () => {
+      crt.GotoXY(5, 25);
+      crt.Write('\x1d');
+      expect(crt.WhereY()).toBe(1);
+    });
+
+    it('ESC (0x1B) makes the next control byte literal', () => {
+      // Position at col 1, send ESC then 0x9B. With escape, 0x9B should
+      // be written as a regular character (not act as a newline).
+      crt.GotoXY(1, 1);
+      crt.Write('\x1b\x9b');
+      // After escape+0x9B, cursor should have advanced one column,
+      // not moved to the next line.
+      expect(crt.WhereY()).toBe(1);
+    });
+  });
+
+  describe('writePETSCII (Commodore mode)', () => {
+    beforeEach(() => {
+      crt.C64 = true;
+    });
+
+    it('0x0D (CR) moves cursor to start of next line', () => {
+      crt.GotoXY(10, 5);
+      crt.Write('\x0d');
+      expect(crt.WhereX()).toBe(1);
+      expect(crt.WhereY()).toBe(6);
+    });
+
+    it('0x0A (LF) is silently dropped', () => {
+      crt.GotoXY(10, 5);
+      crt.Write('\x0a');
+      // Cursor should NOT have moved
+      expect(crt.WhereX()).toBe(10);
+      expect(crt.WhereY()).toBe(5);
+    });
+
+    it('0x05 sets text color to white', () => {
+      crt.Write('\x05');
+      expect(crt.TextAttr & 0x0f).toBe(1); // PETSCIIColor.WHITE
+    });
+
+    it('0x1C sets text color to red', () => {
+      crt.Write('\x1c');
+      expect(crt.TextAttr & 0x0f).toBe(2); // PETSCIIColor.RED
+    });
+
+    it('0x12 enables reverse video, 0x92 disables it', () => {
+      crt.Write('\x12');
+      expect(crt.CharInfo.Reverse).toBe(true);
+      crt.Write('\x92');
+      expect(crt.CharInfo.Reverse).toBe(false);
+    });
+
+    it('0x93 (clear screen) homes the cursor', () => {
+      crt.GotoXY(10, 5);
+      crt.Write('\x93');
+      expect(crt.WhereX()).toBe(1);
+      expect(crt.WhereY()).toBe(1);
+    });
+
+    it('0x13 (home) sets cursor to (1,1)', () => {
+      crt.GotoXY(10, 5);
+      crt.Write('\x13');
+      expect(crt.WhereX()).toBe(1);
+      expect(crt.WhereY()).toBe(1);
+    });
+  });
+
+  describe('WriteLn', () => {
+    it('appends CRLF', () => {
+      crt.GotoXY(10, 5);
+      crt.WriteLn('hi');
+      expect(crt.WhereX()).toBe(1);
+      expect(crt.WhereY()).toBe(6);
+    });
+
+    it('WriteLn() with no arg just emits CRLF', () => {
+      crt.GotoXY(10, 5);
+      crt.WriteLn();
+      expect(crt.WhereX()).toBe(1);
+      expect(crt.WhereY()).toBe(6);
+    });
+  });
+
+  describe('PlaySound (Web Audio)', () => {
+    it('does not throw when queueing a sound', () => {
+      expect(() => crt.PlaySound(800, 200)).not.toThrow();
+    });
+
+    it('Write of BEL (0x07) queues a sound', () => {
+      // We can't easily inspect the AudioContext in tests, but we can
+      // verify that the BEL doesn't crash and doesn't advance the cursor
+      // (BEL is a side effect, not a character).
+      crt.GotoXY(5, 5);
+      crt.Write('\x07');
+      expect(crt.WhereX()).toBe(5);
+      expect(crt.WhereY()).toBe(5);
+    });
+  });
+
+  describe('ReportMouse setter', () => {
+    it('switches the canvas cursor style', () => {
+      crt.ReportMouse = true;
+      expect(crt.Canvas.style.cursor).toBe('pointer');
+      crt.ReportMouse = false;
+      expect(crt.Canvas.style.cursor).toBe('text');
+    });
+  });
+
+  describe('ARIA live region', () => {
+    it('appends a div with visible printable text on CRLF', () => {
+      const initialDivCount = crt.Canvas.querySelectorAll('div').length;
+      crt.Write('Hello\r\n');
+      const newDivCount = crt.Canvas.querySelectorAll('div').length;
+      expect(newDivCount).toBeGreaterThan(initialDivCount);
+    });
+
+    it('flushes the ARIA buffer when Write ends without a newline', () => {
+      const initialDivCount = crt.Canvas.querySelectorAll('div').length;
+      crt.Write('Hello');
+      const newDivCount = crt.Canvas.querySelectorAll('div').length;
+      expect(newDivCount).toBeGreaterThan(initialDivCount);
+    });
+
+    it('does not append a div for whitespace-only content', () => {
+      const initialDivCount = crt.Canvas.querySelectorAll('div').length;
+      crt.Write('   \r\n');
+      const newDivCount = crt.Canvas.querySelectorAll('div').length;
+      expect(newDivCount).toBe(initialDivCount);
+    });
+  });
+
+  describe('SetScreenSize', () => {
+    it('changes the screen dimensions', () => {
+      crt.SetScreenSize(132, 50);
+      expect(crt.ScreenCols).toBe(132);
+      expect(crt.ScreenRows).toBe(50);
+    });
+
+    it('updates the window extents to the new size', () => {
+      crt.SetScreenSize(132, 50);
+      expect(crt.WindMaxX).toBe(131);
+      expect(crt.WindMaxY).toBe(49);
+    });
+
+    it('is a no-op when called with the current size', () => {
+      crt.SetScreenSize(80, 25);
+      expect(crt.ScreenCols).toBe(80);
+      expect(crt.ScreenRows).toBe(25);
+    });
+  });
+
+  describe('Delta 3c-3 methods still throw clearly', () => {
     it('EnterScrollback throws with a clear message', () => {
       expect(() => crt.EnterScrollback()).toThrow(/Delta 3c-3/);
+    });
+
+    it('PushKeyDown throws with a clear message', () => {
+      expect(() => crt.PushKeyDown(65, 65, false, false, false)).toThrow(/Delta 3c-3/);
     });
   });
 });

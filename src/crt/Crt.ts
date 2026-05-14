@@ -47,32 +47,22 @@ import type { KeyPressEvent } from './KeyPressEvent.js';
  *   - Save/Restore screen helpers
  *   - The Cursor (blink timer, position, visibility)
  *
- * Phase 1, Delta 3c-1 — FOUNDATION ONLY. This migration ships:
- *   ✓ Class skeleton with all fields
- *   ✓ Constructor (canvas setup + buffer init + cursor)
- *   ✓ Window/coordinate math (WindMin/Max, WhereX, GotoXY, Window)
- *   ✓ Color and attribute APIs (TextAttr, TextColor, TextBackground,
- *     TextColor24, TextBackground24, NormVideo, HighVideo, LowVideo,
- *     ReverseVideo, Conceal, SetBlink)
- *   ✓ Clear methods (ClrBol, ClrBos, ClrEol, ClrEos, ClrLine, ClrScr)
- *   ✓ Insert/Delete (InsChar, InsLine, DelChar, DelLine)
- *   ✓ Scrolling (ScrollUpCustom/ScrollDownCustom and their wrappers)
- *   ✓ Save/Restore screen
- *   ✓ Cursor visibility (HideCursor/ShowCursor)
- *   ✓ Checksum, FillScreen, FastWrite
- *
- * NOT YET MIGRATED — Delta 3c-2 will add:
- *   ✗ Write/WriteASCII/WriteLn (write path with character handling)
- *   ✗ WritePETSCII/WriteATASCII (alternate emulation modes)
- *   ✗ OnBlinkShow/OnBlinkHide (canvas blink cycle)
- *   ✗ OnFontChanged (canvas resize)
- *   ✗ PlaySound/PlayNextSound (Web Audio bell)
+ * Phase 1, Delta 3c-1 (foundation) — buffer/coords/attrs/clear/scroll.
+ * Phase 1, Delta 3c-2 (this delta) — adds the write path and rendering:
+ *   ✓ Write, WriteLn (dispatch to ASCII / ATASCII / PETSCII)
+ *   ✓ writeASCII, writeATASCII, writePETSCII (mode-specific writers)
+ *   ✓ Real FastWrite with canvas drawImage rendering
+ *   ✓ OnBlinkShow / OnBlinkHide (canvas blink cycle + cursor draw)
+ *   ✓ OnFontChanged (canvas resize + buffer redraw)
+ *   ✓ SetFont, SetScreenSize
+ *   ✓ PlaySound, playNextSound (lazy AudioContext)
+ *   ✓ ARIA live-region mirroring of visible text
  *
  * NOT YET MIGRATED — Delta 3c-3 will add:
- *   ✗ OnKeyDown/OnKeyPress (the giant key encoding table)
- *   ✗ OnMouseDown/Move/Up (selection, copy, mouse reporting)
- *   ✗ EnterScrollback/ExitScrollback
- *   ✗ PushKeyDown/PushKeyPress/ReadKey/KeyPressed
+ *   ✗ OnKeyDown / OnKeyPress (the giant key encoding table)
+ *   ✗ OnMouseDown / Move / Up (selection, copy, mouse reporting)
+ *   ✗ EnterScrollback / ExitScrollback
+ *   ✗ PushKeyDown / PushKeyPress (synthetic events)
  *   ✗ OnResize
  *
  * Methods that depend on un-migrated logic are temporarily stubbed
@@ -133,16 +123,15 @@ export class Crt implements AnsiTarget {
   // ───────── Configuration ─────────
   private _allowDynamicFontResize = true;
   private _atari = false;
+  private _atasciiEscaped = false;
   private _bareLFtoCRLF = false;
   private _c64 = false;
   private _localEcho = false;
   private _reportMouse = false;
   private _reportMouseSgr = false;
+  private _skipRedrawWhenSameFontSize = false;
+  private _transparent = false;
   private _useModernScrollback: boolean;
-
-  // Configuration fields not used until Delta 3c-2 / 3c-3 will be
-  // added back alongside the methods that need them:
-  //   _atasciiEscaped, _skipRedrawWhenSameFontSize, _transparent
 
   // ───────── Display state ─────────
   /**
@@ -169,11 +158,12 @@ export class Crt implements AnsiTarget {
   private _scrollbackSize = 250;
 
   private _inScrollback = false;
+  private _blinkHidden = false;
+  private _lastChar = 0x00;
   private readonly _screenSize: Point = new Point(80, 25);
 
   // Other display state arrives with its consumers:
   //   _scrollbackTemp, _scrollbackPosition (3c-3)
-  //   _blinkHidden, _lastChar (3c-2)
 
   // ───────── Window (scroll region) ─────────
   /**
@@ -189,9 +179,24 @@ export class Crt implements AnsiTarget {
   private _windMax = (80 - 1) | ((25 - 1) << 8);
 
   // Audio/mouse/PETSCII state arrives with the consumers:
-  //   _audioContext, _playSoundQueue (Delta 3c-2)
   //   _mouseDownPoint, _mouseMovePoint (Delta 3c-3)
-  //   _flushBeforeWritePETSCII (Delta 3c-2)
+
+  // ───────── Audio (Web Audio API) ─────────
+  //
+  // The original eagerly constructed an AudioContext in the constructor.
+  // Modern browsers refuse to do that without a user gesture and print
+  // a console warning. We construct it lazily on first PlaySound call
+  // instead. As of late 2024, every browser supports this pattern.
+  private _audioContext: AudioContext | undefined;
+  private readonly _playSoundQueue: Point[] = [];
+
+  // PETSCII control bytes that must flush the output buffer before
+  // being processed. From the original; see WritePETSCII for use.
+  private readonly _flushBeforeWritePETSCII: ReadonlySet<number> = new Set([
+    0x05, 0x07, 0x08, 0x09, 0x0a, 0x0d, 0x0e, 0x11, 0x12, 0x13, 0x14, 0x1c, 0x1d, 0x1e, 0x1f, 0x81,
+    0x8d, 0x8e, 0x90, 0x91, 0x92, 0x93, 0x94, 0x95, 0x96, 0x97, 0x98, 0x99, 0x9a, 0x9b, 0x9c, 0x9d,
+    0x9e, 0x9f,
+  ]);
 
   // ───────── DOM elements ─────────
   private readonly _canvas: HTMLCanvasElement;
@@ -364,6 +369,10 @@ export class Crt implements AnsiTarget {
     return this._reportMouse;
   }
   public set ReportMouse(value: boolean) {
+    // Match the original behavior: switching to mouse-reporting mode
+    // changes the CSS cursor to a pointer so users see that clicks
+    // will be reported (rather than starting a text selection).
+    this._canvas.style.cursor = value ? 'pointer' : 'text';
     this._reportMouse = value;
   }
 
@@ -382,13 +391,16 @@ export class Crt implements AnsiTarget {
     return this._screenSize.y;
   }
 
-  public set SkipRedrawWhenSameFontSize(_value: boolean) {
-    // Delta 3c-2 will store this for the render path; for now the
-    // setter is a no-op so external callers don't break.
+  public set SkipRedrawWhenSameFontSize(value: boolean) {
+    this._skipRedrawWhenSameFontSize = value;
   }
 
-  public set Transparent(_value: boolean) {
-    // Delta 3c-2 will store this and trigger a redraw.
+  public set Transparent(value: boolean) {
+    this._transparent = value;
+    // The original had a `// TODO Redraw` comment here but didn't
+    // actually redraw. Preserving that behavior — the next time
+    // FastWrite is called for an affected cell, the new transparent
+    // setting is honored.
   }
 
   // ─────────────────────────────────────────────────────────
@@ -1014,38 +1026,125 @@ export class Crt implements AnsiTarget {
 
   /**
    * Direct screen write at absolute (x, y). The buffer is updated to
-   * reflect the new cells; the canvas is drawn from the font glyph
-   * cache.
+   * reflect the new cells, and pixels are drawn to the canvas via
+   * the font's pre-colored glyph map.
    *
-   * The original had two FastWrite variants — a per-character one
-   * (`FastWriteGetChar`) and a bulk one (`FastWriteGetChars` — the
-   * normal one). We migrate the bulk variant here; the per-character
-   * variant is rarely used and arrives in Delta 3c-2 along with the
-   * Write path.
+   * The original had two FastWrite variants:
+   *   - `FastWriteGetChar` — getImageData + putImageData per character.
+   *     ~30× slower in Firefox; preserved as commented-out legacy code.
+   *   - `FastWriteGetChars` — getImageData once per attribute, then
+   *     drawImage per character. This is the one fTelnet uses today
+   *     and the one we migrate.
    *
-   * Phase 1, Delta 3c-1 note: this is a SIMPLIFIED implementation that
-   * updates the buffer but skips canvas drawing. Visual output is
-   * intentionally a no-op for now — Delta 3c-2 will fill in the
-   * `_canvasContext.putImageData(...)` calls. Until then, tests that
-   * exercise FastWrite check the buffer state, not pixels.
+   * If the font hasn't finished loading, the glyph map will be undefined.
+   * In that case we mark the cell as `NeedsRedraw` so OnFontChanged can
+   * fix it up when the load completes.
    */
-  public FastWrite(text: string, x: number, y: number, charInfo: CharInfo, updateBuffer = true): void {
-    if (y < 1 || y > this._screenSize.y) {
+  /**
+   * Direct screen write at absolute (x, y). The buffer is updated to
+   * reflect the new cells, and pixels are drawn to the canvas via
+   * the font's pre-colored glyph map.
+   *
+   * Behavior of the `text` parameter:
+   *   - undefined → write a single space (or a transparent placeholder
+   *     if Transparent mode is on). Used by callers who want to clear
+   *     one cell without specifying a char.
+   *   - '' (empty string) → no-op. Callers in the Write path pass
+   *     this when their buffer is empty during a flush, and the
+   *     flush should not corrupt the cell at (x, y).
+   *   - any other string → draw each character starting at (x, y).
+   *
+   * If the font hasn't finished loading, the glyph map will be undefined.
+   * In that case we mark the cell as `NeedsRedraw` so OnFontChanged can
+   * fix it up when the load completes.
+   */
+  public FastWrite(
+    text: string | undefined,
+    x: number,
+    y: number,
+    charInfo: CharInfo,
+    updateBuffer = true
+  ): void {
+    if (x > this._screenSize.x || y > this._screenSize.y) {
       return;
     }
-    if (updateBuffer) {
+    if (y < 1) {
+      return;
+    }
+
+    let chars: string[];
+    let charCodes: number[];
+    if (text === undefined) {
+      chars = [' '];
+      charCodes = [this._transparent ? CrtFont.TRANSPARENT_CHARCODE : 32];
+    } else if (text.length === 0) {
+      // No-op — see docstring above.
+      return;
+    } else {
+      chars = [];
+      charCodes = [];
       for (let i = 0; i < text.length; i++) {
-        const col = x + i;
-        if (col < 1 || col > this._screenSize.x) {
-          continue;
-        }
-        const cell = this._buffer[y]![col]!;
-        cell.Set(charInfo);
-        cell.Ch = text.charAt(i);
-        cell.NeedsRedraw = true;
+        chars.push(text.charAt(i));
+        charCodes.push(text.charCodeAt(i));
       }
     }
-    // Canvas draw is deferred to Delta 3c-2.
+
+    // Get the font's pre-colored char map for this attribute. May be
+    // undefined if the font PNG is still loading.
+    const charMap = this._font.GetChars(charInfo);
+    const textLength = chars.length;
+
+    for (let i = 0; i < textLength; i++) {
+      const col = x + i;
+      if (col < 1 || col > this._screenSize.x) {
+        continue;
+      }
+
+      if (charMap === undefined) {
+        // Font isn't ready; flag for redraw when it finishes loading.
+        const cell = this._buffer[y]?.[col];
+        if (cell) {
+          cell.NeedsRedraw = true;
+        }
+      } else {
+        const srcX = charCodes[i]! * this._font.Width;
+        const dstX = (col - 1) * this._font.Width;
+        const dstY =
+          (y - 1 + (this._useModernScrollback ? this._scrollbackSize : 0)) * this._font.Height;
+
+        // In legacy-scrollback mode, skip drawing while the user is
+        // browsing the scrollback (unless updateBuffer is false, in
+        // which case the caller wants a transient draw like the blink
+        // cycle).
+        if (!this._useModernScrollback && this._inScrollback && updateBuffer) {
+          // skip canvas draw
+        } else {
+          this._canvasContext.drawImage(
+            charMap,
+            srcX,
+            0,
+            this._font.Width,
+            this._font.Height,
+            dstX,
+            dstY,
+            this._font.Width,
+            this._font.Height
+          );
+        }
+      }
+
+      if (updateBuffer) {
+        const cell = this._buffer[y]?.[col];
+        if (cell) {
+          cell.Set(charInfo);
+          cell.Ch = chars[i]!;
+        }
+      }
+
+      if (col >= this._screenSize.x) {
+        break;
+      }
+    }
   }
 
   /** Fill the entire screen with the same character at the current attribute. */
@@ -1071,38 +1170,640 @@ export class Crt implements AnsiTarget {
   }
 
   // ─────────────────────────────────────────────────────────
-  // Methods deferred to Delta 3c-2 / 3c-3
+  // Write path: dispatches to ASCII, ATASCII, or PETSCII writer
+  // depending on the current emulation mode.
   // ─────────────────────────────────────────────────────────
-  //
-  // These are referenced by other code (event handlers wired in the
-  // constructor, the Ansi parser, etc.) and so need at least a stub
-  // to keep the class implementable. Each one throws a descriptive
-  // error so any accidental use is loud and immediate rather than
-  // mysteriously silent.
 
-  /** Write text to the screen at the cursor. **Delta 3c-2.** */
-  public Write(_text: string): void {
-    throw new Error('Crt.Write is not yet migrated; arrives in Delta 3c-2');
+  /**
+   * Write text to the screen at the cursor position. Dispatches to
+   * one of three writer variants based on emulation mode, then
+   * mirrors visible text into the canvas as ARIA live-region updates
+   * so screen readers can read the BBS output.
+   */
+  public Write(text: string): void {
+    if (this._atari) {
+      this.writeATASCII(text);
+    } else if (this._c64) {
+      this.writePETSCII(text);
+    } else {
+      this.writeASCII(text);
+    }
+
+    // Mirror visible chunks of text into screen-reader-accessible
+    // <div>s appended to the canvas. The Crt canvas has aria-live
+    // set to 'polite' so screen readers will announce each block.
+    let ariaText = '';
+    for (let i = 0; i < text.length; i++) {
+      const cc = text.charCodeAt(i);
+      if (cc === 10 || cc === 13) {
+        if (ariaText.trim() !== '') {
+          this.appendAriaDiv(ariaText);
+          ariaText = '';
+        }
+      } else if (cc >= 32 && cc <= 126) {
+        ariaText += text.charAt(i);
+      }
+    }
+    if (ariaText.trim() !== '') {
+      this.appendAriaDiv(ariaText);
+    }
   }
 
-  /** Write text then move cursor to next line. **Delta 3c-2.** */
-  public WriteLn(_text?: string): void {
-    throw new Error('Crt.WriteLn is not yet migrated; arrives in Delta 3c-2');
+  /** Write text followed by CRLF. */
+  public WriteLn(text = ''): void {
+    this.Write(`${text}\r\n`);
   }
 
-  /** Resize the screen and font. **Delta 3c-2.** */
-  public SetScreenSize(_columns: number, _rows: number): void {
-    throw new Error('Crt.SetScreenSize is not yet migrated; arrives in Delta 3c-2');
+  private appendAriaDiv(text: string): void {
+    const div = document.createElement('div');
+    div.innerText = text;
+    this._canvas.appendChild(div);
   }
 
-  /** Switch to a different font. **Delta 3c-2.** */
-  public SetFont(_font: string): boolean {
-    throw new Error('Crt.SetFont is not yet migrated; arrives in Delta 3c-2');
+  /**
+   * ASCII/ANSI writer. Handles control characters (BEL, BS, HT, LF, FF,
+   * CR), regular printable characters, and word wrap at the window edge.
+   *
+   * Note: ANSI escape sequence handling is NOT here — that lives in
+   * the `Ansi` class (Delta 3b). By the time bytes get to this method,
+   * the Ansi parser has already stripped any escape sequences.
+   */
+  private writeASCII(text: string): void {
+    let x = this.WhereX();
+    let y = this.WhereY();
+    let buf = '';
+
+    for (let i = 0; i < text.length; i++) {
+      const cc = text.charCodeAt(i);
+      let doGoto = false;
+
+      if (cc === 0x00) {
+        // NULL — ignore
+      } else if (cc === 0x07) {
+        // BEL
+        this.PlaySound(800, 200);
+      } else if (cc === 0x08) {
+        // Backspace — flush buffer, move cursor left one
+        this.FastWrite(buf, this.WhereXA(), this.WhereYA(), this._charInfo);
+        x += buf.length;
+        if (x > 1) {
+          x -= 1;
+        }
+        doGoto = true;
+        buf = '';
+      } else if (cc === 0x09) {
+        // Tab — flush buffer, advance to next 8-column stop
+        this.FastWrite(buf, this.WhereXA(), this.WhereYA(), this._charInfo);
+        x += buf.length;
+        buf = '';
+
+        if (x === this.WindCols) {
+          // At last column → tab wraps to start of next line
+          x = 1;
+          y += 1;
+        } else {
+          // Advance to next multiple of 8, capped at window width
+          // (caps matter when WindCols isn't divisible by 8)
+          x += 8 - (x % 8);
+          x = Math.min(x, this.WindCols);
+        }
+        doGoto = true;
+      } else if (cc === 0x0a) {
+        // LF — flush buffer, move down. If `BareLFtoCRLF` is set and
+        // we didn't just see a CR, also reset to column 1.
+        this.FastWrite(buf, this.WhereXA(), this.WhereYA(), this._charInfo);
+        if (this._bareLFtoCRLF && this._lastChar !== 0x0d) {
+          x = 1;
+        } else {
+          x += buf.length;
+        }
+        y += 1;
+        doGoto = true;
+        buf = '';
+      } else if (cc === 0x0c) {
+        // FF — clear screen
+        this.ClrScr();
+        x = 1;
+        y = 1;
+        buf = '';
+      } else if (cc === 0x0d) {
+        // CR — flush, return to column 1
+        this.FastWrite(buf, this.WhereXA(), this.WhereYA(), this._charInfo);
+        x = 1;
+        doGoto = true;
+        buf = '';
+      } else {
+        // Printable: buffer it. When the buffer would push past the
+        // right edge, flush and wrap.
+        buf += String.fromCharCode(cc & 0xff);
+        if (x + buf.length > this.WindCols) {
+          this.FastWrite(buf, this.WhereXA(), this.WhereYA(), this._charInfo);
+          buf = '';
+          x = 1;
+          y += 1;
+          doGoto = true;
+        }
+      }
+
+      this._lastChar = cc;
+
+      // Scroll if we walked off the bottom of the window.
+      if (y > this.WindRows) {
+        y = this.WindRows;
+        this.ScrollUpWindow(1);
+        doGoto = true;
+      }
+
+      if (doGoto) {
+        this.GotoXY(x, y);
+      }
+    }
+
+    // Final flush
+    if (buf.length > 0) {
+      this.FastWrite(buf, this.WhereXA(), this.WhereYA(), this._charInfo);
+      x += buf.length;
+      this.GotoXY(x, y);
+    }
   }
 
-  /** Audio bell / ANSI music. **Delta 3c-2.** */
-  public PlaySound(_freq: number, _duration: number): void {
-    throw new Error('Crt.PlaySound is not yet migrated; arrives in Delta 3c-2');
+  /**
+   * ATASCII writer — Atari 8-bit family character handling.
+   *
+   * ATASCII has its own set of control codes (0x1B-0x1F for cursor
+   * movement, 0x7D-0x7F for clear/backspace/tab, 0x9B-0x9D for line
+   * operations, etc.) that don't overlap with ANSI. The 0x1B byte
+   * does double duty as both an inline escape and a regular char,
+   * gated by the `_atasciiEscaped` flag.
+   *
+   * The structure mirrors writeASCII closely; differences are in the
+   * specific control bytes and the cursor-wrap semantics (Atari wraps
+   * the cursor around the window rather than scrolling).
+   */
+  private writeATASCII(text: string): void {
+    let x = this.WhereX();
+    let y = this.WhereY();
+    let buf = '';
+
+    for (let i = 0; i < text.length; i++) {
+      const cc = text.charCodeAt(i);
+      let doGoto = false;
+
+      if (cc === 0x00) {
+        // NULL — ignore
+      } else if (cc === 0x1b && !this._atasciiEscaped) {
+        // Inline escape: next byte is treated literally even if it
+        // would normally be a control byte.
+        this._atasciiEscaped = true;
+      } else if (cc === 0x1c && !this._atasciiEscaped) {
+        // Cursor up (wraps)
+        this.FastWrite(buf, this.WhereXA(), this.WhereYA(), this._charInfo);
+        x += buf.length;
+        y = y > 1 ? y - 1 : this.WindRows;
+        doGoto = true;
+        buf = '';
+      } else if (cc === 0x1d && !this._atasciiEscaped) {
+        // Cursor down (wraps)
+        this.FastWrite(buf, this.WhereXA(), this.WhereYA(), this._charInfo);
+        x += buf.length;
+        y = y < this.WindRows ? y + 1 : 1;
+        doGoto = true;
+        buf = '';
+      } else if (cc === 0x1e && !this._atasciiEscaped) {
+        // Cursor left (wraps)
+        this.FastWrite(buf, this.WhereXA(), this.WhereYA(), this._charInfo);
+        x += buf.length;
+        x = x > 1 ? x - 1 : this.WindCols;
+        doGoto = true;
+        buf = '';
+      } else if (cc === 0x1f && !this._atasciiEscaped) {
+        // Cursor right (wraps)
+        this.FastWrite(buf, this.WhereXA(), this.WhereYA(), this._charInfo);
+        x += buf.length;
+        x = x < this.WindCols ? x + 1 : 1;
+        doGoto = true;
+        buf = '';
+      } else if (cc === 0x7d && !this._atasciiEscaped) {
+        // Clear screen
+        this.ClrScr();
+        x = 1;
+        y = 1;
+        buf = '';
+      } else if (cc === 0x7e && !this._atasciiEscaped) {
+        // Backspace
+        this.FastWrite(buf, this.WhereXA(), this.WhereYA(), this._charInfo);
+        x += buf.length;
+        buf = '';
+        doGoto = true;
+        if (x > 1) {
+          x -= 1;
+          this.FastWrite(' ', x, this.WhereYA(), this._charInfo);
+        }
+      } else if (cc === 0x7f && !this._atasciiEscaped) {
+        // Tab
+        this.FastWrite(buf, this.WhereXA(), this.WhereYA(), this._charInfo);
+        x += buf.length;
+        buf = '';
+        if (x === this.WindCols) {
+          x = 1;
+          y += 1;
+        } else {
+          x += 8 - (x % 8);
+        }
+        doGoto = true;
+      } else if (cc === 0x9b && !this._atasciiEscaped) {
+        // EOL / LF
+        this.FastWrite(buf, this.WhereXA(), this.WhereYA(), this._charInfo);
+        x = 1;
+        y += 1;
+        doGoto = true;
+        buf = '';
+      } else if (cc === 0x9c && !this._atasciiEscaped) {
+        // Delete line
+        this.FastWrite(buf, this.WhereXA(), this.WhereYA(), this._charInfo);
+        x = 1;
+        buf = '';
+        this.GotoXY(x, y);
+        this.DelLine();
+      } else if (cc === 0x9d && !this._atasciiEscaped) {
+        // Insert line
+        this.FastWrite(buf, this.WhereXA(), this.WhereYA(), this._charInfo);
+        x = 1;
+        buf = '';
+        this.GotoXY(x, y);
+        this.InsLine();
+      } else if (cc === 0xfd && !this._atasciiEscaped) {
+        // BEL (Atari)
+        this.PlaySound(800, 200);
+      } else if (cc === 0xfe && !this._atasciiEscaped) {
+        // Delete character
+        this.FastWrite(buf, this.WhereXA(), this.WhereYA(), this._charInfo);
+        x += buf.length;
+        buf = '';
+        this.GotoXY(x, y);
+        this.DelChar();
+      } else if (cc === 0xff && !this._atasciiEscaped) {
+        // Insert character
+        this.FastWrite(buf, this.WhereXA(), this.WhereYA(), this._charInfo);
+        x += buf.length;
+        buf = '';
+        this.GotoXY(x, y);
+        this.InsChar();
+      } else {
+        // Printable — but apply the Lantronix workaround: some Lantronix
+        // adapters send 0x00 after every 0x0D, which we silently drop
+        // to avoid double-spacing.
+        if (cc === 0x00 && this._lastChar === 0x0d) {
+          // drop
+        } else {
+          buf += String.fromCharCode(cc & 0xff);
+        }
+        this._atasciiEscaped = false;
+        this._lastChar = cc;
+
+        if (x + buf.length > this.WindCols) {
+          this.FastWrite(buf, this.WhereXA(), this.WhereYA(), this._charInfo);
+          buf = '';
+          x = 1;
+          y += 1;
+          doGoto = true;
+        }
+      }
+
+      if (y > this.WindRows) {
+        y = this.WindRows;
+        this.ScrollUpWindow(1);
+        doGoto = true;
+      }
+
+      if (doGoto) {
+        this.GotoXY(x, y);
+      }
+    }
+
+    if (buf.length > 0) {
+      this.FastWrite(buf, this.WhereXA(), this.WhereYA(), this._charInfo);
+      x += buf.length;
+      this.GotoXY(x, y);
+    }
+  }
+
+  /**
+   * PETSCII writer — Commodore 64/128 character handling.
+   *
+   * PETSCII has even more inline color/control codes than ATASCII:
+   * 0x05/0x1C/etc. set foreground color, 0x12/0x92 toggle reverse,
+   * 0x0E/0x8E switch between upper-case-only and mixed-case fonts.
+   * The control byte set is captured in `_flushBeforeWritePETSCII`.
+   *
+   * One quirk: PETSCII uses 0x0D (and 0x8D) for newline; the trailing
+   * 0x0A from any CR-LF pair is silently dropped to match the C64's
+   * single-byte line terminator convention.
+   */
+  private writePETSCII(text: string): void {
+    let x = this.WhereX();
+    let y = this.WhereY();
+    let buf = '';
+
+    for (let i = 0; i < text.length; i++) {
+      const cc = text.charCodeAt(i);
+      let doGoto = false;
+
+      // PETSCII control codes flush the buffer before being processed.
+      if (buf !== '' && this._flushBeforeWritePETSCII.has(cc)) {
+        this.FastWrite(buf, this.WhereXA(), this.WhereYA(), this._charInfo);
+        x += buf.length;
+        doGoto = true;
+        buf = '';
+      }
+
+      if (cc === 0x00) {
+        // NULL — ignore
+      } else if (cc === 0x05) {
+        this.TextColor(PETSCIIColor.WHITE);
+      } else if (cc === 0x07) {
+        this.PlaySound(800, 200);
+      } else if (cc === 0x08 || cc === 0x09) {
+        // SHIFT+C= charset lock toggles — not implemented
+        // eslint-disable-next-line no-console
+        console.log(`PETSCII charset lock 0x${cc.toString(16)}`);
+      } else if (cc === 0x0a) {
+        // LF — silently dropped (PETSCII uses 0x0D alone for newline)
+      } else if (cc === 0x0d || cc === 0x8d) {
+        // CR
+        x = 1;
+        y += 1;
+        this._charInfo.Reverse = false;
+        doGoto = true;
+      } else if (cc === 0x0e) {
+        this.SetFont('C64-Lower');
+      } else if (cc === 0x11) {
+        // Cursor down
+        y += 1;
+        doGoto = true;
+      } else if (cc === 0x12) {
+        // Reverse on
+        this._charInfo.Reverse = true;
+      } else if (cc === 0x13) {
+        // Home
+        x = 1;
+        y = 1;
+        doGoto = true;
+      } else if (cc === 0x14) {
+        // Delete (backspace + erase)
+        if (x > 1 || y > 1) {
+          if (x === 1) {
+            x = this.WindCols;
+            y -= 1;
+          } else {
+            x -= 1;
+          }
+          this.GotoXY(x, y);
+          this.DelChar(1);
+        }
+      } else if (cc === 0x1c) {
+        this.TextColor(PETSCIIColor.RED);
+      } else if (cc === 0x1d) {
+        // Cursor right (wraps)
+        if (x === this.WindCols) {
+          x = 1;
+          y += 1;
+        } else {
+          x += 1;
+        }
+        doGoto = true;
+      } else if (cc === 0x1e) {
+        this.TextColor(PETSCIIColor.GREEN);
+      } else if (cc === 0x1f) {
+        this.TextColor(PETSCIIColor.BLUE);
+      } else if (cc === 0x81) {
+        this.TextColor(PETSCIIColor.ORANGE);
+      } else if (cc === 0x8e) {
+        this.SetFont('C64-Upper');
+      } else if (cc === 0x90) {
+        this.TextColor(PETSCIIColor.BLACK);
+      } else if (cc === 0x91) {
+        // Cursor up
+        if (y > 1) {
+          y -= 1;
+          doGoto = true;
+        }
+      } else if (cc === 0x92) {
+        this._charInfo.Reverse = false;
+      } else if (cc === 0x93) {
+        // Clear screen
+        this.ClrScr();
+        x = 1;
+        y = 1;
+      } else if (cc === 0x94) {
+        this.GotoXY(x, y);
+        this.InsChar(1);
+      } else if (cc === 0x95) {
+        this.TextColor(PETSCIIColor.BROWN);
+      } else if (cc === 0x96) {
+        this.TextColor(PETSCIIColor.LIGHTRED);
+      } else if (cc === 0x97) {
+        this.TextColor(PETSCIIColor.DARKGRAY);
+      } else if (cc === 0x98) {
+        this.TextColor(PETSCIIColor.GRAY);
+      } else if (cc === 0x99) {
+        this.TextColor(PETSCIIColor.LIGHTGREEN);
+      } else if (cc === 0x9a) {
+        this.TextColor(PETSCIIColor.LIGHTBLUE);
+      } else if (cc === 0x9b) {
+        this.TextColor(PETSCIIColor.LIGHTGRAY);
+      } else if (cc === 0x9c) {
+        this.TextColor(PETSCIIColor.PURPLE);
+      } else if (cc === 0x9d) {
+        // Cursor left (wraps)
+        if (x > 1 || y > 1) {
+          if (x === 1) {
+            x = this.WindCols;
+            y -= 1;
+          } else {
+            x -= 1;
+          }
+          doGoto = true;
+        }
+      } else if (cc === 0x9e) {
+        this.TextColor(PETSCIIColor.YELLOW);
+      } else if (cc === 0x9f) {
+        this.TextColor(PETSCIIColor.CYAN);
+      } else {
+        // Printable
+        buf += String.fromCharCode(cc & 0xff);
+        if (x + buf.length > this.WindCols) {
+          this.FastWrite(buf, this.WhereXA(), this.WhereYA(), this._charInfo);
+          buf = '';
+          x = 1;
+          y += 1;
+          doGoto = true;
+        }
+      }
+
+      if (y > this.WindRows) {
+        y = this.WindRows;
+        this.ScrollUpWindow(1);
+        doGoto = true;
+      }
+
+      if (doGoto) {
+        this.GotoXY(x, y);
+      }
+    }
+
+    if (buf.length > 0) {
+      this.FastWrite(buf, this.WhereXA(), this.WhereYA(), this._charInfo);
+      x += buf.length;
+      this.GotoXY(x, y);
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────
+  // Font and screen-size management
+  // ─────────────────────────────────────────────────────────
+
+  /**
+   * Request a font load. Returns true if the font is recognized.
+   * The actual PNG load happens asynchronously; OnFontChanged fires
+   * when it's ready and redraws the screen.
+   *
+   * Picks the largest available size that fits in the container's
+   * width and the window's height.
+   */
+  public SetFont(font: string): boolean {
+    // The container's parent is now the same width as the canvas in
+    // both classic and modern scrollback modes, so we have to look at
+    // the grandparent to discover the actual available width.
+    const widthSource = this._container.parentElement ?? this._container;
+    const maxCellWidth = Math.floor(widthSource.clientWidth / this._screenSize.x);
+    const maxCellHeight = Math.floor(window.innerHeight / this._screenSize.y);
+    return this._font.Load(font, maxCellWidth, maxCellHeight);
+  }
+
+  /**
+   * Change the number of cells on the screen. Preserves as much of the
+   * existing screen contents as fits.
+   *
+   * Original comment: `// TODO Doesn't seem to be working`. We keep
+   * the behavior the same — if it's been buggy, fixing it should be
+   * its own change, not part of this migration.
+   */
+  public SetScreenSize(columns: number, rows: number): void {
+    if (this._inScrollback) {
+      return;
+    }
+    if (columns === this._screenSize.x && rows === this._screenSize.y) {
+      return;
+    }
+
+    // Save old buffer
+    const oldBuffer: CharInfo[][] = [];
+    for (let y = 1; y <= this._screenSize.y; y++) {
+      oldBuffer[y] = [];
+      for (let x = 1; x <= this._screenSize.x; x++) {
+        oldBuffer[y]![x] = new CharInfo(this._buffer[y]![x]!);
+      }
+    }
+    const oldScreenSize = new Point(this._screenSize.x, this._screenSize.y);
+
+    // Update size, window extents, and buffer.
+    this._screenSize.x = columns;
+    this._screenSize.y = rows;
+    this._windMin = 0;
+    this._windMax = (this._screenSize.x - 1) | ((this._screenSize.y - 1) << 8);
+    this.InitBuffers(false);
+
+    // Resize canvas
+    this._canvas.width = this._font.Width * this._screenSize.x;
+    if (this._useModernScrollback) {
+      this._canvas.height = this._font.Height * (this._screenSize.y + this._scrollbackSize);
+      this._canvasContext.fillRect(0, 0, this._canvas.width, this._canvas.height);
+      this._tempCanvas.width = this._canvas.width;
+      this._tempCanvas.height = this._canvas.height;
+    } else {
+      this._canvas.height = this._font.Height * this._screenSize.y;
+    }
+
+    // Restore as much of the old screen as fits (top-aligned —
+    // matches the original's behavior, including its "TODO restore
+    // bottom portion if shrinking" comment).
+    for (let y = 1; y <= Math.min(this._screenSize.y, oldScreenSize.y); y++) {
+      for (let x = 1; x <= Math.min(this._screenSize.x, oldScreenSize.x); x++) {
+        this.FastWrite(oldBuffer[y]![x]!.Ch, x, y, oldBuffer[y]![x]!);
+      }
+    }
+
+    this.onscreensizechange.trigger();
+  }
+
+  // ─────────────────────────────────────────────────────────
+  // Audio: PC speaker emulation via Web Audio API
+  // ─────────────────────────────────────────────────────────
+
+  /**
+   * Play a tone of `freq` Hz for `duration` ms.
+   *
+   * Requests are queued. If a tone is already playing, this one waits
+   * its turn — important for ANSI music sequences that send multiple
+   * notes in rapid succession.
+   *
+   * The Web Audio context is created lazily on first call to avoid
+   * the "AudioContext not created on user gesture" console warning
+   * that every browser prints when the eager construction would have
+   * happened during page load.
+   */
+  public PlaySound(freq: number, duration: number): void {
+    this._playSoundQueue.push(new Point(freq, duration));
+    if (this._playSoundQueue.length === 1) {
+      this.playNextSound();
+    }
+  }
+
+  private playNextSound(): void {
+    if (this._playSoundQueue.length === 0) {
+      return;
+    }
+
+    // Lazy-init the AudioContext. Some browsers throw if you call new
+    // AudioContext() without a recent user gesture; in that case we
+    // drop the request silently.
+    if (!this._audioContext) {
+      try {
+        this._audioContext = new AudioContext();
+      } catch {
+        this._playSoundQueue.length = 0;
+        return;
+      }
+    }
+    const audioContext = this._audioContext;
+
+    const next = this._playSoundQueue[0]!;
+    const freq = next.x;
+    const duration = next.y;
+
+    const osc = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+    osc.connect(gain).connect(audioContext.destination);
+    osc.frequency.value = freq;
+
+    osc.onended = (): void => {
+      this._playSoundQueue.shift();
+      if (this._playSoundQueue.length > 0) {
+        this.playNextSound();
+      }
+    };
+
+    // Ramp gain from 0 → 1 at the start and 1 → 0 at the end to
+    // avoid the click that abrupt amplitude changes produce.
+    const startTime = audioContext.currentTime;
+    const endTime = startTime + duration / 1000;
+    gain.gain.setValueAtTime(0, startTime);
+    gain.gain.linearRampToValueAtTime(1, startTime + 0.05);
+    gain.gain.setValueAtTime(1, endTime - 0.05);
+    gain.gain.linearRampToValueAtTime(0, endTime);
+    osc.start(startTime);
+    osc.stop(endTime);
   }
 
   /** Push a synthetic keydown event. **Delta 3c-3.** */
@@ -1138,20 +1839,123 @@ export class Crt implements AnsiTarget {
   }
 
   // ─────────────────────────────────────────────────────────
-  // Internal event handlers (stubbed; real bodies in 3c-2/3c-3)
+  // Internal event handlers
   // ─────────────────────────────────────────────────────────
 
-  // Canvas blink cycle. Wired up in the constructor; real bodies in
-  // Delta 3c-2. Until then they're no-ops so the constructor's event
-  // wiring doesn't cause errors at runtime.
+  /**
+   * Cursor blink "hide" tick. Two things happen here:
+   *   1. Any blinking text in the buffer is temporarily replaced
+   *      with spaces (drawn to canvas only — buffer unchanged).
+   *   2. The cursor block is drawn at the current position.
+   *
+   * The original comment notes the cursor is drawn on hide (not show)
+   * so blinking text and the cursor never overlap visually.
+   */
   private OnBlinkHide(): void {
-    // Deferred to Delta 3c-2.
+    this._blinkHidden = true;
+
+    for (let y = 1; y <= this._screenSize.y; y++) {
+      for (let x = 1; x <= this._screenSize.x; x++) {
+        const cell = this._buffer[y]?.[x];
+        if (cell?.Blink && cell.Ch !== ' ') {
+          this.FastWrite(' ', x, y, cell, false);
+        }
+      }
+    }
+
+    // Draw the cursor as a thin bar at the bottom 20% of the cell.
+    this._canvasContext.fillStyle = this._cursor.Colour;
+    const barHeight = this._font.Size.y * 0.2;
+    const xPx = (this.WhereXA() - 1) * this._font.Size.x;
+    const baseY = this._useModernScrollback
+      ? (this.WhereYA() + this._scrollbackSize) * this._font.Size.y
+      : this.WhereYA() * this._font.Size.y;
+    this._canvasContext.fillRect(xPx, baseY - barHeight, this._font.Size.x, barHeight);
+    this._cursor.LastPosition = new Point(this.WhereXA(), this.WhereYA());
   }
+
+  /**
+   * Cursor blink "show" tick. Counterpart to OnBlinkHide:
+   *   1. Restore any blinking text that was hidden.
+   *   2. Redraw the cell at the cursor's last drawn position to
+   *      erase the cursor bar.
+   *
+   * The "last drawn position" tracking is imperfect — the original
+   * notes that hitting Enter or Backspace while the cursor is shown
+   * can leave a stray cursor artifact. Preserved as-is.
+   */
   private OnBlinkShow(): void {
-    // Deferred to Delta 3c-2.
+    if (this._blinkHidden) {
+      this._blinkHidden = false;
+      for (let y = 1; y <= this._screenSize.y; y++) {
+        for (let x = 1; x <= this._screenSize.x; x++) {
+          const cell = this._buffer[y]?.[x];
+          if (cell?.Blink && cell.Ch !== ' ') {
+            this.FastWrite(cell.Ch, x, y, cell, false);
+          }
+        }
+      }
+    }
+
+    // Erase the cursor by redrawing the cell where it was last drawn.
+    const lastX = this._cursor.LastPosition.x;
+    const lastY = this._cursor.LastPosition.y;
+    const cell = this._buffer[lastY]?.[lastX];
+    if (cell) {
+      this.FastWrite(cell.Ch, lastX, lastY, cell, false);
+    }
   }
-  private OnFontChanged(_oldSize: Point): void {
-    // Deferred to Delta 3c-2.
+
+  /**
+   * Called by CrtFont after a new font PNG has been loaded.
+   *
+   * If the new font has the same dimensions as the old and
+   * `_skipRedrawWhenSameFontSize` is set, we only redraw cells that
+   * were marked `NeedsRedraw` (cells that were written while the font
+   * load was in flight). Otherwise we resize the canvas and redraw
+   * the entire buffer.
+   */
+  private OnFontChanged(oldSize: Point): void {
+    if (oldSize.x === this._font.Size.x && oldSize.y === this._font.Size.y) {
+      if (this._skipRedrawWhenSameFontSize) {
+        // Partial redraw: only cells that asked for it.
+        for (let y = 1; y <= this._screenSize.y; y++) {
+          for (let x = 1; x <= this._screenSize.x; x++) {
+            const cell = this._buffer[y]?.[x];
+            if (cell?.NeedsRedraw) {
+              this.FastWrite(cell.Ch, x, y, cell, false);
+              cell.NeedsRedraw = false;
+            }
+          }
+        }
+        return;
+      }
+    }
+
+    // Full canvas resize and redraw.
+    this._cursor.Size = this._font.Size;
+    this._canvas.width = this._font.Width * this._screenSize.x;
+    if (this._useModernScrollback) {
+      this._canvas.height = this._font.Height * (this._screenSize.y + this._scrollbackSize);
+      this._canvasContext.fillRect(0, 0, this._canvas.width, this._canvas.height);
+    } else {
+      this._canvas.height = this._font.Height * this._screenSize.y;
+    }
+    this._tempCanvas.width = this._canvas.width;
+    this._tempCanvas.height = this._canvas.height;
+
+    // Repaint every cell.
+    for (let y = 1; y <= this._screenSize.y; y++) {
+      for (let x = 1; x <= this._screenSize.x; x++) {
+        const cell = this._buffer[y]?.[x];
+        if (cell) {
+          this.FastWrite(cell.Ch, x, y, cell, false);
+          cell.NeedsRedraw = false;
+        }
+      }
+    }
+
+    this.onfontchange.trigger();
   }
   private OnKeyDown(_ke: KeyboardEvent): void {
     // Deferred to Delta 3c-3.

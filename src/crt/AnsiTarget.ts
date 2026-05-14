@@ -112,7 +112,7 @@ export interface AnsiTarget {
   DelLine(count: number): void;
 
   /** Write `text` at absolute (x, y) with the given attribute. */
-  FastWrite(text: string, x: number, y: number, charInfo: CharInfo): void;
+  FastWrite(text: string | undefined, x: number, y: number, charInfo: CharInfo): void;
 
   /** Move the cursor (1-based, window-relative). */
   GotoXY(x: number, y: number): void;
