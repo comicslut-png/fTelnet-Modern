@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { CharInfo } from '@crt/CharInfo.js';
 import { ANSI_COLOURS, Color } from '@crt/Colors.js';
 import { Crt } from '@crt/Crt.js';
+import { KeyboardKeys } from '@crt/KeyboardKeys.js';
 
 /*
   These tests exercise Delta 3c-1's surface: construction, buffer
@@ -752,13 +753,449 @@ describe('Crt — Delta 3c-1 foundation', () => {
     });
   });
 
-  describe('Delta 3c-3 methods still throw clearly', () => {
-    it('EnterScrollback throws with a clear message', () => {
-      expect(() => crt.EnterScrollback()).toThrow(/Delta 3c-3/);
+  // ───────────────────────────────────────────────────────
+  // Delta 3c-3 — input handling
+  // ───────────────────────────────────────────────────────
+
+  describe('OnKeyDown — ANSI mode encoding', () => {
+    function press(opts: { keyCode: number; ctrlKey?: boolean; altKey?: boolean }): void {
+      const ke = new KeyboardEvent('keydown', {
+        keyCode: opts.keyCode,
+        ctrlKey: opts.ctrlKey ?? false,
+        altKey: opts.altKey ?? false,
+      } as KeyboardEventInit);
+      window.dispatchEvent(ke);
+    }
+
+    function lastKey(): string {
+      const k = crt.ReadKey();
+      return k?.keyString ?? '';
+    }
+
+    it('Ctrl-A produces 0x01', () => {
+      press({ keyCode: 65, ctrlKey: true });
+      expect(lastKey()).toBe('\x01');
     });
 
-    it('PushKeyDown throws with a clear message', () => {
-      expect(() => crt.PushKeyDown(65, 65, false, false, false)).toThrow(/Delta 3c-3/);
+    it('Ctrl-Z produces 0x1A', () => {
+      press({ keyCode: 90, ctrlKey: true });
+      expect(lastKey()).toBe('\x1A');
+    });
+
+    it('Ctrl + lowercase letter (97) also produces 0x01', () => {
+      press({ keyCode: 97, ctrlKey: true });
+      expect(lastKey()).toBe('\x01');
+    });
+
+    it('Enter produces CRLF', () => {
+      press({ keyCode: KeyboardKeys.ENTER });
+      expect(lastKey()).toBe('\r\n');
+    });
+
+    it('Backspace produces \\b', () => {
+      press({ keyCode: KeyboardKeys.BACKSPACE });
+      expect(lastKey()).toBe('\b');
+    });
+
+    it('Up arrow produces CSI A', () => {
+      press({ keyCode: KeyboardKeys.UP });
+      expect(lastKey()).toBe('\x1B[A');
+    });
+
+    it('Down arrow produces CSI B', () => {
+      press({ keyCode: KeyboardKeys.DOWN });
+      expect(lastKey()).toBe('\x1B[B');
+    });
+
+    it('F1 produces ESC O P', () => {
+      press({ keyCode: KeyboardKeys.F1 });
+      expect(lastKey()).toBe('\x1BOP');
+    });
+
+    it('F6 produces CSI 17 ~', () => {
+      press({ keyCode: KeyboardKeys.F6 });
+      expect(lastKey()).toBe('\x1B[17~');
+    });
+
+    it('F12 produces CSI 24 ~', () => {
+      press({ keyCode: KeyboardKeys.F12 });
+      expect(lastKey()).toBe('\x1B[24~');
+    });
+
+    it('Tab produces \\t', () => {
+      press({ keyCode: KeyboardKeys.TAB });
+      expect(lastKey()).toBe('\t');
+    });
+
+    it('Escape produces ESC', () => {
+      press({ keyCode: KeyboardKeys.ESCAPE });
+      expect(lastKey()).toBe('\x1B');
+    });
+
+    it('Delete produces \\x7F', () => {
+      press({ keyCode: KeyboardKeys.DELETE });
+      expect(lastKey()).toBe('\x7F');
+    });
+  });
+
+  describe('OnKeyDown — Atari mode encoding', () => {
+    beforeEach(() => {
+      crt.Atari = true;
+    });
+
+    function press(opts: { keyCode: number; ctrlKey?: boolean }): void {
+      const ke = new KeyboardEvent('keydown', {
+        keyCode: opts.keyCode,
+        ctrlKey: opts.ctrlKey ?? false,
+      } as KeyboardEventInit);
+      window.dispatchEvent(ke);
+    }
+    function lastKey(): string {
+      return crt.ReadKey()?.keyString ?? '';
+    }
+
+    it('Ctrl-A produces 0x01 (same as ANSI)', () => {
+      press({ keyCode: 65, ctrlKey: true });
+      expect(lastKey()).toBe('\x01');
+    });
+
+    it('Ctrl-H produces 0x7E (Atari override, NOT 0x08)', () => {
+      press({ keyCode: 72, ctrlKey: true });
+      expect(lastKey()).toBe('\x7E');
+    });
+
+    it('Ctrl-J produces 0x0D (Atari override, NOT 0x0A)', () => {
+      press({ keyCode: 74, ctrlKey: true });
+      expect(lastKey()).toBe('\r');
+    });
+
+    it('Ctrl-M produces 0x9B (Atari EOL, NOT 0x0D)', () => {
+      press({ keyCode: 77, ctrlKey: true });
+      expect(lastKey()).toBe('\x9B');
+    });
+
+    it('Enter produces 0x9B (Atari EOL)', () => {
+      press({ keyCode: KeyboardKeys.ENTER });
+      expect(lastKey()).toBe('\x9B');
+    });
+
+    it('Up arrow produces 0x1C (Atari cursor-up byte)', () => {
+      press({ keyCode: KeyboardKeys.UP });
+      expect(lastKey()).toBe('\x1C');
+    });
+
+    it('Backspace produces 0x7E (Atari backspace)', () => {
+      press({ keyCode: KeyboardKeys.BACKSPACE });
+      expect(lastKey()).toBe('\x7E');
+    });
+  });
+
+  describe('OnKeyDown — C64 mode encoding', () => {
+    beforeEach(() => {
+      crt.C64 = true;
+    });
+
+    function press(opts: { keyCode: number }): void {
+      const ke = new KeyboardEvent('keydown', { keyCode: opts.keyCode } as KeyboardEventInit);
+      window.dispatchEvent(ke);
+    }
+    function lastKey(): string {
+      return crt.ReadKey()?.keyString ?? '';
+    }
+
+    it('Enter produces CR (PETSCII style)', () => {
+      press({ keyCode: KeyboardKeys.ENTER });
+      expect(lastKey()).toBe('\r');
+    });
+
+    it('F1 produces 0x85 (C64 F1)', () => {
+      press({ keyCode: KeyboardKeys.F1 });
+      expect(lastKey()).toBe('\x85');
+    });
+
+    it('F8 produces 0x8C (C64 F8)', () => {
+      press({ keyCode: KeyboardKeys.F8 });
+      expect(lastKey()).toBe('\x8C');
+    });
+
+    it('Up arrow produces 0x91 (C64 cursor up)', () => {
+      press({ keyCode: KeyboardKeys.UP });
+      expect(lastKey()).toBe('\x91');
+    });
+
+    it('Home produces 0x13 (C64 home)', () => {
+      press({ keyCode: KeyboardKeys.HOME });
+      expect(lastKey()).toBe('\x13');
+    });
+  });
+
+  describe('OnKeyPress — printable characters', () => {
+    function pressChar(charCode: number): void {
+      const ke = new KeyboardEvent('keypress', {
+        charCode,
+      } as KeyboardEventInit);
+      window.dispatchEvent(ke);
+    }
+    function lastKey(): string {
+      return crt.ReadKey()?.keyString ?? '';
+    }
+
+    it('queues a printable ASCII letter', () => {
+      pressChar(65); // 'A'
+      expect(lastKey()).toBe('A');
+    });
+
+    it('queues a printable lowercase letter', () => {
+      pressChar(97); // 'a'
+      expect(lastKey()).toBe('a');
+    });
+
+    it('queues a printable symbol', () => {
+      pressChar(33); // '!'
+      expect(lastKey()).toBe('!');
+    });
+
+    it('control chars below 33 are queued with empty keyString', () => {
+      // The original always pushes a KeyPressEvent (even for chars
+      // that don't map to a printable). The `keyString` field is just
+      // empty, so the event is essentially a no-op for the BBS but
+      // still appears in the queue. Preserved behavior.
+      pressChar(20);
+      const k = crt.ReadKey();
+      expect(k).toBeDefined();
+      expect(k?.keyString).toBe('');
+    });
+
+    it('preserves accented characters (above 126)', () => {
+      pressChar(233); // 'é'
+      expect(lastKey()).toBe('é');
+    });
+  });
+
+  describe('OnKeyPress — C64 case swap', () => {
+    beforeEach(() => {
+      crt.C64 = true;
+    });
+
+    function pressChar(charCode: number): void {
+      const ke = new KeyboardEvent('keypress', { charCode } as KeyboardEventInit);
+      window.dispatchEvent(ke);
+    }
+    function lastKey(): string {
+      return crt.ReadKey()?.keyString ?? '';
+    }
+
+    it('uppercase A (65) gets lowercased to a', () => {
+      pressChar(65);
+      expect(lastKey()).toBe('a');
+    });
+
+    it('lowercase a (97) gets uppercased to A', () => {
+      pressChar(97);
+      expect(lastKey()).toBe('A');
+    });
+
+    it('symbols (33-64) pass through unchanged', () => {
+      pressChar(64); // '@'
+      expect(lastKey()).toBe('@');
+    });
+  });
+
+  describe('Synthetic key events (Push*)', () => {
+    it('PushKeyDown(F1) queues the same string as a real F1', () => {
+      crt.PushKeyDown(0, KeyboardKeys.F1, false, false, false);
+      expect(crt.ReadKey()?.keyString).toBe('\x1BOP');
+    });
+
+    it('PushKeyPress(printable) queues that char', () => {
+      crt.PushKeyPress(65, 65, false, false, false);
+      expect(crt.ReadKey()?.keyString).toBe('A');
+    });
+
+    it('PushKeyDown(Ctrl-C) produces \\x03', () => {
+      crt.PushKeyDown(0, 67, true, false, false);
+      expect(crt.ReadKey()?.keyString).toBe('\x03');
+    });
+  });
+
+  describe('KeyPressed and ReadKey', () => {
+    it('KeyPressed is false initially', () => {
+      expect(crt.KeyPressed()).toBe(false);
+    });
+
+    it('KeyPressed is true after a key is queued', () => {
+      crt.PushKeyDown(0, KeyboardKeys.UP, false, false, false);
+      expect(crt.KeyPressed()).toBe(true);
+    });
+
+    it('ReadKey dequeues in FIFO order', () => {
+      crt.PushKeyPress(65, 65, false, false, false);
+      crt.PushKeyPress(66, 66, false, false, false);
+      expect(crt.ReadKey()?.keyString).toBe('A');
+      expect(crt.ReadKey()?.keyString).toBe('B');
+    });
+
+    it('ReadKey returns undefined when queue is empty', () => {
+      expect(crt.ReadKey()).toBeUndefined();
+    });
+  });
+
+  describe('LocalEcho', () => {
+    it('disabled by default — ReadKey does not write to screen', () => {
+      crt.GotoXY(1, 1);
+      crt.PushKeyPress(65, 65, false, false, false);
+      crt.ReadKey();
+      const snap = crt.SaveScreen(1, 1, 1, 1);
+      expect(snap[0]?.[0]?.Ch).toBe(' '); // unchanged
+    });
+
+    it('enabled — ReadKey writes the keystring to the screen', () => {
+      crt.GotoXY(1, 1);
+      crt.LocalEcho = true;
+      crt.PushKeyPress(65, 65, false, false, false);
+      crt.ReadKey();
+      const snap = crt.SaveScreen(1, 1, 1, 1);
+      expect(snap[0]?.[0]?.Ch).toBe('A');
+    });
+  });
+
+  describe('onkeypressed event', () => {
+    it('fires when a printable key is queued', () => {
+      let fired = false;
+      crt.onkeypressed.on(() => {
+        fired = true;
+      });
+      crt.PushKeyPress(65, 65, false, false, false);
+      expect(fired).toBe(true);
+    });
+
+    it('fires when a special key is queued', () => {
+      let fired = false;
+      crt.onkeypressed.on(() => {
+        fired = true;
+      });
+      crt.PushKeyDown(0, KeyboardKeys.UP, false, false, false);
+      expect(fired).toBe(true);
+    });
+
+    it('also fires for Ctrl-key combos even with no keyString', () => {
+      let fired = false;
+      crt.onkeypressed.on(() => {
+        fired = true;
+      });
+      // A weird ctrl combo that doesn't map to anything
+      crt.PushKeyDown(0, 999, true, false, false);
+      expect(fired).toBe(true);
+    });
+  });
+
+  describe('focus check', () => {
+    it('does not queue keys when an input element is focused', () => {
+      const input = document.createElement('input');
+      document.body.appendChild(input);
+      try {
+        // Dispatch a keydown with the input as target.
+        const ke = new KeyboardEvent('keydown', {
+          keyCode: KeyboardKeys.ENTER,
+        } as KeyboardEventInit);
+        Object.defineProperty(ke, 'target', { value: input });
+        window.dispatchEvent(ke);
+
+        expect(crt.KeyPressed()).toBe(false);
+      } finally {
+        document.body.removeChild(input);
+      }
+    });
+  });
+
+  describe('Scrollback mode', () => {
+    it('EnterScrollback in legacy mode flips the flag', () => {
+      crt.EnterScrollback();
+      // No direct getter for _inScrollback, but ExitScrollback should
+      // work without error if we entered.
+      expect(() => crt.ExitScrollback()).not.toThrow();
+    });
+
+    it('EnterScrollback in modern-scrollback mode is a no-op', () => {
+      crt.dispose();
+      document.body.removeChild(container);
+      // Build a fresh modern-scrollback Crt
+      container = document.createElement('div');
+      document.body.appendChild(container);
+      crt = new Crt(container, true);
+
+      crt.EnterScrollback();
+      // We can verify by attempting a scrollback-only action: pushing
+      // Up arrow should NOT consume the event (would queue it instead).
+      crt.PushKeyDown(0, KeyboardKeys.UP, false, false, false);
+      expect(crt.KeyPressed()).toBe(true);
+    });
+
+    it('After EnterScrollback, arrow keys are intercepted (not queued)', () => {
+      crt.EnterScrollback();
+      // In scrollback, arrow keys should NOT be queued for the BBS.
+      const ke = new KeyboardEvent('keydown', {
+        keyCode: KeyboardKeys.UP,
+      } as KeyboardEventInit);
+      window.dispatchEvent(ke);
+      expect(crt.KeyPressed()).toBe(false);
+    });
+
+    it('ExitScrollback re-enables normal key handling', () => {
+      crt.EnterScrollback();
+      crt.ExitScrollback();
+      const ke = new KeyboardEvent('keydown', {
+        keyCode: KeyboardKeys.UP,
+      } as KeyboardEventInit);
+      window.dispatchEvent(ke);
+      expect(crt.KeyPressed()).toBe(true);
+      expect(crt.ReadKey()?.keyString).toBe('\x1B[A');
+    });
+  });
+
+  describe('Mouse reporting (no selection — ReportMouse on)', () => {
+    function dispatch(eventType: string, x: number, y: number, button = 0): void {
+      const evt = new MouseEvent(eventType, {
+        clientX: x,
+        clientY: y,
+        button,
+      });
+      // jsdom doesn't set offsetX/Y on MouseEvent — patch them in.
+      Object.defineProperty(evt, 'offsetX', { value: x });
+      Object.defineProperty(evt, 'offsetY', { value: y });
+      crt.Canvas.dispatchEvent(evt);
+    }
+
+    it('fires onmousereport on mousedown when ReportMouse is on', () => {
+      crt.ReportMouse = true;
+      let report = '';
+      crt.onmousereport.on((s) => {
+        report = s;
+      });
+      dispatch('mousedown', 10, 10);
+      expect(report.length).toBeGreaterThan(0);
+      expect(report.startsWith('\x1B[M')).toBe(true);
+    });
+
+    it('uses SGR format when ReportMouseSgr is on', () => {
+      crt.ReportMouse = true;
+      crt.ReportMouseSgr = true;
+      let report = '';
+      crt.onmousereport.on((s) => {
+        report = s;
+      });
+      dispatch('mousedown', 10, 10);
+      expect(report.startsWith('\x1B[<')).toBe(true);
+      expect(report.endsWith('M')).toBe(true);
+    });
+
+    it('does not fire when ReportMouse is off', () => {
+      let fired = false;
+      crt.onmousereport.on(() => {
+        fired = true;
+      });
+      dispatch('mousedown', 10, 10);
+      expect(fired).toBe(false);
     });
   });
 });

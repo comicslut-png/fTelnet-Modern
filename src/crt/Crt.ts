@@ -20,8 +20,10 @@
 
 import {
   ByteArray,
+  ClipboardHelper,
   CRC,
   DetectMobileBrowser,
+  getOffset,
   Point,
   StringUtils,
   TypedEvent,
@@ -32,7 +34,8 @@ import { CharInfo } from './CharInfo.js';
 import { ANSI_COLOURS, Color, PETSCIIColor } from './Colors.js';
 import { CrtFont } from './CrtFont.js';
 import { Cursor } from './Cursor.js';
-import type { KeyPressEvent } from './KeyPressEvent.js';
+import { KeyboardKeys } from './KeyboardKeys.js';
+import { KeyPressEvent } from './KeyPressEvent.js';
 
 /**
  * Crt: console-window emulator for the terminal canvas.
@@ -48,27 +51,22 @@ import type { KeyPressEvent } from './KeyPressEvent.js';
  *   - The Cursor (blink timer, position, visibility)
  *
  * Phase 1, Delta 3c-1 (foundation) — buffer/coords/attrs/clear/scroll.
- * Phase 1, Delta 3c-2 (this delta) — adds the write path and rendering:
- *   ✓ Write, WriteLn (dispatch to ASCII / ATASCII / PETSCII)
- *   ✓ writeASCII, writeATASCII, writePETSCII (mode-specific writers)
- *   ✓ Real FastWrite with canvas drawImage rendering
- *   ✓ OnBlinkShow / OnBlinkHide (canvas blink cycle + cursor draw)
- *   ✓ OnFontChanged (canvas resize + buffer redraw)
- *   ✓ SetFont, SetScreenSize
- *   ✓ PlaySound, playNextSound (lazy AudioContext)
- *   ✓ ARIA live-region mirroring of visible text
+ * Phase 1, Delta 3c-2 (write path) — Write + WriteASCII/ATASCII/PETSCII,
+ *   FastWrite rendering, blink cycle, font change, audio.
+ * Phase 1, Delta 3c-3 (this delta) — input handling:
+ *   ✓ OnKeyDown / OnKeyPress with separate ANSI / Atari / C64 encoders
+ *   ✓ PushKeyDown / PushKeyPress (synthetic events for the on-screen
+ *     keyboard and the scrollback pager)
+ *   ✓ OnMouseDown / Move / Up / UpForWindow (text selection, copy,
+ *     mouse reporting in both xterm and SGR-extended formats)
+ *   ✓ EnterScrollback / ExitScrollback (legacy scrollback view)
+ *   ✓ OnResize (dynamic font resize on window change)
+ *   ✓ Single-cell-click hyperlink detection
+ *   ✓ ReadKey now honors LocalEcho
  *
- * NOT YET MIGRATED — Delta 3c-3 will add:
- *   ✗ OnKeyDown / OnKeyPress (the giant key encoding table)
- *   ✗ OnMouseDown / Move / Up (selection, copy, mouse reporting)
- *   ✗ EnterScrollback / ExitScrollback
- *   ✗ PushKeyDown / PushKeyPress (synthetic events)
- *   ✗ OnResize
- *
- * Methods that depend on un-migrated logic are temporarily stubbed
- * with `throw new Error('not yet migrated...')` rather than left
- * unimplemented, so any accidental use is immediately obvious. The
- * codebase compiles cleanly with stubs in place.
+ * After this delta the Crt class is feature-complete. The remaining
+ * Phase 1 work is in other modules (crtcontrols/, graph/, filetransfer/,
+ * ftelnetclient/), not Crt itself.
  *
  * Crt declares `implements AnsiTarget`. All members of the interface
  * are implemented by this delta (either with real code or as one of
@@ -162,8 +160,12 @@ export class Crt implements AnsiTarget {
   private _lastChar = 0x00;
   private readonly _screenSize: Point = new Point(80, 25);
 
-  // Other display state arrives with its consumers:
-  //   _scrollbackTemp, _scrollbackPosition (3c-3)
+  // Scrollback view state. `_scrollbackTemp` is a working copy of
+  // `_scrollback` plus the live screen, used while the user is
+  // browsing history. `_scrollbackPosition` tracks where in that
+  // buffer the top row of the visible viewport currently is.
+  private _scrollbackTemp: CharInfo[][] = [];
+  private _scrollbackPosition = -1;
 
   // ───────── Window (scroll region) ─────────
   /**
@@ -179,7 +181,12 @@ export class Crt implements AnsiTarget {
   private _windMax = (80 - 1) | ((25 - 1) << 8);
 
   // Audio/mouse/PETSCII state arrives with the consumers:
-  //   _mouseDownPoint, _mouseMovePoint (Delta 3c-3)
+
+  // ───────── Mouse drag state ─────────
+  // Set on mousedown, cleared on mouseup. When defined, a drag
+  // selection is in progress; mousemove events update the highlight.
+  private _mouseDownPoint: Point | undefined;
+  private _mouseMovePoint: Point | undefined;
 
   // ───────── Audio (Web Audio API) ─────────
   //
@@ -1164,9 +1171,21 @@ export class Crt implements AnsiTarget {
     return this._keyBuf.length > 0;
   }
 
-  /** Dequeue and return the next key event, or undefined if none. */
+  /**
+   * Dequeue and return the next key event, or undefined if none.
+   * If `LocalEcho` is on, the dequeued keystring is also written
+   * to the screen — convenient for terminals that aren't getting
+   * server-side echo.
+   */
   public ReadKey(): KeyPressEvent | undefined {
-    return this._keyBuf.shift();
+    const kpe = this._keyBuf.shift();
+    if (!kpe) {
+      return undefined;
+    }
+    if (this._localEcho) {
+      this.Write(kpe.keyString);
+    }
+    return kpe;
   }
 
   // ─────────────────────────────────────────────────────────
@@ -1806,36 +1825,129 @@ export class Crt implements AnsiTarget {
     osc.stop(endTime);
   }
 
-  /** Push a synthetic keydown event. **Delta 3c-3.** */
+  // ─────────────────────────────────────────────────────────
+  // Synthetic key events (used by the on-screen virtual keyboard
+  // and by the scrollback view for paging)
+  // ─────────────────────────────────────────────────────────
+
+  /**
+   * Push a synthetic keydown event into the input pipeline. The on-
+   * screen virtual keyboard uses this for keys that browsers don't
+   * fire normal `keydown` events for (Break, function keys on mobile,
+   * etc.); the scrollback view uses it internally to handle Page Up /
+   * Page Down by simulating multiple Up/Down arrow presses.
+   *
+   * The original cast a partial object literal to `KeyboardEvent`. In
+   * strict TypeScript that requires a structural assertion; rather
+   * than fight the type system, we build a minimal stub that
+   * implements just the fields OnKeyDown actually reads, then assert
+   * to KeyboardEvent at the call site.
+   */
   public PushKeyDown(
-    _pushedCharCode: number,
-    _pushedKeyCode: number,
-    _ctrl: boolean,
-    _alt: boolean,
-    _shift: boolean
+    pushedCharCode: number,
+    pushedKeyCode: number,
+    ctrl: boolean,
+    alt: boolean,
+    shift: boolean
   ): void {
-    throw new Error('Crt.PushKeyDown is not yet migrated; arrives in Delta 3c-3');
+    this.OnKeyDown(this.makeSyntheticKeyEvent(pushedCharCode, pushedKeyCode, ctrl, alt, shift));
   }
 
-  /** Push a synthetic keypress event. **Delta 3c-3.** */
+  /** Push a synthetic keypress event. Counterpart to PushKeyDown. */
   public PushKeyPress(
-    _pushedCharCode: number,
-    _pushedKeyCode: number,
-    _ctrl: boolean,
-    _alt: boolean,
-    _shift: boolean
+    pushedCharCode: number,
+    pushedKeyCode: number,
+    ctrl: boolean,
+    alt: boolean,
+    shift: boolean
   ): void {
-    throw new Error('Crt.PushKeyPress is not yet migrated; arrives in Delta 3c-3');
+    this.OnKeyPress(this.makeSyntheticKeyEvent(pushedCharCode, pushedKeyCode, ctrl, alt, shift));
   }
 
-  /** Enter scrollback view. **Delta 3c-3.** */
+  /**
+   * Build a partial KeyboardEvent stub for the synthetic-key helpers.
+   * Only the fields OnKeyDown / OnKeyPress actually read are filled
+   * in; the `as KeyboardEvent` cast at the end tells TypeScript to
+   * trust the caller.
+   */
+  private makeSyntheticKeyEvent(
+    charCode: number,
+    keyCode: number,
+    ctrl: boolean,
+    alt: boolean,
+    shift: boolean
+  ): KeyboardEvent {
+    return {
+      altKey: alt,
+      charCode,
+      ctrlKey: ctrl,
+      keyCode,
+      shiftKey: shift,
+      which: charCode,
+      target: null,
+      preventDefault: (): void => {
+        /* synthetic event — nothing to suppress */
+      },
+    } as unknown as KeyboardEvent;
+  }
+
+  // ─────────────────────────────────────────────────────────
+  // Scrollback view
+  // ─────────────────────────────────────────────────────────
+
+  /**
+   * Enter scrollback mode: stop accepting normal input and let the
+   * user page through history with Up/Down/PageUp/PageDown.
+   *
+   * Modern-scrollback mode doesn't need this — the whole scrollback
+   * lives on the canvas above the visible viewport and the user can
+   * just scroll the page. This method is a no-op in that mode.
+   */
   public EnterScrollback(): void {
-    throw new Error('Crt.EnterScrollback is not yet migrated; arrives in Delta 3c-3');
+    if (this._useModernScrollback) {
+      return;
+    }
+    if (this._inScrollback) {
+      return;
+    }
+    this._inScrollback = true;
+
+    // Build the scrollback view: history rows + current screen.
+    this._scrollbackTemp = [];
+    for (let y = 0; y < this._scrollback.length; y++) {
+      const row: CharInfo[] = [];
+      const sourceRow = this._scrollback[y]!;
+      for (let x = 0; x < sourceRow.length; x++) {
+        row.push(new CharInfo(sourceRow[x]!));
+      }
+      this._scrollbackTemp.push(row);
+    }
+    for (let y = 1; y <= this._screenSize.y; y++) {
+      const row: CharInfo[] = [];
+      for (let x = 1; x <= this._screenSize.x; x++) {
+        row.push(new CharInfo(this._buffer[y]![x]!));
+      }
+      this._scrollbackTemp.push(row);
+    }
+
+    // Position at the bottom of history (showing the live screen).
+    this._scrollbackPosition = this._scrollbackTemp.length;
   }
 
-  /** Exit scrollback view. **Delta 3c-3.** */
+  /**
+   * Exit scrollback mode and return to the live screen.
+   */
   public ExitScrollback(): void {
-    throw new Error('Crt.ExitScrollback is not yet migrated; arrives in Delta 3c-3');
+    // Repaint the live buffer over whatever scrollback rows were shown.
+    for (let y = 1; y <= this._screenSize.y; y++) {
+      for (let x = 1; x <= this._screenSize.x; x++) {
+        const cell = this._buffer[y]?.[x];
+        if (cell) {
+          this.FastWrite(cell.Ch, x, y, cell, false);
+        }
+      }
+    }
+    this._inScrollback = false;
   }
 
   // ─────────────────────────────────────────────────────────
@@ -1957,26 +2069,600 @@ export class Crt implements AnsiTarget {
 
     this.onfontchange.trigger();
   }
-  private OnKeyDown(_ke: KeyboardEvent): void {
-    // Deferred to Delta 3c-3.
+  // ─────────────────────────────────────────────────────────
+  // Keyboard handlers
+  // ─────────────────────────────────────────────────────────
+
+  /**
+   * Handle a `keydown` event. Two main responsibilities:
+   *
+   *   1. While in scrollback mode, intercept arrow / page keys and
+   *      page through history instead of sending them to the BBS.
+   *   2. Otherwise, map keys (modifier + keycode combinations) to
+   *      the ANSI escape sequences the BBS expects, then queue them.
+   *
+   * The mapping tables vary by emulation mode (Atari / C64 / ANSI).
+   * Ctrl-A through Ctrl-Z generate 0x01-0x1A in ANSI mode; the Atari
+   * variant has overrides for Ctrl-H/J/M (which map to ATASCII-specific
+   * codes 0x7E, 0x0D, 0x9B respectively).
+   */
+  private OnKeyDown(ke: KeyboardEvent): void {
+    // Skip if focus is on an input element somewhere on the page —
+    // otherwise typing in those would also get queued as terminal input.
+    if (ke.target instanceof HTMLInputElement || ke.target instanceof HTMLTextAreaElement) {
+      return;
+    }
+
+    if (this._inScrollback) {
+      this.handleKeyDownInScrollback(ke);
+      return;
+    }
+
+    let keyString = '';
+
+    if (this._atari) {
+      keyString = this.encodeKeyDownAtari(ke);
+    } else if (this._c64) {
+      keyString = this.encodeKeyDownC64(ke);
+    } else {
+      keyString = this.encodeKeyDownAnsi(ke);
+    }
+
+    this._keyBuf.push(new KeyPressEvent(ke, keyString));
+
+    // We consume the event (and notify listeners) only if we mapped
+    // it to something. Ctrl is always consumed even with no mapping
+    // so the browser doesn't intercept (e.g. Ctrl-N opening a new
+    // window when we wanted to send Ctrl-N to the BBS).
+    if (keyString !== '' || ke.ctrlKey) {
+      ke.preventDefault();
+      this.onkeypressed.trigger();
+    }
   }
-  private OnKeyPress(_ke: KeyboardEvent): void {
-    // Deferred to Delta 3c-3.
+
+  /**
+   * Scrollback-mode key handling: Up/Down scroll one row, PageUp/Down
+   * scroll one screen (implemented as a loop of single-row scrolls
+   * via the synthetic-key mechanism so the same logic handles both).
+   */
+  private handleKeyDownInScrollback(ke: KeyboardEvent): void {
+    if (ke.keyCode === KeyboardKeys.DOWN) {
+      this.scrollbackScrollDown();
+    } else if (ke.keyCode === KeyboardKeys.UP) {
+      this.scrollbackScrollUp();
+    } else if (ke.keyCode === KeyboardKeys.PAGE_DOWN) {
+      for (let i = 0; i < this._screenSize.y; i++) {
+        this.PushKeyDown(KeyboardKeys.DOWN, KeyboardKeys.DOWN, false, false, false);
+      }
+    } else if (ke.keyCode === KeyboardKeys.PAGE_UP) {
+      for (let i = 0; i < this._screenSize.y; i++) {
+        this.PushKeyDown(KeyboardKeys.UP, KeyboardKeys.UP, false, false, false);
+      }
+    }
+    ke.preventDefault();
   }
-  private OnMouseDown(_me: MouseEvent): void {
-    // Deferred to Delta 3c-3.
+
+  /** Scroll one row down in scrollback view (toward the live screen). */
+  private scrollbackScrollDown(): void {
+    if (this._scrollbackPosition < this._scrollbackTemp.length) {
+      this._scrollbackPosition += 1;
+      this.ScrollUpCustom(
+        1,
+        1,
+        this._screenSize.x,
+        this._screenSize.y,
+        1,
+        new CharInfo(null),
+        false
+      );
+
+      const yDest = this._screenSize.y;
+      const ySource = this._scrollbackPosition - 1;
+      const sourceRow = this._scrollbackTemp[ySource];
+      if (sourceRow) {
+        const xEnd = Math.min(this._screenSize.x, sourceRow.length);
+        for (let x = 0; x < xEnd; x++) {
+          this.FastWrite(sourceRow[x]!.Ch, x + 1, yDest, sourceRow[x]!, false);
+        }
+      }
+    }
   }
-  private OnMouseMove(_me: MouseEvent): void {
-    // Deferred to Delta 3c-3.
+
+  /** Scroll one row up in scrollback view (further back in history). */
+  private scrollbackScrollUp(): void {
+    if (this._scrollbackPosition > this._screenSize.y) {
+      this._scrollbackPosition -= 1;
+      this.ScrollDownCustom(
+        1,
+        1,
+        this._screenSize.x,
+        this._screenSize.y,
+        1,
+        new CharInfo(null),
+        false
+      );
+
+      const yDest = 1;
+      const ySource = this._scrollbackPosition - this._screenSize.y;
+      const sourceRow = this._scrollbackTemp[ySource];
+      if (sourceRow) {
+        const xEnd = Math.min(this._screenSize.x, sourceRow.length);
+        for (let x = 0; x < xEnd; x++) {
+          this.FastWrite(sourceRow[x]!.Ch, x + 1, yDest, sourceRow[x]!, false);
+        }
+      }
+    }
   }
-  private OnMouseUp(_me: MouseEvent): void {
-    // Deferred to Delta 3c-3.
+
+  /**
+   * Encode a keydown event in ANSI/CTERM mode.
+   *
+   * Ctrl-letter: A-Z (65-90) → 0x01-0x1A; a-z (97-122) → 0x01-0x1A.
+   * Other special keys map to standard CSI sequences (CSI A for up,
+   * CSI [ H for Home, etc.) Function keys use the xterm convention
+   * (F1-F5 → ESC O P/Q/R/S/t, F6-F12 → CSI 17-24 ~).
+   */
+  private encodeKeyDownAnsi(ke: KeyboardEvent): string {
+    if (ke.ctrlKey) {
+      if (ke.keyCode >= 65 && ke.keyCode <= 90) {
+        return String.fromCharCode(ke.keyCode - 64);
+      }
+      if (ke.keyCode >= 97 && ke.keyCode <= 122) {
+        return String.fromCharCode(ke.keyCode - 96);
+      }
+      return '';
+    }
+
+    switch (ke.keyCode) {
+      case KeyboardKeys.BACKSPACE: return '\b';
+      case KeyboardKeys.DELETE: return '\x7F';
+      case KeyboardKeys.DOWN: return '\x1B[B';
+      case KeyboardKeys.END: return '\x1B[K';
+      case KeyboardKeys.ENTER: return '\r\n';
+      case KeyboardKeys.ESCAPE: return '\x1B';
+      case KeyboardKeys.F1: return '\x1BOP';
+      case KeyboardKeys.F2: return '\x1BOQ';
+      case KeyboardKeys.F3: return '\x1BOR';
+      case KeyboardKeys.F4: return '\x1BOS';
+      case KeyboardKeys.F5: return '\x1BOt';
+      case KeyboardKeys.F6: return '\x1B[17~';
+      case KeyboardKeys.F7: return '\x1B[18~';
+      case KeyboardKeys.F8: return '\x1B[19~';
+      case KeyboardKeys.F9: return '\x1B[20~';
+      case KeyboardKeys.F10: return '\x1B[21~';
+      case KeyboardKeys.F11: return '\x1B[23~';
+      case KeyboardKeys.F12: return '\x1B[24~';
+      case KeyboardKeys.HOME: return '\x1B[H';
+      case KeyboardKeys.INSERT: return '\x1B@';
+      case KeyboardKeys.LEFT: return '\x1B[D';
+      case KeyboardKeys.PAGE_DOWN: return '\x1B[U';
+      case KeyboardKeys.PAGE_UP: return '\x1B[V';
+      case KeyboardKeys.RIGHT: return '\x1B[C';
+      case KeyboardKeys.SPACE: return ' ';
+      case KeyboardKeys.TAB: return '\t';
+      case KeyboardKeys.UP: return '\x1B[A';
+      default: return '';
+    }
   }
+
+  /**
+   * Encode a keydown event in Atari ATASCII mode.
+   *
+   * Ctrl handling has three overrides from the otherwise-standard
+   * "Ctrl-X → X-64" pattern:
+   *   Ctrl-H → 0x7E (ATASCII backspace, not 0x08)
+   *   Ctrl-J → 0x0D (CR, not 0x0A)
+   *   Ctrl-M → 0x9B (ATASCII EOL, not 0x0D)
+   *
+   * Non-ctrl special keys use ATASCII-specific control bytes
+   * (0x1C-0x1F for cursor moves, etc.) — completely different from
+   * the ANSI mode's CSI sequences.
+   */
+  private encodeKeyDownAtari(ke: KeyboardEvent): string {
+    if (ke.ctrlKey) {
+      if (ke.keyCode >= 65 && ke.keyCode <= 90) {
+        switch (ke.keyCode) {
+          case 72: return String.fromCharCode(126); // Ctrl-H → ~
+          case 74: return String.fromCharCode(13);  // Ctrl-J → CR
+          case 77: return String.fromCharCode(155); // Ctrl-M → ATASCII EOL
+          default: return String.fromCharCode(ke.keyCode - 64);
+        }
+      }
+      if (ke.keyCode >= 97 && ke.keyCode <= 122) {
+        switch (ke.keyCode) {
+          case 104: return String.fromCharCode(126);
+          case 106: return String.fromCharCode(13);
+          case 109: return String.fromCharCode(155);
+          default: return String.fromCharCode(ke.keyCode - 96);
+        }
+      }
+      return '';
+    }
+
+    switch (ke.keyCode) {
+      case KeyboardKeys.BACKSPACE: return '\x7E';
+      case KeyboardKeys.DELETE: return '\x7E';
+      case KeyboardKeys.DOWN: return '\x1D';
+      case KeyboardKeys.ENTER: return '\x9B';
+      case KeyboardKeys.LEFT: return '\x1E';
+      case KeyboardKeys.RIGHT: return '\x1F';
+      case KeyboardKeys.SPACE: return ' ';
+      case KeyboardKeys.TAB: return '\x7F';
+      case KeyboardKeys.UP: return '\x1C';
+      default: return '';
+    }
+  }
+
+  /**
+   * Encode a keydown event in Commodore 64 PETSCII mode.
+   *
+   * The C64 doesn't use Ctrl-letter combos the same way — special
+   * keys go through the function-key set (F1-F8) with their own
+   * PETSCII codes.
+   */
+  private encodeKeyDownC64(ke: KeyboardEvent): string {
+    switch (ke.keyCode) {
+      case KeyboardKeys.BACKSPACE: return '\x14';
+      case KeyboardKeys.DELETE: return '\x14';
+      case KeyboardKeys.DOWN: return '\x11';
+      case KeyboardKeys.ENTER: return '\r';
+      case KeyboardKeys.F1: return '\x85';
+      case KeyboardKeys.F2: return '\x89';
+      case KeyboardKeys.F3: return '\x86';
+      case KeyboardKeys.F4: return '\x8A';
+      case KeyboardKeys.F5: return '\x87';
+      case KeyboardKeys.F6: return '\x8B';
+      case KeyboardKeys.F7: return '\x88';
+      case KeyboardKeys.F8: return '\x8C';
+      case KeyboardKeys.HOME: return '\x13';
+      case KeyboardKeys.INSERT: return '\x94';
+      case KeyboardKeys.LEFT: return '\x9D';
+      case KeyboardKeys.RIGHT: return '\x1D';
+      case KeyboardKeys.SPACE: return ' ';
+      case KeyboardKeys.UP: return '\x91';
+      default: return '';
+    }
+  }
+
+  /**
+   * Handle a `keypress` event — fired for printable characters,
+   * regardless of locale or input method. This is where we collect
+   * actual typed text (vs OnKeyDown's special-key handling).
+   *
+   * Modifier keys (Alt, Ctrl) are ignored here — those are handled
+   * in OnKeyDown's encode* methods. Alt+key isn't even routed through
+   * keypress on most browsers.
+   *
+   * Phase 1 note: the original used a deprecated `ke.charCode` field
+   * with a fallback to `ke.which`. Modern browsers prefer
+   * `KeyboardEvent.key` (a string) over both. We keep the deprecated
+   * path for now to avoid changing input behavior during the migration;
+   * the UI facelift in Phase 3 will modernize this.
+   */
+  private OnKeyPress(ke: KeyboardEvent): void {
+    if (ke.target instanceof HTMLInputElement || ke.target instanceof HTMLTextAreaElement) {
+      return;
+    }
+    if (this._inScrollback) {
+      return;
+    }
+    if (ke.altKey || ke.ctrlKey) {
+      return;
+    }
+
+    let keyString = '';
+    // Some old browsers (Opera) used `which` instead of `charCode`.
+    const which = typeof ke.charCode !== 'undefined' ? ke.charCode : ke.which;
+
+    if (this._atari) {
+      if (which >= 33 && which <= 122) {
+        keyString = String.fromCharCode(which);
+      }
+    } else if (this._c64) {
+      // C64 mode swaps case for letters since PETSCII fonts encode
+      // upper- and lower-case in non-standard slots.
+      if (which >= 33 && which <= 64) {
+        keyString = String.fromCharCode(which);
+      } else if (which >= 65 && which <= 90) {
+        keyString = String.fromCharCode(which).toLowerCase();
+      } else if (which >= 91 && which <= 95) {
+        keyString = String.fromCharCode(which);
+      } else if (which >= 97 && which <= 122) {
+        keyString = String.fromCharCode(which).toUpperCase();
+      }
+    } else {
+      // ANSI: original capped at 126 but commented that this breaks
+      // French accented chars, and the simplified `>= 33` was kept.
+      // We preserve that.
+      if (which >= 33) {
+        keyString = String.fromCharCode(which);
+      }
+    }
+
+    this._keyBuf.push(new KeyPressEvent(ke, keyString));
+    if (keyString !== '') {
+      ke.preventDefault();
+      this.onkeypressed.trigger();
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────
+  // Mouse handlers
+  // ─────────────────────────────────────────────────────────
+
+  /**
+   * Convert a mouse event's pixel coordinates to a 1-based screen cell.
+   * Accounts for canvas CSS scaling and the modern-scrollback offset.
+   */
+  private MousePositionToScreenPosition(x: number, y: number): Point {
+    const rect = this._canvas.getBoundingClientRect();
+    x *= this._canvas.width / rect.width;
+    y *= this._canvas.height / rect.height;
+    if (this._useModernScrollback) {
+      y -= this._scrollbackSize * this._font.Height;
+    }
+    return new Point(Math.floor(x / this._font.Width) + 1, Math.floor(y / this._font.Height) + 1);
+  }
+
+  /**
+   * Start a click / drag selection. If mouse reporting is enabled,
+   * also fires an `onmousereport` event with the encoded position
+   * (xterm-style or SGR-extended depending on `ReportMouseSgr`).
+   */
+  private OnMouseDown(me: MouseEvent): void {
+    this._mouseDownPoint = this.mouseEventToScreenPosition(me);
+    this._mouseMovePoint = new Point(this._mouseDownPoint.x, this._mouseDownPoint.y);
+
+    if (this._reportMouse) {
+      this.fireMouseReport(me.button, this._mouseDownPoint, false);
+    }
+  }
+
+  /** Resolve a MouseEvent to a 1-based screen cell. */
+  private mouseEventToScreenPosition(me: MouseEvent): Point {
+    if (typeof me.offsetX !== 'undefined') {
+      return this.MousePositionToScreenPosition(me.offsetX, me.offsetY);
+    }
+    const off = getOffset(this._canvas);
+    return this.MousePositionToScreenPosition(me.clientX - off.x, me.clientY - off.y);
+  }
+
+  /**
+   * Emit a mouse-position report in either the old xterm CSI M format
+   * or the SGR-extended CSI < ... M/m format, depending on settings.
+   *
+   * @param isUp true for mouseup events (uses button 3 in xterm mode,
+   *             lowercase 'm' in SGR mode)
+   */
+  private fireMouseReport(button: number, pos: Point, isUp: boolean): void {
+    if (this._reportMouseSgr) {
+      const terminator = isUp ? 'm' : 'M';
+      this.onmousereport.trigger(`\x1B[<${button};${pos.x};${pos.y}${terminator}`);
+      return;
+    }
+
+    // Classic xterm encoding: ESC [ M then three encoded bytes.
+    // Button: 32 + n (mouseup uses 32 + 3 = 35).
+    // Position: 33 + (n - 1), clamped to 0..222 (the cap matches the
+    // original; xterm's spec actually allows higher with extended
+    // coordinates, but the classic mode caps at 7-bit ASCII range).
+    const buttonChar = ' '.charCodeAt(0) + (isUp ? 3 : button);
+    const clamp = (n: number): number => Math.max(0, Math.min(222, n));
+    const xChar = clamp('!'.charCodeAt(0) + pos.x - 1);
+    const yChar = clamp('!'.charCodeAt(0) + pos.y - 1);
+    this.onmousereport.trigger(
+      `\x1B[M${String.fromCharCode(buttonChar)}${String.fromCharCode(xChar)}${String.fromCharCode(yChar)}`
+    );
+  }
+
+  /**
+   * Mid-drag mouse-move: update the selection highlight.
+   *
+   * Two passes: first un-highlight the previous selection rectangle
+   * (set Reverse=false and redraw), then highlight the new one. This
+   * avoids flicker compared to redrawing the whole screen every move.
+   */
+  private OnMouseMove(me: MouseEvent): void {
+    if (!this._mouseDownPoint) {
+      return;
+    }
+    const newMovePoint = this.mouseEventToScreenPosition(me);
+
+    if (this._mouseMovePoint) {
+      // Bail if the cursor hasn't moved to a new cell.
+      if (this._mouseMovePoint.x === newMovePoint.x && this._mouseMovePoint.y === newMovePoint.y) {
+        return;
+      }
+
+      // Un-highlight the previous selection rectangle.
+      this.applyHighlightRange(this._mouseDownPoint, this._mouseMovePoint, false);
+      // Highlight the new one.
+      this.applyHighlightRange(this._mouseDownPoint, newMovePoint, true);
+    }
+
+    this._mouseMovePoint = newMovePoint;
+  }
+
+  /**
+   * Set or clear `Reverse` on every cell between `from` and `to`
+   * (text-flow order: row by row, left to right). The orientation
+   * is normalized internally so callers don't have to worry about
+   * which point is upper-left vs lower-right.
+   */
+  private applyHighlightRange(from: Point, to: Point, highlight: boolean): void {
+    let a = new Point(from.x, from.y);
+    let b = new Point(to.x, to.y);
+    if (a.y > b.y || (a.y === b.y && a.x > b.x)) {
+      [a, b] = [b, a];
+    }
+    for (let y = a.y; y <= b.y; y++) {
+      const firstX = y === a.y ? a.x : 1;
+      const lastX = y === b.y ? b.x : this._screenSize.x;
+      for (let x = firstX; x <= lastX; x++) {
+        const cell = this._buffer[y]?.[x];
+        if (cell) {
+          cell.Reverse = highlight;
+          this.FastWrite(cell.Ch, x, y, cell, false);
+        }
+      }
+    }
+  }
+
+  /**
+   * Mouse-up over the canvas. Two cases:
+   *
+   *   1. Single-cell click (down and up at the same position) → check
+   *      whether the clicked word is a URL; if so, prompt to open it.
+   *   2. Multi-cell drag → un-highlight the selection and copy the
+   *      selected text to the system clipboard.
+   *
+   * In either case, if mouse reporting is enabled, also fires the
+   * mouseup report. The original explicitly used button=3 (xterm
+   * release marker) in xterm mode and just `m` instead of `M` in SGR.
+   */
+  private OnMouseUp(me: MouseEvent): void {
+    const upPoint = this.mouseEventToScreenPosition(me);
+
+    if (this._mouseDownPoint) {
+      const downPoint = new Point(this._mouseDownPoint.x, this._mouseDownPoint.y);
+
+      if (downPoint.x === upPoint.x && downPoint.y === upPoint.y) {
+        this.handleSingleCellClick(downPoint);
+      } else {
+        this.handleDragSelectionCopy(downPoint, upPoint);
+      }
+    }
+
+    this._mouseDownPoint = undefined;
+    this._mouseMovePoint = undefined;
+
+    if (this._reportMouse) {
+      this.fireMouseReport(me.button, upPoint, true);
+    }
+  }
+
+  /**
+   * Handle a single-cell click: scan left and right from the clicked
+   * cell to extract the contiguous word, and if it starts with
+   * http:// or https://, prompt the user to open it.
+   */
+  private handleSingleCellClick(downPoint: Point): void {
+    const row = this._buffer[downPoint.y];
+    if (!row) {
+      return;
+    }
+    const cell = row[downPoint.x];
+    if (!cell) {
+      return;
+    }
+    const cc = cell.Ch.charCodeAt(0);
+    if (cc <= 32 || cc > 126) {
+      // Clicked on a space or non-printable; nothing to do.
+      return;
+    }
+
+    // Walk left to the previous non-printable.
+    let startX = downPoint.x;
+    while (startX > 1) {
+      const prev = row[startX - 1];
+      if (!prev) break;
+      const pc = prev.Ch.charCodeAt(0);
+      if (pc <= 32 || pc > 126) break;
+      startX -= 1;
+    }
+    // Walk right to the next non-printable.
+    let endX = downPoint.x;
+    while (endX < this._screenSize.x) {
+      const next = row[endX + 1];
+      if (!next) break;
+      const nc = next.Ch.charCodeAt(0);
+      if (nc <= 32 || nc > 126) break;
+      endX += 1;
+    }
+
+    let clickedWord = '';
+    for (let x = startX; x <= endX; x++) {
+      clickedWord += row[x]?.Ch ?? '';
+    }
+
+    const lower = clickedWord.toLowerCase();
+    if (lower.startsWith('http://') || lower.startsWith('https://')) {
+      // eslint-disable-next-line no-alert
+      if (confirm(`Would you like to open this url in a new window?\n\n${clickedWord}`)) {
+        window.open(clickedWord);
+      }
+    }
+  }
+
+  /**
+   * Handle a multi-cell drag: un-highlight the selection rectangle
+   * and copy the selected text (with newlines between rows) to the
+   * clipboard.
+   *
+   * Note: the original had a subtle bug — it added `\r\n` between
+   * rows only when `y < DownPoint.y` (a condition that's impossible
+   * after the point-flip earlier in the method, so it never fired).
+   * The net effect was that multi-row selections came out concatenated
+   * with no line breaks. We preserve the original's behavior here
+   * rather than "fix" it, since changing copy semantics during a pure
+   * migration is risky. Flagged as a TODO for a later pass.
+   */
+  private handleDragSelectionCopy(downPoint: Point, upPoint: Point): void {
+    let a = downPoint;
+    let b = upPoint;
+    if (a.y > b.y || (a.y === b.y && a.x > b.x)) {
+      [a, b] = [b, a];
+    }
+
+    let text = '';
+    for (let y = a.y; y <= b.y; y++) {
+      const firstX = y === a.y ? a.x : 1;
+      const lastX = y === b.y ? b.x : this._screenSize.x;
+      const row = this._buffer[y];
+      if (!row) continue;
+
+      for (let x = firstX; x <= lastX; x++) {
+        const cell = row[x];
+        if (cell) {
+          cell.Reverse = false;
+          this.FastWrite(cell.Ch, x, y, cell, false);
+          text += cell.Ch;
+        } else {
+          text += ' ';
+        }
+      }
+      // See docstring: the original's "add CRLF between rows" check
+      // was unreachable. Preserving that.
+    }
+
+    ClipboardHelper.SetData(text);
+  }
+
+  /**
+   * Mouseup outside the canvas. If a drag was in progress, just
+   * un-highlight the selection — don't copy.
+   */
   private OnMouseUpForWindow(_me: MouseEvent): void {
-    // Deferred to Delta 3c-3.
+    if (this._mouseDownPoint && this._mouseMovePoint) {
+      if (
+        this._mouseDownPoint.x !== this._mouseMovePoint.x ||
+        this._mouseDownPoint.y !== this._mouseMovePoint.y
+      ) {
+        this.applyHighlightRange(this._mouseDownPoint, this._mouseMovePoint, false);
+      }
+    }
+    this._mouseDownPoint = undefined;
+    this._mouseMovePoint = undefined;
   }
+
+  /**
+   * Window resize: if dynamic font resize is enabled, ask CrtFont to
+   * pick the largest size that still fits the new viewport.
+   */
   private OnResize(): void {
-    // Deferred to Delta 3c-3.
+    if (this._allowDynamicFontResize) {
+      this.SetFont(this._font.Name);
+    }
   }
 
   // ─────────────────────────────────────────────────────────
