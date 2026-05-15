@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
+  <title>fTelnet-Modern — Dev</title>
+
+  <!--
+    The fTelnet container. fTelnetClient builds its entire UI inside
+    this div: client canvas, focus warning bar, scrollback bar, status
+    bar, virtual keyboard. The menu popup gets attached directly to
+    document.body (so its position can escape the container's overflow).
+  -->
+  <div id="fTelnetContainer"></div>
+
+  <!--
+    Placeholder script tag fTelnetClient looks for at construction time.
+    Two reasons it has to exist:
+
+      1. The constructor throws "fTelnet Error: Script element with
+         id='fTelnetScript' was not found" if it's missing.
+
+      2. StringUtils.GetUrl reads its `src` attribute to resolve
+         sibling assets (ftelnet.css, keyboard CSS, font PNGs).
+
+    The placeholder script is a no-op file in /public/, served at root
+    by Vite. Its location determines the asset base path: /placeholder.js
+    means assets are looked up at /ftelnet.css, /keyboard/keyboard-*.css,
+    /fonts/CP437_9x16.png, etc.
+
+    In production, sysops replace this with `<script src="ftelnet.rip.xfer.min.js">`
+    and the same asset-resolution logic still works since the bundle
+    sits next to ftelnet.css in their hosting dir.
+  -->
+  <script id="fTelnetScript" src="/placeholder.js"></script>
+
+  <!--
+    Dev entry — Vite transforms TS on the fly. In production, the
+    fTelnetScript tag above IS the bundle and main.ts isn't needed.
+  -->
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

@@ -12,6 +12,19 @@ import { resolve } from 'node:path';
  *
  * Phase 1 keeps the same four output filenames for backward compatibility
  * with embed wizards and sysops who have hardcoded <script> tags.
+ *
+ * Two distinct runtime configurations:
+ *
+ *   - `npm run dev`  → no `--mode` flag → SPA dev server, serves the
+ *     root `index.html` and hot-reloads `src/main.ts`. Used for local
+ *     testing against a real BBS.
+ *
+ *   - `npm run build:rip:xfer` (etc.) → library mode, builds the IIFE
+ *     bundle that sysops embed via <script>. Each flavor produces one
+ *     `ftelnet.flavor.js` in `dist/`.
+ *
+ * The split is detected via the `mode` arg: if it matches a known
+ * flavor, library mode; otherwise SPA mode.
  */
 
 type BundleFlavor = {
@@ -43,22 +56,40 @@ const FLAVORS: Record<string, BundleFlavor> = {
   },
 };
 
-export default defineConfig(({ mode }): UserConfig => {
-  // In dev mode, serve the full-featured build for convenience
-  const flavor = FLAVORS[mode] ?? FLAVORS['rip-xfer']!;
+const ALIASES = {
+  '@common': resolve(__dirname, 'src/common'),
+  '@connections': resolve(__dirname, 'src/connections'),
+  '@crt': resolve(__dirname, 'src/crt'),
+  '@crtcontrols': resolve(__dirname, 'src/crtcontrols'),
+  '@filetransfer': resolve(__dirname, 'src/filetransfer'),
+  '@graph': resolve(__dirname, 'src/graph'),
+  '@ftelnetclient': resolve(__dirname, 'src/ftelnetclient'),
+};
 
-  return {
-    resolve: {
-      alias: {
-        '@common': resolve(__dirname, 'src/common'),
-        '@connections': resolve(__dirname, 'src/connections'),
-        '@crt': resolve(__dirname, 'src/crt'),
-        '@crtcontrols': resolve(__dirname, 'src/crtcontrols'),
-        '@filetransfer': resolve(__dirname, 'src/filetransfer'),
-        '@graph': resolve(__dirname, 'src/graph'),
-        '@ftelnetclient': resolve(__dirname, 'src/ftelnetclient'),
+export default defineConfig(({ mode }): UserConfig => {
+  const flavor = FLAVORS[mode];
+
+  // SPA / dev-server mode. No library bundling — Vite serves index.html
+  // and transforms the imported TS sources on the fly.
+  if (!flavor) {
+    return {
+      resolve: { alias: ALIASES },
+      server: {
+        port: 5173,
+        // Don't auto-open — most devs prefer to control browser opening
+        // themselves, and on Windows + WSL setups auto-open can hang.
+        open: false,
       },
-    },
+      // Public assets (css, keyboard css, fonts, placeholder script)
+      // live in `public/` and are served at the root path by Vite.
+      publicDir: 'public',
+    };
+  }
+
+  // Library / production-build mode. Emits a single IIFE bundle per
+  // flavor for sysops to embed via <script>.
+  return {
+    resolve: { alias: ALIASES },
 
     build: {
       target: 'es2020',
@@ -90,14 +121,6 @@ export default defineConfig(({ mode }): UserConfig => {
       minify: false, // We produce both .js and .min.js; see scripts in package.json
     },
 
-    // Dev server: opens the demo page with hot reload
-    server: {
-      port: 5173,
-      open: '/dev/index.html',
-    },
-
-    // Public assets (fonts, keyboard CSS, demo HTML) live in `public/`
-    // and are copied to dist/ as-is.
     publicDir: 'public',
   };
 });
