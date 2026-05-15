@@ -84,7 +84,13 @@ describe('fTelnetClient', () => {
       const scrollbacks = container.getElementsByClassName('fTelnetScrollback');
       expect(scrollbacks.length).toBe(1);
 
-      const focusWarnings = container.getElementsByClassName('fTelnetFocusWarning');
+      // Focus warning is now a Lit component <f-focus-warning>.
+      // Its inner .fTelnetFocusWarning div renders one microtask
+      // later, so synchronous getElementsByClassName misses it.
+      // Check for the custom element itself instead; the inner DOM
+      // is verified by the FFocusWarning component's own test
+      // file with `await updateComplete`.
+      const focusWarnings = container.getElementsByTagName('f-focus-warning');
       expect(focusWarnings.length).toBe(1);
     });
 

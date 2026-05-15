@@ -5,7 +5,31 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
-    "useDefineForClassFields": true,
+    /* useDefineForClassFields: false is required for Lit's
+       @property decorator to work without `accessor` syntax.
+       Under `true`, TS emits class field initializers via
+       `Object.defineProperty`, which overwrites the prototype
+       accessor that @property installs on the class — breaking
+       reactivity. Under `false`, initializers run as plain
+       assignments and flow through the prototype setter Lit
+       installed. `accessor` would also work but Vite 5's
+       Rollup 4 parser doesn't recognize the keyword, so we
+       can't use it. This setting is safe for the rest of the
+       codebase: our `field!: Type` definite-assignment patterns
+       are purely type-level and emit identically under both
+       modes. */
+    "useDefineForClassFields": false,
+    /* Decorators: experimental mode (TC39 stage 2). Required for
+       Lit components in production builds — Vite 5's Rollup 4
+       parser doesn't accept the TC39 standard `accessor` keyword
+       that standard decorators require, even though esbuild
+       handles it correctly during dev-server transforms. Lit
+       officially recommends experimentalDecorators for
+       production output quality regardless. Paired with
+       `useDefineForClassFields: false` above so @property
+       decorators install accessors that class-field initializers
+       flow through rather than overwrite. */
+    "experimentalDecorators": true,
 
     /* Output */
     "outDir": "./dist",
@@ -44,6 +68,7 @@
     "baseUrl": "./src",
     "paths": {
       "@common/*": ["common/*"],
+      "@components/*": ["components/*"],
       "@connections/*": ["connections/*"],
       "@crt/*": ["crt/*"],
       "@crtcontrols/*": ["crtcontrols/*"],

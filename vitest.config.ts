@@ -5,6 +5,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@common': resolve(__dirname, 'src/common'),
+      '@components': resolve(__dirname, 'src/components'),
       '@connections': resolve(__dirname, 'src/connections'),
       '@crt': resolve(__dirname, 'src/crt'),
       '@crtcontrols': resolve(__dirname, 'src/crtcontrols'),

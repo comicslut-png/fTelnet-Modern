@@ -34,6 +34,14 @@ import {
 import { Ansi, Crt, KeyboardKeys, KeyPressEvent } from '../crt/index.js';
 import { RIP } from '../graph/index.js';
 import { FileRecord, YModemReceive, YModemSend } from '../filetransfer/index.js';
+// Force component registration as a side effect even if all named
+// imports below get tree-shaken (they would: the named imports are
+// only used as type annotations, which TypeScript erases at compile
+// time, so the bundler sees no runtime use). Without this bare
+// import the @customElement registrations never run in production
+// builds and <f-focus-warning> tags render as empty inline elements.
+import '../components/index.js';
+import { FFocusWarning } from '../components/index.js';
 import { fTelnetOptions } from './fTelnetOptions.js';
 import { VirtualKeyboard } from './VirtualKeyboard.js';
 
@@ -116,7 +124,7 @@ export class fTelnetClient {
   private _Connection: WebSocketConnection | undefined;
   private _Crt!: Crt;
   private _DataTimer: ReturnType<typeof setTimeout> | undefined;
-  private _FocusWarningBar!: HTMLDivElement;
+  private _FocusWarningBar!: FFocusWarning;
   private _fTelnetContainer!: HTMLElement;
   private _HasFocus = true;
   private _InitMessageBar!: HTMLDivElement;
@@ -375,10 +383,11 @@ export class fTelnetClient {
     }
 
     // ── Focus warning bar ──
-    this._FocusWarningBar = document.createElement('div');
-    this._FocusWarningBar.className = 'fTelnetFocusWarning';
-    this._FocusWarningBar.innerHTML = '*** CLICK HERE TO ENABLE KEYBOARD INPUT ***';
-    this._FocusWarningBar.style.display = 'none';
+    // Lit component <f-focus-warning>. Same DOM contract as the
+    // original (renders a div.fTelnetFocusWarning into light DOM
+    // so the existing CSS applies unchanged). Visibility is set
+    // imperatively via the .visible property — see OnTimer().
+    this._FocusWarningBar = document.createElement('f-focus-warning') as FFocusWarning;
     this._fTelnetContainer.appendChild(this._FocusWarningBar);
 
     // ── Scrollback bar ──
@@ -1541,7 +1550,7 @@ export class fTelnetClient {
     // TODO (preserved): -10 is 5px of left and right padding —
     // should not be hardcoded since the .css can override it.
     if (this._FocusWarningBar !== undefined) {
-      this._FocusWarningBar.style.width = NewWidth - 10 + 'px';
+      this._FocusWarningBar.widthPx = NewWidth - 10;
     }
     if (this._ScrollbackBar !== undefined) {
       this._ScrollbackBar.style.width = NewWidth - 10 + 'px';
@@ -1605,14 +1614,14 @@ export class fTelnetClient {
     if (this._Connection !== undefined && this._Connection.connected) {
       if (document.hasFocus() && !this._HasFocus) {
         this._HasFocus = true;
-        this._FocusWarningBar.style.display = 'none';
+        this._FocusWarningBar.visible = false;
       } else if (!document.hasFocus() && this._HasFocus) {
         this._HasFocus = false;
-        this._FocusWarningBar.style.display = 'block';
+        this._FocusWarningBar.visible = true;
       }
     } else {
-      if (this._FocusWarningBar.style.display === 'block') {
-        this._FocusWarningBar.style.display = 'none';
+      if (this._FocusWarningBar.visible) {
+        this._FocusWarningBar.visible = false;
       }
     }
 
