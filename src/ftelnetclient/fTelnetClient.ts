@@ -41,7 +41,7 @@ import { FileRecord, YModemReceive, YModemSend } from '../filetransfer/index.js'
 // import the @customElement registrations never run in production
 // builds and <f-focus-warning> tags render as empty inline elements.
 import '../components/index.js';
-import { FFocusWarning, FScrollbackBar } from '../components/index.js';
+import { FFocusWarning, FScrollbackBar, FStatusBar, type MenuClickDetail } from '../components/index.js';
 import { fTelnetOptions } from './fTelnetOptions.js';
 import { VirtualKeyboard } from './VirtualKeyboard.js';
 
@@ -91,8 +91,12 @@ import { VirtualKeyboard } from './VirtualKeyboard.js';
  *     are typed `T | undefined` accordingly.
  *
  *   - `OnMenuButtonClick(null)` was a call site passing null where
- *     MouseEvent was declared. Fixed by widening the parameter type
- *     to `MouseEvent | null` since the body already handles both.
+ *     MouseEvent was declared. Phase 1 fixed this by widening the
+ *     parameter type to `MouseEvent | null`. Phase 2's <f-status-bar>
+ *     migration widened it further to `{ pageX, pageY } | null`
+ *     since the body only uses those two fields and the component
+ *     now dispatches a MenuClickDetail object rather than the raw
+ *     MouseEvent.
  *
  *   - `!window.cordova` guards dropped. Cordova support was already
  *     removed from DetectMobileBrowser in an earlier delta, so the
@@ -124,7 +128,6 @@ export class fTelnetClient {
   // ───── Private state ─────
   private _Ansi!: Ansi;
   private _ClientContainer!: HTMLDivElement;
-  private _ConnectButton!: HTMLAnchorElement;
   private _Connection: WebSocketConnection | undefined;
   private _Crt!: Crt;
   private _DataTimer: ReturnType<typeof setTimeout> | undefined;
@@ -140,12 +143,18 @@ export class fTelnetClient {
    * Cleared back to 0 by the fetch's success/error handlers.
    */
   private _LoadingProxySettings = 0;
-  private _MenuButton!: HTMLAnchorElement;
   private _MenuButtons!: HTMLDivElement;
   private _RIP!: RIP;
   private _ScrollbackBar!: FScrollbackBar;
-  private _StatusBar!: HTMLDivElement;
-  private _StatusBarLabel!: HTMLSpanElement;
+  /**
+   * The status-bar component. Phase 2 collapsed what used to be
+   * four separate fields (`_StatusBar`, `_StatusBarLabel`,
+   * `_ConnectButton`, `_MenuButton`) into this single component
+   * reference. Reactive properties on the component handle what
+   * used to be `.innerHTML = ...` / `.style.display = ...` /
+   * `.style.backgroundColor = ...` assignments.
+   */
+  private _StatusBar!: FStatusBar;
   private _Timer: ReturnType<typeof setInterval> | undefined;
   private _UploadInput!: HTMLInputElement;
   private _UseModernScrollback = false;
@@ -423,47 +432,28 @@ export class fTelnetClient {
     // TODO (preserved): also have a span to hold the current line number
 
     // ── Status bar ──
-    this._StatusBar = document.createElement('div');
-    this._StatusBar.className = 'fTelnetStatusBar';
+    // Lit component <f-status-bar>. Same DOM contract as the
+    // original (renders div.fTelnetStatusBar with .fTelnetMenuButton,
+    // .fTelnetConnectButton, .fTelnetStatusBarLabel children — all
+    // in light DOM so the existing CSS applies). Click handlers
+    // dispatch custom events we listen for below.
+    //
+    // The component consolidates what used to be four separate
+    // fields (_StatusBar, _StatusBarLabel, _ConnectButton,
+    // _MenuButton) into a single reference. All later state
+    // changes (label text, button visibility, background color)
+    // are reactive property writes on this one component.
+    this._StatusBar = document.createElement('f-status-bar') as FStatusBar;
+    this._StatusBar.addEventListener('menu-click', (e: Event): void => {
+      const detail = (e as CustomEvent<MenuClickDetail>).detail;
+      // OnMenuButtonClick accepts a MouseEvent-like object with
+      // pageX/pageY; the MenuClickDetail satisfies that shape.
+      this.OnMenuButtonClick({ pageX: detail.pageX, pageY: detail.pageY });
+    });
+    this._StatusBar.addEventListener('connect-click', (): void => {
+      this.Connect();
+    });
     this._fTelnetContainer.appendChild(this._StatusBar);
-
-    // Status-bar menu button
-    this._MenuButton = document.createElement('a');
-    this._MenuButton.className = 'fTelnetMenuButton';
-    this._MenuButton.href = '#';
-    this._MenuButton.innerHTML = 'Menu';
-    this._MenuButton.addEventListener(
-      'click',
-      (e: MouseEvent): boolean => {
-        this.OnMenuButtonClick(e);
-        e.preventDefault();
-        return false;
-      },
-      false
-    );
-    this._StatusBar.appendChild(this._MenuButton);
-
-    // Status-bar connect button
-    this._ConnectButton = document.createElement('a');
-    this._ConnectButton.className = 'fTelnetConnectButton';
-    this._ConnectButton.href = '#';
-    this._ConnectButton.innerHTML = 'Connect';
-    this._ConnectButton.addEventListener(
-      'click',
-      (e: Event): boolean => {
-        this.Connect();
-        e.preventDefault();
-        return false;
-      },
-      false
-    );
-    this._StatusBar.appendChild(this._ConnectButton);
-
-    // Status-bar label
-    this._StatusBarLabel = document.createElement('span');
-    this._StatusBarLabel.className = 'fTelnetStatusBarLabel';
-    this._StatusBarLabel.innerHTML = 'Not connected';
-    this._StatusBar.appendChild(this._StatusBarLabel);
 
     // ── Menu popup (table of action buttons) ──
     this._MenuButtons = document.createElement('div');
@@ -908,10 +898,10 @@ export class fTelnetClient {
 
     // Direct connection (no proxy) vs proxied connection.
     if (this._Options.ProxyHostname === '') {
-      this._ConnectButton.style.display = 'none';
-      this._StatusBarLabel.innerHTML =
+      this._StatusBar.connectButtonVisible = false;
+      this._StatusBar.statusText =
         'Connecting to ' + this._Options.Hostname + ':' + this._Options.Port;
-      this._StatusBar.style.backgroundColor = 'blue';
+      this._StatusBar.backgroundColor = 'blue';
       this._ClientContainer.style.opacity = '1.0';
       this._Connection.connect(
         this._Options.Hostname,
@@ -920,15 +910,15 @@ export class fTelnetClient {
         this._Options.ForceWss
       );
     } else {
-      this._ConnectButton.style.display = 'none';
-      this._StatusBarLabel.innerHTML =
+      this._StatusBar.connectButtonVisible = false;
+      this._StatusBar.statusText =
         'Connecting to ' +
         this._Options.Hostname +
         ':' +
         this._Options.Port +
         ' via ' +
         this._Options.ProxyHostname;
-      this._StatusBar.style.backgroundColor = 'blue';
+      this._StatusBar.backgroundColor = 'blue';
       this._ClientContainer.style.opacity = '1.0';
       this._Connection.connect(
         this._Options.Hostname,
@@ -1304,12 +1294,12 @@ export class fTelnetClient {
   // ───── Connection lifecycle handlers ─────
 
   private OnConnectionClose(): void {
-    this._ConnectButton.innerHTML = 'Reconnect';
-    this._ConnectButton.style.display = 'inline';
+    this._StatusBar.connectButtonText = 'Reconnect';
+    this._StatusBar.connectButtonVisible = true;
 
-    this._StatusBarLabel.innerHTML =
+    this._StatusBar.statusText =
       'Disconnected from ' + this._Options.Hostname + ':' + this._Options.Port;
-    this._StatusBar.style.backgroundColor = 'red';
+    this._StatusBar.backgroundColor = 'red';
     this._ClientContainer.style.opacity = '0.5';
   }
 
@@ -1317,19 +1307,19 @@ export class fTelnetClient {
     this._Crt.ClrScr();
 
     if (this._Options.ProxyHostname === '') {
-      this._StatusBarLabel.innerHTML =
+      this._StatusBar.statusText =
         'Connected to ' + this._Options.Hostname + ':' + this._Options.Port;
-      this._StatusBar.style.backgroundColor = 'blue';
+      this._StatusBar.backgroundColor = 'blue';
       this._ClientContainer.style.opacity = '1.0';
     } else {
-      this._StatusBarLabel.innerHTML =
+      this._StatusBar.statusText =
         'Connected to ' +
         this._Options.Hostname +
         ':' +
         this._Options.Port +
         ' via ' +
         this._Options.ProxyHostname;
-      this._StatusBar.style.backgroundColor = 'blue';
+      this._StatusBar.backgroundColor = 'blue';
       this._ClientContainer.style.opacity = '1.0';
     }
 
@@ -1428,23 +1418,23 @@ export class fTelnetClient {
   }
 
   private OnConnectionSecurityError(): void {
-    this._ConnectButton.innerHTML = 'Retry Connection';
-    this._ConnectButton.style.display = 'inline';
+    this._StatusBar.connectButtonText = 'Retry Connection';
+    this._StatusBar.connectButtonVisible = true;
 
     if (this._Options.ProxyHostname === '') {
-      this._StatusBarLabel.innerHTML =
+      this._StatusBar.statusText =
         'Unable to connect to ' + this._Options.Hostname + ':' + this._Options.Port;
-      this._StatusBar.style.backgroundColor = 'red';
+      this._StatusBar.backgroundColor = 'red';
       this._ClientContainer.style.opacity = '0.5';
     } else {
-      this._StatusBarLabel.innerHTML =
+      this._StatusBar.statusText =
         'Unable to connect to ' +
         this._Options.Hostname +
         ':' +
         this._Options.Port +
         ' via ' +
         this._Options.ProxyHostname;
-      this._StatusBar.style.backgroundColor = 'red';
+      this._StatusBar.backgroundColor = 'red';
       this._ClientContainer.style.opacity = '0.5';
     }
   }
@@ -1525,7 +1515,7 @@ export class fTelnetClient {
       this._ScrollbackBar.widthPx = NewWidth - 10;
     }
     if (this._StatusBar !== undefined) {
-      this._StatusBar.style.width = NewWidth - 10 + 'px';
+      this._StatusBar.widthPx = NewWidth - 10;
     }
 
     // Pick an appropriate keyboard CSS file based on screen size.
@@ -1565,7 +1555,18 @@ export class fTelnetClient {
    * Show/hide the popup menu. Pass null as the event arg to close
    * without repositioning (used after a dropdown selection).
    */
-  private OnMenuButtonClick(e: MouseEvent | null): void {
+  /**
+   * Show/hide the popup menu. Pass null as the event arg to close
+   * without repositioning (used after a dropdown selection).
+   *
+   * The parameter is typed structurally as `{ pageX, pageY }`
+   * rather than `MouseEvent` so it accepts both the MouseEvent
+   * delivered from a direct user click (no longer used now that
+   * the status bar is a component) and the structured
+   * MenuClickDetail dispatched by `<f-status-bar>`. The body only
+   * uses these two fields.
+   */
+  private OnMenuButtonClick(e: { pageX: number; pageY: number } | null): void {
     this._MenuButtons.style.display =
       this._MenuButtons.style.display === 'none' ? 'block' : 'none';
     if (e !== null) {

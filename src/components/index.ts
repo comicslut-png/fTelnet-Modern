@@ -16,3 +16,4 @@
  */
 export { FFocusWarning } from './FFocusWarning.js';
 export { FScrollbackBar } from './FScrollbackBar.js';
+export { FStatusBar, type MenuClickDetail } from './FStatusBar.js';
