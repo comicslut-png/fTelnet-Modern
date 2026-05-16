@@ -7,9 +7,9 @@
  *   Stage 2 ✓ — ZModemDecoder (streaming parser)
  *   Stage 3 ✓ — ZModemEncoder (frame builder)
  *   Stage 4 ✓ — ZModemReceive state machine
- *   Stage 5 ✓ — ZModemSend state machine (this stage)
- *   Stage 6 — auto-detect in the ANSI parser (next)
- *   Stage 7 — transfer-progress UI
+ *   Stage 5 ✓ — ZModemSend state machine
+ *   Stage 6 ✓ — ZModemDetector + auto-detect wiring (this stage)
+ *   Stage 7 — transfer-progress UI (next)
  *
  * Earlier plans suggested replacing this module with an external
  * library (zmodemjs / zmodem2-js). Decision: continue cleanroom
@@ -22,6 +22,10 @@ export {
   ZModemDecoder,
   type ZModemDecoderEvents,
 } from './ZModemDecoder.js';
+export {
+  ZModemDetector,
+  type ZModemDetectorCallbacks,
+} from './ZModemDetector.js';
 export { ZModemEncoder } from './ZModemEncoder.js';
 export {
   parseZFileSubpacket,

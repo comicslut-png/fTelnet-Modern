@@ -33,7 +33,15 @@ import {
 } from '../connections/index.js';
 import { Ansi, Crt, KeyboardKeys, KeyPressEvent } from '../crt/index.js';
 import { RIP } from '../graph/index.js';
-import { FileRecord, YModemReceive, YModemSend } from '../filetransfer/index.js';
+import { saveAs } from 'file-saver';
+import {
+  FileRecord,
+  YModemReceive,
+  YModemSend,
+  ZModemDetector,
+  ZModemReceive,
+  type ZModemFileInfo,
+} from '../filetransfer/index.js';
 // Force component registration as a side effect even if all named
 // imports below get tree-shaken (they would: the named imports are
 // only used as type annotations, which TypeScript erases at compile
@@ -178,6 +186,27 @@ export class fTelnetClient {
   private _VirtualKeyboard!: FVirtualKeyboard;
   private _YModemReceive!: YModemReceive;
   private _YModemSend!: YModemSend;
+
+  /**
+   * ZMODEM auto-detect state, Phase 4 Stage 6.
+   *
+   * `_ZModemDetector` watches the incoming byte stream for the
+   * auto-trigger sequence and is always present (lazily created on
+   * first connect). Bytes flow through it; non-ZMODEM bytes pass
+   * to the ANSI parser as normal terminal output.
+   *
+   * `_ZModemReceive` is the active receive state machine, created
+   * when the detector fires and torn down when the session ends.
+   * Non-null only during a ZMODEM transfer.
+   *
+   * `_ZModemFileBuffers` accumulates each in-progress file's bytes.
+   * Indexed by filename. Cleared per-file as ZEOF arrives and the
+   * file is handed to FileSaver.
+   */
+  private _ZModemDetector: ZModemDetector | undefined;
+  private _ZModemReceive: ZModemReceive | undefined;
+  private readonly _ZModemFileBuffers = new Map<string, number[]>();
+  private _ZModemCurrentFile: ZModemFileInfo | undefined;
 
   /** User-supplied configuration. Defaults are in fTelnetOptions. */
   private readonly _Options: fTelnetOptions;
@@ -1323,10 +1352,23 @@ export class fTelnetClient {
       'Disconnected from ' + this._Options.Hostname + ':' + this._Options.Port;
     this._StatusBar.state = 'error';
     this._ClientContainer.style.opacity = '0.5';
+
+    // Tear down any in-progress ZMODEM session.
+    if (this._ZModemReceive !== undefined) {
+      this.endZModemReceive();
+    }
   }
 
   private OnConnectionConnect(): void {
     this._Crt.ClrScr();
+
+    // Make sure the ZMODEM auto-detector exists and is in a fresh
+    // state. Stays alive across the whole session; resets after each
+    // ZMODEM transfer so the next one auto-detects too.
+    if (this._Options.ZModemAutoDetect) {
+      this.ensureZModemDetector();
+      this._ZModemDetector?.reset();
+    }
 
     if (this._Options.ProxyHostname === '') {
       this._StatusBar.statusText =
@@ -1377,7 +1419,9 @@ export class fTelnetClient {
   }
 
   /**
-   * Drain bytes from the connection into the Ansi or RIP parser.
+   * Drain bytes from the connection into the Ansi or RIP parser,
+   * with ZMODEM auto-detect interposed when Options.ZModemAutoDetect
+   * is true (the default).
    *
    * Throttled to the configured BitsPerSecond rate so a very fast
    * server can't overwhelm the renderer. If there's leftover data
@@ -1385,8 +1429,10 @@ export class fTelnetClient {
    * setTimeout to keep draining without spinning.
    */
   private OnConnectionData(): void {
-    // If _Timer is undefined we're in a file transfer — let YModem
-    // handle the bytes directly.
+    // If _Timer is undefined we're in a YMODEM file transfer — let
+    // YModem handle the bytes directly. (ZMODEM uses a different
+    // pattern: bytes still flow through this method, the detector
+    // intercepts them.)
     if (this._Timer !== undefined) {
       if (this._Connection !== undefined) {
         // Compute elapsed time and read accordingly to maintain
@@ -1406,10 +1452,16 @@ export class fTelnetClient {
         const Data: string = this._Connection.readString(BytesToRead);
         if (Data.length > 0) {
           this.ondata.trigger(Data);
-          if (this._Options.Emulation === 'RIP') {
-            this._RIP.Parse(Data);
+          if (
+            this._Options.ZModemAutoDetect &&
+            this._ZModemDetector !== undefined
+          ) {
+            // Route through the detector. Its callbacks handle
+            // both passthrough-to-ANSI and divert-to-ZMODEM.
+            this._ZModemDetector.feed(Data);
           } else {
-            this._Ansi.Write(Data);
+            // Detector disabled — go straight to the renderer.
+            this.routeToRenderer(Data);
           }
         }
 
@@ -1425,6 +1477,121 @@ export class fTelnetClient {
       }
     }
     this._LastTimer = new Date().getTime();
+  }
+
+  /**
+   * Send a chunk of received bytes to whichever renderer the
+   * current emulation mode dictates (ANSI or RIP). Extracted as a
+   * helper because both OnConnectionData (the normal path) and the
+   * ZModemDetector's onPassthrough callback need it.
+   */
+  private routeToRenderer(Data: string): void {
+    if (this._Options.Emulation === 'RIP') {
+      this._RIP.Parse(Data);
+    } else {
+      this._Ansi.Write(Data);
+    }
+  }
+
+  /**
+   * Lazily create the ZMODEM auto-detector. Called from
+   * OnConnectionConnect so the detector exists as soon as the
+   * connection is established and stays alive across multiple
+   * transfers (the detector resets after each session).
+   *
+   * Phase 4 Stage 6.
+   */
+  private ensureZModemDetector(): void {
+    if (this._ZModemDetector !== undefined) return;
+    this._ZModemDetector = new ZModemDetector({
+      onPassthrough: (bytes: Uint8Array) => {
+        // Convert byte array back to the byte-as-char string that
+        // ANSI/RIP parsers expect. (This is how readString() came
+        // out of the connection originally.)
+        let s = '';
+        for (let i = 0; i < bytes.length; i++) {
+          s += String.fromCharCode(bytes[i]!);
+        }
+        this.routeToRenderer(s);
+      },
+      onTrigger: (initialBytes: Uint8Array) => {
+        this.beginZModemReceive(initialBytes);
+      },
+      onZmodemBytes: (bytes: Uint8Array) => {
+        this._ZModemReceive?.feedBytes(bytes);
+      },
+    });
+  }
+
+  /**
+   * Spin up a ZModemReceive session on detector trigger and feed it
+   * the initial trigger bytes (which are the first 6 bytes of the
+   * sender's ZRQINIT frame).
+   *
+   * Phase 4 Stage 6.
+   */
+  private beginZModemReceive(initialBytes: Uint8Array): void {
+    if (this._Connection === undefined) return;
+    this._ZModemFileBuffers.clear();
+    this._ZModemCurrentFile = undefined;
+
+    this._ZModemReceive = new ZModemReceive({
+      onBytesToSend: (bytes) => {
+        if (this._Connection !== undefined && this._Connection.connected) {
+          // Connection.writeBytes wants a ByteArray; convert.
+          for (let i = 0; i < bytes.length; i++) {
+            this._Connection.writeByte(bytes[i]!);
+          }
+          this._Connection.flush();
+        }
+      },
+      onFileStart: (file) => {
+        this._ZModemCurrentFile = file;
+        this._ZModemFileBuffers.set(file.name, []);
+      },
+      onFileData: (chunk) => {
+        if (this._ZModemCurrentFile === undefined) return;
+        const buf = this._ZModemFileBuffers.get(this._ZModemCurrentFile.name);
+        if (buf === undefined) return;
+        for (let i = 0; i < chunk.length; i++) {
+          buf.push(chunk[i]!);
+        }
+      },
+      onFileComplete: (file) => {
+        const buf = this._ZModemFileBuffers.get(file.name);
+        if (buf === undefined || buf.length === 0) return;
+        const blob = new Blob([new Uint8Array(buf)]);
+        saveAs(blob, file.name);
+        this._ZModemFileBuffers.delete(file.name);
+      },
+      onSessionComplete: () => {
+        this.endZModemReceive();
+      },
+      onError: (msg) => {
+        // eslint-disable-next-line no-console
+        console.warn('ZMODEM transfer error:', msg);
+        this.endZModemReceive();
+      },
+    });
+
+    // Feed the trigger bytes — they are the first 6 bytes of the
+    // sender's ZRQINIT, which the receive state machine's
+    // handleZRQINIT will recognize and respond to with ZRINIT.
+    this._ZModemReceive.feedBytes(initialBytes);
+  }
+
+  /**
+   * Tear down an active ZMODEM session and reset the detector so
+   * it's ready to watch for the next trigger. Bytes that arrive
+   * after this point flow normally through the ANSI parser.
+   *
+   * Phase 4 Stage 6.
+   */
+  private endZModemReceive(): void {
+    this._ZModemReceive = undefined;
+    this._ZModemCurrentFile = undefined;
+    this._ZModemFileBuffers.clear();
+    this._ZModemDetector?.reset();
   }
 
   private OnConnectionLocalEcho(value: boolean): void {

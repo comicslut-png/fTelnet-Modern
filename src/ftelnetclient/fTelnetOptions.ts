@@ -100,4 +100,19 @@ export class fTelnetOptions {
   public VirtualKeyboardVibrateDuration = 25;
   public VirtualKeyboardVisible: boolean = DetectMobileBrowser.IsMobile;
   public WebSocketUrlPath = '';
+  /**
+   * Whether to auto-detect ZMODEM transfers in the incoming byte
+   * stream. When true (default), seeing the ZMODEM auto-trigger
+   * sequence (`**\x18B00`) automatically diverts the stream into
+   * a ZModemReceive session and saves any received files via
+   * the browser download mechanism. Pre-trigger bytes still
+   * render through the ANSI parser normally.
+   *
+   * Set to false to disable, e.g. for embedders that want to
+   * handle file transfers their own way or stick exclusively to
+   * the legacy YMODEM "Download" button.
+   *
+   * Phase 4 Stage 6.
+   */
+  public ZModemAutoDetect = true;
 }
