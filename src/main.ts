@@ -22,6 +22,7 @@
 import { fTelnetClient, fTelnetOptions } from './ftelnetclient/index.js';
 
 const Options = new fTelnetOptions();
+Options.Theme = 'dos-classic';
 Options.Hostname = 'bbs.ftelnet.ca';
 
 // Direct WebSocket connection (commented out — bbs.ftelnet.ca doesn't

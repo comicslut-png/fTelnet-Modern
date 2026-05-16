@@ -37,7 +37,7 @@ describe('<f-status-bar>', () => {
       expect(el.statusText).toBe('Not connected');
       expect(el.connectButtonText).toBe('Connect');
       expect(el.connectButtonVisible).toBe(true);
-      expect(el.backgroundColor).toBe('');
+      expect(el.state).toBe('idle');
       expect(el.widthPx).toBe(0);
     });
 
@@ -113,25 +113,28 @@ describe('<f-status-bar>', () => {
     });
   });
 
-  describe('backgroundColor reactivity', () => {
-    it('setting blue stamps an inline background-color', async () => {
-      el.backgroundColor = 'blue';
-      await el.updateComplete;
+  describe('state reactivity', () => {
+    it('renders data-state="idle" by default', () => {
       const inner = el.querySelector<HTMLElement>('.fTelnetStatusBar');
-      expect(inner?.getAttribute('style')).toContain('background-color: blue');
+      expect(inner?.getAttribute('data-state')).toBe('idle');
     });
 
-    it('setting red stamps an inline background-color', async () => {
-      el.backgroundColor = 'red';
+    it('setting state="active" updates the data-state attribute', async () => {
+      el.state = 'active';
       await el.updateComplete;
       const inner = el.querySelector<HTMLElement>('.fTelnetStatusBar');
-      expect(inner?.getAttribute('style')).toContain('background-color: red');
+      expect(inner?.getAttribute('data-state')).toBe('active');
     });
 
-    it('resetting to empty string drops the inline background-color', async () => {
-      el.backgroundColor = 'red';
+    it('setting state="error" updates the data-state attribute', async () => {
+      el.state = 'error';
       await el.updateComplete;
-      el.backgroundColor = '';
+      const inner = el.querySelector<HTMLElement>('.fTelnetStatusBar');
+      expect(inner?.getAttribute('data-state')).toBe('error');
+    });
+
+    it('never stamps an inline background-color (CSS owns coloring)', async () => {
+      el.state = 'error';
       await el.updateComplete;
       const inner = el.querySelector<HTMLElement>('.fTelnetStatusBar');
       const style = inner?.getAttribute('style') ?? '';
@@ -147,13 +150,15 @@ describe('<f-status-bar>', () => {
       expect(inner?.getAttribute('style')).toContain('width: 800px');
     });
 
-    it('width and backgroundColor combine into one style attribute', async () => {
+    it('width works in error state without affecting background', async () => {
       el.widthPx = 640;
-      el.backgroundColor = 'red';
+      el.state = 'error';
       await el.updateComplete;
-      const style = el.querySelector('.fTelnetStatusBar')?.getAttribute('style') ?? '';
+      const inner = el.querySelector('.fTelnetStatusBar');
+      const style = inner?.getAttribute('style') ?? '';
       expect(style).toContain('width: 640px');
-      expect(style).toContain('background-color: red');
+      expect(style).not.toContain('background-color');
+      expect(inner?.getAttribute('data-state')).toBe('error');
     });
   });
 

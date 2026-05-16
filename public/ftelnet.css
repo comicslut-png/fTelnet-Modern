@@ -18,14 +18,19 @@
 /* ──────────────────────────────────────────────────────────
    Theme: classic (default)
 
-   Targets: explicit `data-theme="classic"`, empty data-theme,
-   or no data-theme attribute at all. The `:not()` patterns make
-   the classic theme the "default" without requiring callers to
-   set the attribute on every embed.
+   Active when `data-theme="classic"` is set on an ancestor.
+   fTelnetClient sets this attribute on both the container and
+   the menu popup at construction time, so it's effectively the
+   default.
+
+   (Earlier drafts of this CSS had a `:not([data-theme])` fallback
+   selector that matched inner divs without the attribute — but
+   that caused a bug: the inner `.fTelnetMenuButtons` div inside
+   `<f-menu-popup data-theme="dos-classic">` would re-inherit
+   classic-theme variables via the fallback selector matching
+   itself, defeating the parent's theme. Removed.)
    ────────────────────────────────────────────────────────── */
-[data-theme='classic'],
-.fTelnetContainer:not([data-theme]),
-.fTelnetMenuButtons:not([data-theme]) {
+[data-theme='classic'] {
   /* Colors */
   --ft-ui-bg: white;
   --ft-ui-fg: black;
@@ -171,23 +176,49 @@
 
 /* ── Status bar ── */
 
+/* Base rule: shared properties regardless of state */
 .fTelnetStatusBar {
-  background-color: var(--ft-status-active-bg);
-  border: var(--ft-button-border-width) solid var(--ft-status-active-border);
-  color: var(--ft-status-active-fg);
+  border-width: var(--ft-button-border-width);
+  border-style: solid;
   font: var(--ft-ui-font);
   margin: auto;
   padding: 5px;
   text-align: left;
 }
 
+/* Idle / active states (initial + connecting + connected): use
+   the "active" palette. Most of the lifetime is spent here. */
+.fTelnetStatusBar[data-state='idle'],
+.fTelnetStatusBar[data-state='active'] {
+  background-color: var(--ft-status-active-bg);
+  border-color: var(--ft-status-active-border);
+  color: var(--ft-status-active-fg);
+}
+
+/* Error state (security failure or disconnect): error palette. */
+.fTelnetStatusBar[data-state='error'] {
+  background-color: var(--ft-status-error-bg);
+  border-color: var(--ft-status-error-border);
+  color: var(--ft-status-error-fg);
+}
+
 /* dos-classic: bevel the status bar (sunken / inverted bevel,
-   like an old TUI "info bar"). */
+   like an old TUI "info bar"). The bevel color overrides the
+   border-color set by the state rules above. */
 [data-theme='dos-classic'] .fTelnetStatusBar {
   border-top-color: var(--ft-bevel-shadow);
   border-left-color: var(--ft-bevel-shadow);
   border-bottom-color: var(--ft-bevel-light);
   border-right-color: var(--ft-bevel-light);
+}
+
+/* dos-classic error state: keep the bevel, but also add an
+   accent border so the error is visible (the bevel-only look
+   reads as "still normal"). We use box-shadow as a "second
+   border" since the actual border is the bevel. */
+[data-theme='dos-classic'] .fTelnetStatusBar[data-state='error'] {
+  box-shadow: inset 0 0 0 1px var(--ft-status-error-border);
+  color: var(--ft-status-error-fg);
 }
 
 .fTelnetMenuButton,

@@ -77,13 +77,24 @@ export interface MenuClickDetail {
  * `OnConnectionClose()`, and `OnConnectionSecurityError()`. Those
  * all become single property writes on this component.
  *
- * Note on the API surface: the properties are deliberately
- * "primitive" rather than semantic (no `state: 'connecting' | ...`
- * enum). The original code computes the label, button text, and
- * background color explicitly at each transition site. Migrating
- * to primitive properties preserves that contract verbatim;
- * Phase 3 (chrome facelift) can introduce semantic state when it
- * actually helps the visual design.
+ * Note on the API surface: Phase 2 Stage 4 used a primitive
+ * `backgroundColor: string` property here, with fTelnetClient
+ * writing literal color strings (`'blue'`, `'red'`, `''`) that
+ * got stamped as inline CSS. That worked for the classic theme
+ * but broke under Phase 3 theming — inline `background-color`
+ * always wins against `var(--ft-status-active-bg)` from a theme
+ * block, so theme colors couldn't override the imperative
+ * inline values.
+ *
+ * Phase 3 Stage 1.1 replaced it with a semantic `state` enum:
+ *   - 'idle'   — no special styling (initial state)
+ *   - 'active' — connecting / connected (was 'blue')
+ *   - 'error'  — disconnected / security failure (was 'red')
+ *
+ * The component renders the state as a `data-state` attribute
+ * on the inner `.fTelnetStatusBar` div; CSS reads the attribute
+ * to pick colors per-theme. Component is now fully theme-
+ * agnostic.
  */
 @customElement('f-status-bar')
 export class FStatusBar extends LitElement {
@@ -96,8 +107,15 @@ export class FStatusBar extends LitElement {
   @property({ type: Boolean, attribute: 'connect-button-visible' })
   connectButtonVisible = true;
 
-  @property({ type: String, attribute: 'background-color' })
-  backgroundColor = '';
+  /**
+   * Semantic connection state. Drives the background color and
+   * border via CSS — themes decide what each state looks like.
+   *
+   * Phase 2's `backgroundColor` property is gone; fTelnetClient
+   * updated its 7 call sites to use this instead.
+   */
+  @property({ type: String })
+  state: 'idle' | 'active' | 'error' = 'idle';
 
   @property({ type: Number, attribute: 'width-px' })
   widthPx = 0;
@@ -110,7 +128,11 @@ export class FStatusBar extends LitElement {
     const inlineStyle: string = this.buildInlineStyle();
 
     return html`
-      <div class="fTelnetStatusBar" style=${inlineStyle}>
+      <div
+        class="fTelnetStatusBar"
+        data-state=${this.state}
+        style=${inlineStyle}
+      >
         <a
           class="fTelnetMenuButton"
           href="#"
@@ -130,18 +152,14 @@ export class FStatusBar extends LitElement {
   }
 
   /**
-   * Combine width + background color into a single inline `style`.
-   * Same pattern as FFocusWarning and FScrollbackBar.
+   * Inline style now carries only the width. Background color
+   * comes from CSS, driven by the `data-state` attribute.
    */
   private buildInlineStyle(): string {
-    const parts: string[] = [];
     if (this.widthPx > 0) {
-      parts.push(`width: ${this.widthPx}px`);
+      return `width: ${this.widthPx}px;`;
     }
-    if (this.backgroundColor !== '') {
-      parts.push(`background-color: ${this.backgroundColor}`);
-    }
-    return parts.length > 0 ? parts.join('; ') + ';' : '';
+    return '';
   }
 
   /**

@@ -842,7 +842,7 @@ export class fTelnetClient {
       this._StatusBar.connectButtonVisible = false;
       this._StatusBar.statusText =
         'Connecting to ' + this._Options.Hostname + ':' + this._Options.Port;
-      this._StatusBar.backgroundColor = 'blue';
+      this._StatusBar.state = 'active';
       this._ClientContainer.style.opacity = '1.0';
       this._Connection.connect(
         this._Options.Hostname,
@@ -859,7 +859,7 @@ export class fTelnetClient {
         this._Options.Port +
         ' via ' +
         this._Options.ProxyHostname;
-      this._StatusBar.backgroundColor = 'blue';
+      this._StatusBar.state = 'active';
       this._ClientContainer.style.opacity = '1.0';
       this._Connection.connect(
         this._Options.Hostname,
@@ -1240,7 +1240,7 @@ export class fTelnetClient {
 
     this._StatusBar.statusText =
       'Disconnected from ' + this._Options.Hostname + ':' + this._Options.Port;
-    this._StatusBar.backgroundColor = 'red';
+    this._StatusBar.state = 'error';
     this._ClientContainer.style.opacity = '0.5';
   }
 
@@ -1250,7 +1250,7 @@ export class fTelnetClient {
     if (this._Options.ProxyHostname === '') {
       this._StatusBar.statusText =
         'Connected to ' + this._Options.Hostname + ':' + this._Options.Port;
-      this._StatusBar.backgroundColor = 'blue';
+      this._StatusBar.state = 'active';
       this._ClientContainer.style.opacity = '1.0';
     } else {
       this._StatusBar.statusText =
@@ -1260,7 +1260,7 @@ export class fTelnetClient {
         this._Options.Port +
         ' via ' +
         this._Options.ProxyHostname;
-      this._StatusBar.backgroundColor = 'blue';
+      this._StatusBar.state = 'active';
       this._ClientContainer.style.opacity = '1.0';
     }
 
@@ -1365,7 +1365,7 @@ export class fTelnetClient {
     if (this._Options.ProxyHostname === '') {
       this._StatusBar.statusText =
         'Unable to connect to ' + this._Options.Hostname + ':' + this._Options.Port;
-      this._StatusBar.backgroundColor = 'red';
+      this._StatusBar.state = 'error';
       this._ClientContainer.style.opacity = '0.5';
     } else {
       this._StatusBar.statusText =
@@ -1375,7 +1375,7 @@ export class fTelnetClient {
         this._Options.Port +
         ' via ' +
         this._Options.ProxyHostname;
-      this._StatusBar.backgroundColor = 'red';
+      this._StatusBar.state = 'error';
       this._ClientContainer.style.opacity = '0.5';
     }
   }
