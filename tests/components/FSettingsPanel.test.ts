@@ -46,7 +46,7 @@ describe('<f-settings-panel>', () => {
       expect(el.currentTheme).toBe('classic');
       expect(el.muted).toBe(false);
       expect(el.vibrateDuration).toBe(25);
-      expect(el.themes.length).toBe(2);
+      expect(el.themes.length).toBe(6);
     });
 
     it('renders an inner panel with the CSS class', () => {
@@ -60,15 +60,22 @@ describe('<f-settings-panel>', () => {
 
     it('renders theme radio buttons', () => {
       const radios = el.querySelectorAll<HTMLInputElement>('input[type="radio"][name="theme"]');
-      expect(radios.length).toBe(2);
+      expect(radios.length).toBe(6);
       expect(radios[0]?.value).toBe('classic');
       expect(radios[1]?.value).toBe('dos-classic');
+      expect(radios[2]?.value).toBe('crt-green');
+      expect(radios[3]?.value).toBe('cyberpunk');
+      expect(radios[4]?.value).toBe('gothic');
+      expect(radios[5]?.value).toBe('cartoon');
     });
 
     it('the current theme radio is checked', () => {
       const radios = el.querySelectorAll<HTMLInputElement>('input[type="radio"][name="theme"]');
       expect(radios[0]?.checked).toBe(true);  // classic is current
-      expect(radios[1]?.checked).toBe(false);
+      // None of the others are checked
+      for (let i = 1; i < radios.length; i++) {
+        expect(radios[i]?.checked).toBe(false);
+      }
     });
 
     it('renders the mute checkbox unchecked', () => {

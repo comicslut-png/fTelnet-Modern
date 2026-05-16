@@ -339,6 +339,7 @@
 }
 
 .fTelnetMenuButtons select {
+  background-color: var(--ft-ui-bg);
   border: var(--ft-button-border-width) solid var(--ft-ui-border);
   border-radius: var(--ft-button-radius);
   color: var(--ft-ui-fg);
@@ -346,6 +347,16 @@
   font: var(--ft-ui-font);
   padding: var(--ft-button-padding);
   width: 100%;
+}
+
+/* Option styling — most browsers respect these on <option>, though
+   the native popup list rendering varies wildly across browser+OS.
+   This gets us readable text in Firefox on Windows; Chrome/Safari
+   on macOS may still use system styling. A custom dropdown
+   component would be the only fully-portable solution. */
+.fTelnetMenuButtons select option {
+  background-color: var(--ft-ui-bg);
+  color: var(--ft-ui-fg);
 }
 
 /* dos-classic: sunken-bevel select (inverted from the buttons) */
@@ -493,4 +504,351 @@
 
 [data-theme='dos-classic'] .fTelnetSettingsPanelClose:hover {
   background-color: #cccccc;
+}
+
+/* ──────────────────────────────────────────────────────────
+   Theme: crt-green (Phase 3 Stage 3)
+
+   Phosphor-green-on-black terminal nostalgia. The look of every
+   movie hacker scene from "WarGames" to "Mr. Robot." Monospace
+   chrome (matches the BBS canvas font); subtle text-shadow glow
+   to mimic CRT bleed; thin bright-green borders.
+
+   Glow intensity is deliberately mild — anything stronger
+   becomes eye-strain over a long session. The 4px + 8px halo
+   pair gives "tube screen at twilight" without "lasers in eyes."
+   ────────────────────────────────────────────────────────── */
+[data-theme='crt-green'] {
+  /* Phosphor green: bright on hot, dim on cool. #00ff00 is the
+     traditional terminal green; #003000 is the dim "off" state. */
+  --ft-ui-bg: #001a00;
+  --ft-ui-fg: #00ff00;
+  --ft-ui-border: #00ff00;
+  --ft-ui-border-soft: #006600;
+
+  --ft-status-active-bg: #001a00;
+  --ft-status-active-fg: #00ff00;
+  --ft-status-active-border: #00ff00;
+
+  --ft-status-error-bg: #1a0000;
+  --ft-status-error-fg: #ff4040;
+  --ft-status-error-border: #ff4040;
+
+  --ft-focus-warning-bg: #1a1a00;
+  --ft-focus-warning-fg: #ffff00;
+  --ft-focus-warning-border: #ffff00;
+
+  --ft-scrollback-bg: #001a00;
+  --ft-scrollback-fg: #00ff00;
+  --ft-scrollback-border: #00ff00;
+  --ft-scrollback-link-fg: #00ffff;
+
+  --ft-popup-bg: #001a00;
+  --ft-popup-fg: #00ff00;
+  --ft-popup-border: #00ff00;
+  --ft-popup-button-bg: #002a00;
+  --ft-popup-button-fg: #00ff00;
+  --ft-popup-button-border: #00ff00;
+
+  /* Monospace UI font matches the BBS canvas — full terminal
+     aesthetic top to bottom. */
+  --ft-ui-font: 12px 'Courier New', Consolas, 'Lucida Console', monospace;
+  /* The glow: two halos at different radii create the
+     phosphor-bleed look. */
+  --ft-ui-text-shadow: 0 0 4px #00ff00, 0 0 8px #00cc00;
+
+  --ft-button-radius: 0;
+  --ft-button-border-width: 1px;
+  --ft-button-padding: 4px 10px;
+
+  --ft-bevel-light: transparent;
+  --ft-bevel-shadow: transparent;
+  --ft-bevel-outer-dark: transparent;
+}
+
+/* crt-green needs the glow to apply to the popup buttons too —
+   they're inside <f-menu-popup> which has its own data-theme,
+   so the variable propagates correctly, but the base
+   `.fTelnetMenuButtons a` rule doesn't apply text-shadow.
+   Add it here. */
+[data-theme='crt-green'] .fTelnetMenuButtons a,
+[data-theme='crt-green'] .fTelnetMenuButton,
+[data-theme='crt-green'] .fTelnetConnectButton,
+[data-theme='crt-green'] .fTelnetStatusBarLabel,
+[data-theme='crt-green'] .fTelnetSettingsPanelClose {
+  text-shadow: var(--ft-ui-text-shadow);
+}
+
+/* Hover: brighten the green slightly */
+[data-theme='crt-green'] .fTelnetMenuButton:hover,
+[data-theme='crt-green'] .fTelnetConnectButton:hover,
+[data-theme='crt-green'] .fTelnetMenuButtons a:hover,
+[data-theme='crt-green'] .fTelnetSettingsPanelClose:hover {
+  background-color: #003a00;
+  color: #00ffaa;
+}
+
+/* ──────────────────────────────────────────────────────────
+   Theme: cyberpunk (Phase 3 Stage 3)
+
+   Neon magenta + cyan on near-black. Blade Runner / Cyberpunk
+   2077 / Neuromancer aesthetic. Bright, aggressive, slightly
+   hostile. Uppercase labels with letter-spacing for that
+   "corp-overlay HUD" feel.
+   ────────────────────────────────────────────────────────── */
+[data-theme='cyberpunk'] {
+  /* Two-tone neon: magenta (#ff00aa) is the "hot" accent,
+     cyan (#00ffff) is the "info" accent. Background is a deep
+     purple-black for warmth. */
+  --ft-ui-bg: #0a0014;
+  --ft-ui-fg: #00ffff;
+  --ft-ui-border: #ff00aa;
+  --ft-ui-border-soft: #660044;
+
+  --ft-status-active-bg: #1a0033;
+  --ft-status-active-fg: #00ffff;
+  --ft-status-active-border: #ff00aa;
+
+  --ft-status-error-bg: #330011;
+  --ft-status-error-fg: #ffff00; /* yellow alert */
+  --ft-status-error-border: #ff0044;
+
+  --ft-focus-warning-bg: #1a0033;
+  --ft-focus-warning-fg: #ffff00;
+  --ft-focus-warning-border: #ff00aa;
+
+  --ft-scrollback-bg: #0a0014;
+  --ft-scrollback-fg: #00ffff;
+  --ft-scrollback-border: #ff00aa;
+  --ft-scrollback-link-fg: #ffff00;
+
+  --ft-popup-bg: #1a0033;
+  --ft-popup-fg: #00ffff;
+  --ft-popup-border: #ff00aa;
+  --ft-popup-button-bg: #0a0014;
+  --ft-popup-button-fg: #ff00aa;
+  --ft-popup-button-border: #00ffff;
+
+  --ft-ui-font: 11px 'Consolas', 'Courier New', monospace;
+  --ft-ui-text-shadow: 0 0 6px currentColor;
+
+  --ft-button-radius: 0;
+  --ft-button-border-width: 1px;
+  --ft-button-padding: 4px 12px;
+
+  --ft-bevel-light: transparent;
+  --ft-bevel-shadow: transparent;
+  --ft-bevel-outer-dark: transparent;
+}
+
+/* Cyberpunk: ALL-CAPS labels with letter-spacing for the HUD feel.
+   The `currentColor` text-shadow trick makes each element glow in
+   its own color (magenta buttons get magenta glow, cyan text gets
+   cyan glow) — neat single-line effect. */
+[data-theme='cyberpunk'] .fTelnetMenuButton,
+[data-theme='cyberpunk'] .fTelnetConnectButton,
+[data-theme='cyberpunk'] .fTelnetMenuButtons a,
+[data-theme='cyberpunk'] .fTelnetSettingsPanelClose {
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: bold;
+}
+
+[data-theme='cyberpunk'] .fTelnetSettingsPanelHeader {
+  background-color: #ff00aa;
+  color: #0a0014;
+  margin: -8px -8px 8px -8px;
+  padding: 4px 8px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+[data-theme='cyberpunk'] .fTelnetMenuButton:hover,
+[data-theme='cyberpunk'] .fTelnetConnectButton:hover,
+[data-theme='cyberpunk'] .fTelnetMenuButtons a:hover,
+[data-theme='cyberpunk'] .fTelnetSettingsPanelClose:hover {
+  background-color: #ff00aa;
+  color: #0a0014;
+}
+
+/* ──────────────────────────────────────────────────────────
+   Theme: gothic (Phase 3 Stage 3)
+
+   Blood-red on black with Victorian-mourning serif italics. The
+   restraint here is deliberate — true gothic UIs lean toward
+   "subdued elegance" rather than "Hot Topic explosion." Deep
+   red (#8b0000, "darkred" CSS keyword) is the accent; the
+   chrome itself stays near-black with hairline maroon borders.
+
+   Serif font for chrome contrasts with the BBS canvas's
+   monospace — like a hand-set typeface peering at a telegraph
+   tape.
+   ────────────────────────────────────────────────────────── */
+[data-theme='gothic'] {
+  --ft-ui-bg: #0a0000;
+  --ft-ui-fg: #d4c4c4; /* off-white with a slight red tint */
+  --ft-ui-border: #8b0000;
+  --ft-ui-border-soft: #4a0000;
+
+  --ft-status-active-bg: #1a0000;
+  --ft-status-active-fg: #d4c4c4;
+  --ft-status-active-border: #8b0000;
+
+  --ft-status-error-bg: #2a0000;
+  --ft-status-error-fg: #ff6666;
+  --ft-status-error-border: #ff0000;
+
+  --ft-focus-warning-bg: #1a0000;
+  --ft-focus-warning-fg: #b22222;
+  --ft-focus-warning-border: #8b0000;
+
+  --ft-scrollback-bg: #1a0000;
+  --ft-scrollback-fg: #d4c4c4;
+  --ft-scrollback-border: #8b0000;
+  --ft-scrollback-link-fg: #ff6666;
+
+  --ft-popup-bg: #0a0000;
+  --ft-popup-fg: #d4c4c4;
+  --ft-popup-border: #8b0000;
+  --ft-popup-button-bg: #1a0000;
+  --ft-popup-button-fg: #b22222;
+  --ft-popup-button-border: #4a0000;
+
+  --ft-ui-font: italic 13px 'Georgia', 'Garamond', 'Times New Roman', serif;
+  --ft-ui-text-shadow: 0 0 2px rgba(139, 0, 0, 0.4);
+
+  --ft-button-radius: 0;
+  --ft-button-border-width: 1px;
+  --ft-button-padding: 4px 12px;
+
+  --ft-bevel-light: transparent;
+  --ft-bevel-shadow: transparent;
+  --ft-bevel-outer-dark: transparent;
+}
+
+/* Gothic: the status bar gets a two-toned border like a coffin
+   lid (bright on top, dark on bottom). Subtle but evocative. */
+[data-theme='gothic'] .fTelnetStatusBar {
+  border-top-width: 2px;
+  border-bottom-width: 2px;
+  border-top-color: #8b0000;
+  border-bottom-color: #4a0000;
+}
+
+[data-theme='gothic'] .fTelnetSettingsPanelHeader {
+  background-color: #4a0000;
+  color: #d4c4c4;
+  margin: -8px -8px 8px -8px;
+  padding: 4px 8px;
+  font-style: italic;
+  font-family: 'Georgia', 'Garamond', serif;
+  border-bottom: 1px solid #8b0000;
+}
+
+[data-theme='gothic'] .fTelnetMenuButton:hover,
+[data-theme='gothic'] .fTelnetConnectButton:hover,
+[data-theme='gothic'] .fTelnetMenuButtons a:hover,
+[data-theme='gothic'] .fTelnetSettingsPanelClose:hover {
+  background-color: #2a0000;
+  color: #ff6666;
+}
+
+/* ──────────────────────────────────────────────────────────
+   Theme: cartoon (Phase 3 Stage 3)
+
+   Primary colors, thick black outlines, rounded corners,
+   Comic Sans (yes, really — it actually fits this aesthetic
+   for once). Reads as "Adventure Time" / "classic Hanna-Barbera."
+
+   The thick borders are part of the look: 3px solid black on
+   every panel, including the canvas. Buttons get their own
+   bright colors (yellow Menu, blue Connect, red status bar)
+   instead of a unified palette.
+   ────────────────────────────────────────────────────────── */
+[data-theme='cartoon'] {
+  /* Cream/butter background; bright primary accents. */
+  --ft-ui-bg: #fffacd;
+  --ft-ui-fg: #000000;
+  --ft-ui-border: #000000;
+  --ft-ui-border-soft: #333333;
+
+  /* Status bar: red panel with white text — the loudest
+     element on the page, on purpose. */
+  --ft-status-active-bg: #ff4444;
+  --ft-status-active-fg: #ffffff;
+  --ft-status-active-border: #000000;
+
+  --ft-status-error-bg: #ff8800;
+  --ft-status-error-fg: #ffffff;
+  --ft-status-error-border: #000000;
+
+  --ft-focus-warning-bg: #ffdd00;
+  --ft-focus-warning-fg: #000000;
+  --ft-focus-warning-border: #000000;
+
+  --ft-scrollback-bg: #44aaff;
+  --ft-scrollback-fg: #ffffff;
+  --ft-scrollback-border: #000000;
+  --ft-scrollback-link-fg: #ffff00;
+
+  --ft-popup-bg: #fffacd;
+  --ft-popup-fg: #000000;
+  --ft-popup-border: #000000;
+  --ft-popup-button-bg: #ffdd00;
+  --ft-popup-button-fg: #000000;
+  --ft-popup-button-border: #000000;
+
+  --ft-ui-font: bold 13px 'Comic Sans MS', 'Marker Felt', 'Chalkboard SE', sans-serif;
+  --ft-ui-text-shadow: none;
+
+  --ft-button-radius: 8px;
+  --ft-button-border-width: 3px;
+  --ft-button-padding: 4px 12px;
+
+  --ft-bevel-light: transparent;
+  --ft-bevel-shadow: transparent;
+  --ft-bevel-outer-dark: transparent;
+}
+
+/* Cartoon: thick borders everywhere, including the BBS canvas
+   container itself (the only theme that styles this). */
+[data-theme='cartoon'] .fTelnetClientContainer {
+  border-width: 3px;
+  border-color: #000000;
+  border-radius: 8px;
+}
+
+[data-theme='cartoon'] .fTelnetSettingsPanel {
+  border-width: 3px;
+  border-radius: 12px;
+}
+
+[data-theme='cartoon'] .fTelnetSettingsPanelGroup {
+  border-width: 2px;
+  border-radius: 6px;
+}
+
+[data-theme='cartoon'] .fTelnetSettingsPanelHeader {
+  background-color: #ff4444;
+  color: #ffffff;
+  margin: -8px -8px 8px -8px;
+  padding: 6px 12px;
+  border-radius: 9px 9px 0 0;
+  font-weight: bold;
+}
+
+[data-theme='cartoon'] .fTelnetConnectButton {
+  background-color: #44aaff;
+  color: #ffffff;
+}
+
+[data-theme='cartoon'] .fTelnetMenuButton:hover,
+[data-theme='cartoon'] .fTelnetMenuButtons a:hover,
+[data-theme='cartoon'] .fTelnetSettingsPanelClose:hover {
+  background-color: #ff8800;
+  color: #ffffff;
+}
+
+[data-theme='cartoon'] .fTelnetConnectButton:hover {
+  background-color: #66ccff;
 }

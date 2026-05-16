@@ -96,6 +96,10 @@ export class FSettingsPanel extends LitElement {
   themes: ThemeChoice[] = [
     { id: 'classic', label: 'classic' },
     { id: 'dos-classic', label: 'dos-classic' },
+    { id: 'crt-green', label: 'crt-green' },
+    { id: 'cyberpunk', label: 'cyberpunk' },
+    { id: 'gothic', label: 'gothic' },
+    { id: 'cartoon', label: 'cartoon' },
   ];
 
   @property({ type: String, attribute: 'current-theme' })
