@@ -97,11 +97,29 @@ Parrish, R&M Software). Smaller, primarily a connectivity demo;
 useful for testing the connection flow but does not have
 downloadable files for exercising ZMODEM.
 
-For ZMODEM smoke-testing, set `options.Hostname = 'sbbs.dmine.net'`
-and `options.Port = 24`, navigate to a file area after login,
-choose a file, and type `D` to download. The browser save dialog
-should pop up when the transfer completes (visible
-progress UI lands in Stage 7).
+For ZMODEM smoke-testing, the simplest path is to edit
+`src/main.ts` (the dev-server entry point) to point at Diamond
+Mine via Rick Parrish's public WebSocket proxy:
+
+```typescript
+Options.Hostname = 'sbbs.dmine.net';
+Options.Port = 24;
+Options.ProxyHostname = 'p-us-east.ftelnet.ca';
+Options.ProxyPort = 80;
+Options.ProxyPortSecure = 443;
+```
+
+Save the file, then run `npm run dev` and open the page in
+Firefox. The proxy bridges WebSocket → raw telnet for any
+`Hostname:Port` you specify, so you don't need Diamond Mine to
+run their own WebSocket bridge.
+
+Once connected, log in with your existing Diamond Mine account,
+navigate to a file area (typically `F` from the main menu),
+pick a small file, and type `D` to download. Stage 6's
+auto-detect should fire when Synchronet starts the ZMODEM
+transfer; the browser save dialog should pop up when the
+transfer completes. Visible progress UI lands in Stage 7.
 
 ## Quick start
 

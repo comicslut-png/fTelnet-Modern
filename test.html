@@ -1,0 +1,24 @@
+<!doctype html>
+<html>
+<head>
+  <title>fTelnet test</title>
+</head>
+<body>
+  <div id="fTelnetContainer"></div>
+  
+  <!-- Load the built fTelnet bundle -->
+  <script src="dist/ftelnet.rip.xfer.js" id="fTelnetScript"></script>
+  
+  <script>
+    const options = new fTelnetOptions();
+    options.Hostname = 'sbbs.dmine.net';
+    options.Port = 24;
+    options.ProxyHostname = 'proxy-us-ga.ftelnet.ca';  // Rick's public bridge
+    options.ProxyPort = 1123;
+    options.ProxyPortSecure = 11235;
+    options.ZModemAutoDetect = true;  // explicit, though it's the default
+    
+    new fTelnetClient('fTelnetContainer', options);
+  </script>
+</body>
+</html>
