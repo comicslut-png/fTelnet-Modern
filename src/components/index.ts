@@ -23,3 +23,4 @@ export {
 } from './FMenuPopup.js';
 export { FScrollbackBar } from './FScrollbackBar.js';
 export { FStatusBar, type MenuClickDetail } from './FStatusBar.js';
+export { FVirtualKeyboard, type VKKeyEventDetail } from './FVirtualKeyboard.js';

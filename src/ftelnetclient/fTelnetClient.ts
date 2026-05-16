@@ -46,12 +46,13 @@ import {
   FMenuPopup,
   FScrollbackBar,
   FStatusBar,
+  FVirtualKeyboard,
   type MenuActionDetail,
   type MenuClickDetail,
   type ScreenSizeChangeDetail,
+  type VKKeyEventDetail,
 } from '../components/index.js';
 import { fTelnetOptions } from './fTelnetOptions.js';
-import { VirtualKeyboard } from './VirtualKeyboard.js';
 
 /**
  * Top-level fTelnet client.
@@ -169,7 +170,7 @@ export class fTelnetClient {
   private _Timer: ReturnType<typeof setInterval> | undefined;
   private _UploadInput!: HTMLInputElement;
   private _UseModernScrollback = false;
-  private _VirtualKeyboard!: VirtualKeyboard;
+  private _VirtualKeyboard!: FVirtualKeyboard;
   private _YModemReceive!: YModemReceive;
   private _YModemSend!: YModemSend;
 
@@ -577,10 +578,25 @@ export class fTelnetClient {
     document.body.appendChild(this._MenuButtons);
 
     // ── Virtual keyboard ──
-    this._VirtualKeyboard = new VirtualKeyboard(this._Crt, this._fTelnetContainer);
-    this._VirtualKeyboard.VibrateDurationInMilliseconds =
-      this._Options.VirtualKeyboardVibrateDuration;
-    this._VirtualKeyboard.Visible = this._Options.VirtualKeyboardVisible;
+    // Lit component <f-virtual-keyboard>. The Phase 1 class took
+    // a Crt reference and called Crt.PushKeyDown / PushKeyPress
+    // directly; the component decouples by dispatching typed
+    // events with matching payloads, which we forward to Crt
+    // here.
+    this._VirtualKeyboard = document.createElement('f-virtual-keyboard') as FVirtualKeyboard;
+    this._VirtualKeyboard.vibrateDuration = this._Options.VirtualKeyboardVibrateDuration;
+    this._VirtualKeyboard.visible = this._Options.VirtualKeyboardVisible;
+
+    this._VirtualKeyboard.addEventListener('vk-key-down', (e: Event): void => {
+      const d = (e as CustomEvent<VKKeyEventDetail>).detail;
+      this._Crt.PushKeyDown(d.charCode, d.keyCode, d.ctrl, d.alt, d.shift);
+    });
+    this._VirtualKeyboard.addEventListener('vk-key-press', (e: Event): void => {
+      const d = (e as CustomEvent<VKKeyEventDetail>).detail;
+      this._Crt.PushKeyPress(d.charCode, d.keyCode, d.ctrl, d.alt, d.shift);
+    });
+
+    this._fTelnetContainer.appendChild(this._VirtualKeyboard);
 
     // Recompute sizes for the bars and keyboard now that everything
     // is in place.
@@ -1624,7 +1640,7 @@ export class fTelnetClient {
 
   public set VirtualKeyboardVibrateDuration(value: number) {
     this._Options.VirtualKeyboardVibrateDuration = value;
-    this._VirtualKeyboard.VibrateDurationInMilliseconds = value;
+    this._VirtualKeyboard.vibrateDuration = value;
   }
 
   // TODOX (preserved): ideally this would be a ToggleVirtualKeyboard().
@@ -1638,6 +1654,6 @@ export class fTelnetClient {
     }
 
     this._Options.VirtualKeyboardVisible = value;
-    this._VirtualKeyboard.Visible = value;
+    this._VirtualKeyboard.visible = value;
   }
 }
