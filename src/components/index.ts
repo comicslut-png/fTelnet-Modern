@@ -15,3 +15,4 @@
  *     import '@components/FFocusWarning.js';
  */
 export { FFocusWarning } from './FFocusWarning.js';
+export { FScrollbackBar } from './FScrollbackBar.js';

@@ -41,7 +41,7 @@ import { FileRecord, YModemReceive, YModemSend } from '../filetransfer/index.js'
 // import the @customElement registrations never run in production
 // builds and <f-focus-warning> tags render as empty inline elements.
 import '../components/index.js';
-import { FFocusWarning } from '../components/index.js';
+import { FFocusWarning, FScrollbackBar } from '../components/index.js';
 import { fTelnetOptions } from './fTelnetOptions.js';
 import { VirtualKeyboard } from './VirtualKeyboard.js';
 
@@ -62,17 +62,21 @@ import { VirtualKeyboard } from './VirtualKeyboard.js';
  *     create element, set class/innerHTML/style, append. Migrated
  *     as-is.
  *
- *   - Real bug preserved: lines `if (this._ScrollbackBar.style.display = 'none')`
- *     in EnterScrollback/ExitScrollback. Single `=` (assignment),
- *     not `===` (comparison). The assignment expression evaluates
- *     to the assigned string (`'none'` / `'block'`) which is
- *     always truthy, so the if-body always runs. Effect: the
- *     guards are dead, the operations always execute. Since both
- *     `Crt.EnterScrollback()` / `Crt.ExitScrollback()` are
- *     idempotent, the observable behavior is harmless — but
- *     calling EnterScrollback while already in scrollback (or
- *     ExitScrollback while not in scrollback) does an unnecessary
- *     repaint. Preserved as-is with explanatory comment.
+ *   - Real bug in original FIXED during Phase 2 component
+ *     refactor: the lines `if (this._ScrollbackBar.style.display = 'none')`
+ *     in `EnterScrollback`/`ExitScrollback` used a single `=`
+ *     (assignment), not `===` (comparison). The assignment
+ *     expression evaluated to the assigned string (`'none'` /
+ *     `'block'`), always truthy, so the if-body always ran. In
+ *     the original the effect was harmless (the operations are
+ *     idempotent), so Phase 1 preserved the bug. In Phase 2 the
+ *     scrollback bar became a Lit component with a `.visible`
+ *     boolean property — porting the literal characters of the
+ *     bug would have produced `if (this._ScrollbackBar.visible = false)`,
+ *     always-falsy, never-execute, which is a real regression.
+ *     Fixed at the time of the refactor to use the obviously-
+ *     intended `if (!this._ScrollbackBar.visible)` etc. Same
+ *     observable behavior as the original buggy code.
  *
  *   - `LoadProxySettings` migrated from synchronous-style XHR to
  *     async fetch, matching the pattern used elsewhere
@@ -139,7 +143,7 @@ export class fTelnetClient {
   private _MenuButton!: HTMLAnchorElement;
   private _MenuButtons!: HTMLDivElement;
   private _RIP!: RIP;
-  private _ScrollbackBar!: HTMLDivElement;
+  private _ScrollbackBar!: FScrollbackBar;
   private _StatusBar!: HTMLDivElement;
   private _StatusBarLabel!: HTMLSpanElement;
   private _Timer: ReturnType<typeof setInterval> | undefined;
@@ -391,70 +395,30 @@ export class fTelnetClient {
     this._fTelnetContainer.appendChild(this._FocusWarningBar);
 
     // ── Scrollback bar ──
-    this._ScrollbackBar = document.createElement('div');
-    this._ScrollbackBar.className = 'fTelnetScrollback';
-    if (this._UseModernScrollback) {
-      this._ScrollbackBar.innerHTML =
-        'SCROLLBACK: Scroll back down to the bottom to exit scrollback mode';
-    } else {
-      // Classic scrollback: explicit buttons for line up/down,
-      // page up/down, and exit. Each pushes a synthetic key event
-      // onto the Crt's keypress queue.
-      const ScrollbackLabel: HTMLSpanElement = document.createElement('span');
-      ScrollbackLabel.innerHTML = 'SCROLLBACK:';
-      this._ScrollbackBar.appendChild(ScrollbackLabel);
-
-      const ScrollbackLineUp: HTMLAnchorElement = document.createElement('a');
-      ScrollbackLineUp.href = '#';
-      ScrollbackLineUp.innerHTML = 'Line Up';
-      ScrollbackLineUp.addEventListener('click', (e: MouseEvent): boolean => {
-        this._Crt.PushKeyDown(KeyboardKeys.UP, KeyboardKeys.UP, false, false, false);
-        e.preventDefault();
-        return false;
-      });
-      this._ScrollbackBar.appendChild(ScrollbackLineUp);
-
-      const ScrollbackLineDown: HTMLAnchorElement = document.createElement('a');
-      ScrollbackLineDown.href = '#';
-      ScrollbackLineDown.innerHTML = 'Line Down';
-      ScrollbackLineDown.addEventListener('click', (e: MouseEvent): boolean => {
-        this._Crt.PushKeyDown(KeyboardKeys.DOWN, KeyboardKeys.DOWN, false, false, false);
-        e.preventDefault();
-        return false;
-      });
-      this._ScrollbackBar.appendChild(ScrollbackLineDown);
-
-      const ScrollbackPageUp: HTMLAnchorElement = document.createElement('a');
-      ScrollbackPageUp.href = '#';
-      ScrollbackPageUp.innerHTML = 'Page Up';
-      ScrollbackPageUp.addEventListener('click', (e: MouseEvent): boolean => {
-        this._Crt.PushKeyDown(KeyboardKeys.PAGE_UP, KeyboardKeys.PAGE_UP, false, false, false);
-        e.preventDefault();
-        return false;
-      });
-      this._ScrollbackBar.appendChild(ScrollbackPageUp);
-
-      const ScrollbackPageDown: HTMLAnchorElement = document.createElement('a');
-      ScrollbackPageDown.href = '#';
-      ScrollbackPageDown.innerHTML = 'Page Down';
-      ScrollbackPageDown.addEventListener('click', (e: MouseEvent): boolean => {
-        this._Crt.PushKeyDown(KeyboardKeys.PAGE_DOWN, KeyboardKeys.PAGE_DOWN, false, false, false);
-        e.preventDefault();
-        return false;
-      });
-      this._ScrollbackBar.appendChild(ScrollbackPageDown);
-
-      const ScrollbackExit: HTMLAnchorElement = document.createElement('a');
-      ScrollbackExit.href = '#';
-      ScrollbackExit.innerHTML = 'Exit';
-      ScrollbackExit.addEventListener('click', (e: MouseEvent): boolean => {
-        this.ExitScrollback();
-        e.preventDefault();
-        return false;
-      });
-      this._ScrollbackBar.appendChild(ScrollbackExit);
-    }
-    this._ScrollbackBar.style.display = 'none';
+    // Lit component <f-scrollback-bar>. Same DOM contract as the
+    // original (renders a div.fTelnetScrollback into light DOM
+    // so the existing CSS applies unchanged). The mode property
+    // selects between classic (full button set) and modern (just
+    // a hint message). The classic-mode button clicks dispatch
+    // custom events that we handle below — each pushes a synthetic
+    // key event onto the Crt's queue, same as the original.
+    this._ScrollbackBar = document.createElement('f-scrollback-bar') as FScrollbackBar;
+    this._ScrollbackBar.mode = this._UseModernScrollback ? 'modern' : 'classic';
+    this._ScrollbackBar.addEventListener('scrollback-line-up', (): void => {
+      this._Crt.PushKeyDown(KeyboardKeys.UP, KeyboardKeys.UP, false, false, false);
+    });
+    this._ScrollbackBar.addEventListener('scrollback-line-down', (): void => {
+      this._Crt.PushKeyDown(KeyboardKeys.DOWN, KeyboardKeys.DOWN, false, false, false);
+    });
+    this._ScrollbackBar.addEventListener('scrollback-page-up', (): void => {
+      this._Crt.PushKeyDown(KeyboardKeys.PAGE_UP, KeyboardKeys.PAGE_UP, false, false, false);
+    });
+    this._ScrollbackBar.addEventListener('scrollback-page-down', (): void => {
+      this._Crt.PushKeyDown(KeyboardKeys.PAGE_DOWN, KeyboardKeys.PAGE_DOWN, false, false, false);
+    });
+    this._ScrollbackBar.addEventListener('scrollback-exit', (): void => {
+      this.ExitScrollback();
+    });
     this._fTelnetContainer.appendChild(this._ScrollbackBar);
     // TODO (preserved): also have a span to hold the current line number
 
@@ -1059,39 +1023,44 @@ export class fTelnetClient {
   /**
    * Show the scrollback bar and enter Crt scrollback mode.
    *
-   * **Note**: the `if (this._ScrollbackBar.style.display = 'none')`
-   * line uses a single `=` (assignment), not `===` (comparison).
-   * The assignment expression evaluates to `'none'` which is always
-   * truthy, so the body always runs. **The guard is dead**. Bug
-   * preserved from the original per migration policy. Effect is
-   * benign because `Crt.EnterScrollback()` is idempotent.
+   * Migration note: the Phase 1 port preserved a `=` (assignment)
+   * vs `===` (comparison) typo from the original:
+   *
+   *     if (this._ScrollbackBar.style.display = 'none') { ... }
+   *
+   * The assignment evaluated to `'none'` (always truthy), so the
+   * if-body always ran. Effect was benign because
+   * `Crt.EnterScrollback()` is idempotent (it early-returns if
+   * already in scrollback). With the component refactor, the
+   * literal port would become:
+   *
+   *     if (this._ScrollbackBar.visible = false) { ... }
+   *
+   * which evaluates to `false` (always falsy) — the if-body
+   * would NEVER run. That would be a real regression, so this
+   * is the right place to fix the original typo: rewrite the
+   * condition the way the author obviously meant.
    */
   public EnterScrollback(): void {
     if (this._MenuButtons !== undefined) {
       this._MenuButtons.style.display = 'none';
     }
 
-    if (this._ScrollbackBar !== undefined) {
-      // eslint-disable-next-line no-cond-assign
-      if ((this._ScrollbackBar.style.display = 'none')) {
-        this._Crt.EnterScrollback();
-        this._ScrollbackBar.style.display = 'block';
-      }
+    if (this._ScrollbackBar !== undefined && !this._ScrollbackBar.visible) {
+      this._Crt.EnterScrollback();
+      this._ScrollbackBar.visible = true;
     }
   }
 
   /**
    * Exit scrollback mode and hide the scrollback bar.
    *
-   * Same single-`=` bug as EnterScrollback. Same preservation.
+   * Same typo fix as `EnterScrollback` above.
    */
   public ExitScrollback(): void {
-    if (this._ScrollbackBar !== undefined) {
-      // eslint-disable-next-line no-cond-assign
-      if ((this._ScrollbackBar.style.display = 'block')) {
-        this._Crt.ExitScrollback();
-        this._ScrollbackBar.style.display = 'none';
-      }
+    if (this._ScrollbackBar !== undefined && this._ScrollbackBar.visible) {
+      this._Crt.ExitScrollback();
+      this._ScrollbackBar.visible = false;
     }
   }
 
@@ -1553,7 +1522,7 @@ export class fTelnetClient {
       this._FocusWarningBar.widthPx = NewWidth - 10;
     }
     if (this._ScrollbackBar !== undefined) {
-      this._ScrollbackBar.style.width = NewWidth - 10 + 'px';
+      this._ScrollbackBar.widthPx = NewWidth - 10;
     }
     if (this._StatusBar !== undefined) {
       this._StatusBar.style.width = NewWidth - 10 + 'px';
@@ -1633,10 +1602,10 @@ export class fTelnetClient {
           this._ClientContainer.scrollTop -
           this._ClientContainer.clientHeight >
         1;
-      if (ScrolledUp && this._ScrollbackBar.style.display === 'none') {
-        this._ScrollbackBar.style.display = 'block';
-      } else if (!ScrolledUp && this._ScrollbackBar.style.display === 'block') {
-        this._ScrollbackBar.style.display = 'none';
+      if (ScrolledUp && !this._ScrollbackBar.visible) {
+        this._ScrollbackBar.visible = true;
+      } else if (!ScrolledUp && this._ScrollbackBar.visible) {
+        this._ScrollbackBar.visible = false;
       }
     }
   }
