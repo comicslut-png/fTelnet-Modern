@@ -17,7 +17,7 @@ applicable.
 | 1. Modernize foundation (TS 5, Vite, ESM, strict, Vitest)              | ✅ Complete                   |
 | 2. Refactor UI layer into Lit Web Components                           | ✅ Complete (6 stages)        |
 | 3. Neo-retro chrome facelift (theming system, settings panel, 6 themes) | ✅ Complete (3 main + deltas) |
-| 4. ZMODEM file transfer (replaces YMODEM as default)                   | 🚧 In progress (2/7 stages)   |
+| 4. ZMODEM file transfer (replaces YMODEM as default)                   | 🚧 In progress (6/7 stages)   |
 | 5. Polish (PWA, performance, docs, embed wizard refresh)               | ⏳ Planned                    |
 
 ### What works today
@@ -50,29 +50,58 @@ ZMODEM file transfers — the major feature missing from the original.
 Synchronet, Mystic, ENiGMA½, and other modern BBSes all use ZMODEM by
 default; YMODEM-G is unreliable over today's TCP-and-WebSocket stack.
 
-Phase 4 is shipping in 7 stages, currently 2 of 7 complete:
+Phase 4 is shipping in 7 stages, currently 6 of 7 complete:
 
   1. ✅ CRC-32 + protocol constants (foundation)
   2. ✅ ZMODEM streaming decoder
-  3. 🚧 ZMODEM encoder (next)
-  4. ⏳ Receive state machine
-  5. ⏳ Send state machine
-  6. ⏳ Auto-detect in the ANSI parser
-  7. ⏳ Transfer-progress UI (SyncTERM-style, themed per active theme)
+  3. ✅ ZMODEM encoder
+  4. ✅ Receive state machine
+  5. ✅ Send state machine
+  6. ✅ Auto-detect + fTelnetClient wiring (ZMODEM goes live)
+  7. 🚧 Transfer-progress UI (faithful SyncTERM-style retro panel)
 
 See `docs/` for stage-by-stage planning notes:
   - `phase4-references.md` — ZMODEM implementations we consult informally
   - `phase4-ui-decision.md` — Stage 7 dialog design
+  - `future-protocols.md` — post-Phase-4 to-do list (HSLink, etc.)
 
 ### Test coverage
 
-785 unit tests across 41 files, run on every commit. Phase boundaries:
+903 unit tests across 45 files, run on every commit. Phase boundaries:
 
   - End of Phase 1: 559 tests
   - End of Phase 2: 691 tests
   - End of Phase 3: 722 tests
   - Phase 4 Stage 1: 756 tests
   - Phase 4 Stage 2: 785 tests
+  - Phase 4 Stage 3: 821 tests
+  - Phase 4 Stage 4: 849 tests
+  - Phase 4 Stage 5: 874 tests
+  - Phase 4 Stage 6: 903 tests
+
+## Testing against a real BBS
+
+Once a build is loaded in the browser, you can connect to a live
+Synchronet BBS to exercise the full ANSI + ZMODEM stack. Two
+recommended hosts:
+
+**Diamond Mine Online** (`sbbs.dmine.net:24`) — long-running
+Synchronet BBS in Fredericksburg, VA, in operation since 1993.
+Large shareware file collection (programs, games, utilities,
+MIDI music) so it's a good ZMODEM target. Sysop maintains the
+*Telnet BBS Guide* and *BBS Corner* sites. Backup hostname
+`dmine.ddns.net:24` if primary is unreachable.
+
+**bbs.ftelnet.ca:23** — the upstream fTelnet demo server (Rick
+Parrish, R&M Software). Smaller, primarily a connectivity demo;
+useful for testing the connection flow but does not have
+downloadable files for exercising ZMODEM.
+
+For ZMODEM smoke-testing, set `options.Hostname = 'sbbs.dmine.net'`
+and `options.Port = 24`, navigate to a file area after login,
+choose a file, and type `D` to download. The browser save dialog
+should pop up when the transfer completes (visible
+progress UI lands in Stage 7).
 
 ## Quick start
 
