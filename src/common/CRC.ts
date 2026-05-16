@@ -21,21 +21,41 @@
 import { ByteArray } from './ByteArray.js';
 
 /**
- * CRC-16/XMODEM calculation used by the XMODEM/YMODEM file transfer
- * protocols. Polynomial: 0x1021 (CRC-CCITT, init 0x0000, no reflection,
- * no final XOR).
+ * CRC-16 and CRC-32 calculation used by the XMODEM/YMODEM/ZMODEM
+ * file transfer protocols.
  *
- * Phase 1 migration notes:
+ * CRC-16/XMODEM: polynomial 0x1021 (CRC-CCITT), init 0x0000, no
+ * reflection, no final XOR. Used by XMODEM-CRC, YMODEM, and the
+ * "16-bit subpacket" variant of ZMODEM.
+ *
+ * CRC-32 (IEEE 802.3): polynomial 0xEDB88320 (reflected form of
+ * 0x04C11DB7), init 0xFFFFFFFF, reflect input/output, final XOR
+ * 0xFFFFFFFF. This is the same CRC-32 used by ZIP, PNG, Ethernet,
+ * and the "32-bit subpacket" variant of ZMODEM.
+ *
+ * Phase 1 migration notes (CRC-16):
  *   - Made the table a `readonly` typed array. Frozen at class load.
  *   - Calculate16 preserves the caller's `position` (unchanged from original).
  *   - The two trailing UpdateCrc(0) calls in Calculate16 are the standard
  *     CRC-CCITT "shift out the last byte" — they're correct, not bugs.
  *
- * ZMODEM (Phase 4) will need both CRC-16 (this) and CRC-32 with a different
- * polynomial. When that work begins we'll likely extend this file to add
- * Calculate32, rather than splitting into separate modules.
+ * Phase 4 Stage 1 additions (CRC-32 for ZMODEM):
+ *   - Added the IEEE 802.3 CRC-32 table (computed at class-load time
+ *     from the polynomial rather than inlined as a 256-entry literal —
+ *     half the byte size of a hex-literal table, identical at runtime).
+ *   - Added `Calculate32(bytes)` matching the shape of `Calculate16`.
+ *   - Added public incremental methods `Update16(byte, crc)` and
+ *     `Update32(byte, crc)` for streaming use — ZMODEM emits subpackets
+ *     byte-by-byte and we don't want to allocate a fresh ByteArray
+ *     for every single one.
+ *   - The original Phase 1 `UpdateCrc` (private) stays as-is for
+ *     internal use by Calculate16. It's structurally the same as the
+ *     new public `Update16`. Kept the duplicate name rather than
+ *     refactoring to avoid touching the well-tested CRC-16 path.
  */
 export class CRC {
+  // ─────────────────────────── CRC-16 ───────────────────────────
+
   private static readonly TABLE: ReadonlyArray<number> = [
     0x0000, 0x1021, 0x2042, 0x3063, 0x4084, 0x50a5, 0x60c6, 0x70e7, 0x8108, 0x9129, 0xa14a, 0xb16b,
     0xc18c, 0xd1ad, 0xe1ce, 0xf1ef, 0x1231, 0x0210, 0x3273, 0x2252, 0x52b5, 0x4294, 0x72f7, 0x62d6,
@@ -81,8 +101,88 @@ export class CRC {
     return crc;
   }
 
+  /**
+   * Incremental CRC-16/XMODEM update — fold one byte into the running
+   * CRC. Initialize `crc` to 0 for the first call; pass the previous
+   * return value for subsequent calls. After the last data byte, fold
+   * two zero bytes through to flush the shift register if you need
+   * the final value (`Calculate16` does this for you).
+   *
+   * Public version of the existing private `UpdateCrc`. Phase 4 Stage 1.
+   */
+  public static Update16(byte: number, crc: number): number {
+    return CRC.UpdateCrc(byte, crc);
+  }
+
   private static UpdateCrc(curByte: number, curCrc: number): number {
     // Pascal: UpdateCrc := CrcTable[((CurCrc shr 8) and 255)] xor (CurCrc shl 8) xor CurByte
     return (CRC.TABLE[(curCrc >> 8) & 0xff]! ^ (curCrc << 8) ^ curByte) & 0xffff;
+  }
+
+  // ─────────────────────────── CRC-32 ───────────────────────────
+
+  /**
+   * CRC-32 (IEEE 802.3) lookup table. Computed at class-load time from
+   * the reflected polynomial 0xEDB88320. This is the same table that
+   * lrzsz, zmodemjs, and SyncTERM use — verified by matching the
+   * standard test vector (CRC-32 of "123456789" = 0xCBF43926).
+   *
+   * Computed-at-load rather than inlined: 256 hex literals would add
+   * ~2KB of source for identical runtime behavior, and Phase 1's pattern
+   * for CRC-16 was to inline-from-original since the original was
+   * already a literal table. Here we have neither precedent nor
+   * source-to-port; computing is cleaner.
+   */
+  private static readonly TABLE_32: ReadonlyArray<number> = (() => {
+    const table = new Array<number>(256);
+    for (let i = 0; i < 256; i++) {
+      let c = i;
+      for (let j = 0; j < 8; j++) {
+        // Reflected polynomial 0xEDB88320 (== reflect of 0x04C11DB7).
+        // The cast through `>>> 0` keeps the value as an unsigned 32-bit
+        // integer; JS bitwise ops return signed 32-bit otherwise.
+        c = (c & 1) !== 0 ? (0xedb88320 ^ (c >>> 1)) >>> 0 : c >>> 1;
+      }
+      table[i] = c;
+    }
+    return table;
+  })();
+
+  /**
+   * Compute the CRC-32 (IEEE 802.3) of every byte in `bytes`.
+   * The caller's `position` is restored before returning.
+   *
+   * This matches the CRC-32 that ZMODEM uses for binary32 subpackets
+   * and ZBIN32 headers. Verified against the standard test vector
+   * 0xCBF43926 for the string "123456789".
+   */
+  public static Calculate32(bytes: ByteArray): number {
+    let crc = 0xffffffff;
+    const savedPosition = bytes.position;
+    bytes.position = 0;
+
+    while (bytes.bytesAvailable > 0) {
+      crc = CRC.Update32(bytes.readUnsignedByte(), crc);
+    }
+
+    bytes.position = savedPosition;
+    // Final XOR with 0xFFFFFFFF, then mask to keep unsigned.
+    return (crc ^ 0xffffffff) >>> 0;
+  }
+
+  /**
+   * Incremental CRC-32 update — fold one byte into the running CRC.
+   *
+   * **Important**: initialize `crc` to `0xFFFFFFFF` for the first call,
+   * not 0 — that's the standard CRC-32 starting state. After folding
+   * all bytes, XOR the result with `0xFFFFFFFF` to get the final value.
+   * `Calculate32` does both for you; `Update32` is the loop body when
+   * you're computing incrementally.
+   *
+   * Returned value is always an unsigned 32-bit integer (because JS
+   * bitwise ops return signed 32-bit, we mask via `>>> 0`).
+   */
+  public static Update32(byte: number, crc: number): number {
+    return (CRC.TABLE_32[(crc ^ byte) & 0xff]! ^ (crc >>> 8)) >>> 0;
   }
 }
