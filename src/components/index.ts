@@ -22,5 +22,12 @@ export {
   type ScreenSizeChangeDetail,
 } from './FMenuPopup.js';
 export { FScrollbackBar } from './FScrollbackBar.js';
+export {
+  FSettingsPanel,
+  type SettingsMuteChangeDetail,
+  type SettingsThemeChangeDetail,
+  type SettingsVibrateChangeDetail,
+  type ThemeChoice,
+} from './FSettingsPanel.js';
 export { FStatusBar, type MenuClickDetail } from './FStatusBar.js';
 export { FVirtualKeyboard, type VKKeyEventDetail } from './FVirtualKeyboard.js';

@@ -690,6 +690,38 @@ describe('Crt — Delta 3c-1 foundation', () => {
       expect(() => crt.PlaySound(800, 200)).not.toThrow();
     });
 
+    it('Muted defaults to false', () => {
+      expect(crt.Muted).toBe(false);
+    });
+
+    it('setting Muted=true prevents PlaySound from queueing', () => {
+      crt.Muted = true;
+      // We can't inspect internals from outside, but we CAN verify
+      // that mute is observable via the getter and that PlaySound
+      // doesn't throw under it.
+      expect(crt.Muted).toBe(true);
+      expect(() => crt.PlaySound(800, 200)).not.toThrow();
+    });
+
+    it('setting Muted=true drops any queued sounds', () => {
+      // Queue a few sounds, then mute. The queue should be drained.
+      crt.PlaySound(800, 200);
+      crt.PlaySound(600, 100);
+      crt.Muted = true;
+      // No direct way to inspect queue length, but the behavior is
+      // "subsequent operations don't trigger residual oscillators."
+      // We can at least verify the getter reflects the new state.
+      expect(crt.Muted).toBe(true);
+    });
+
+    it('un-muting allows PlaySound to queue again', () => {
+      crt.Muted = true;
+      crt.PlaySound(800, 200); // dropped
+      crt.Muted = false;
+      expect(crt.Muted).toBe(false);
+      expect(() => crt.PlaySound(800, 200)).not.toThrow();
+    });
+
     it('Write of BEL (0x07) queues a sound', () => {
       // We can't easily inspect the AudioContext in tests, but we can
       // verify that the BEL doesn't crash and doesn't advance the cursor

@@ -45,11 +45,15 @@ import {
   FFocusWarning,
   FMenuPopup,
   FScrollbackBar,
+  FSettingsPanel,
   FStatusBar,
   FVirtualKeyboard,
   type MenuActionDetail,
   type MenuClickDetail,
   type ScreenSizeChangeDetail,
+  type SettingsMuteChangeDetail,
+  type SettingsThemeChangeDetail,
+  type SettingsVibrateChangeDetail,
   type VKKeyEventDetail,
 } from '../components/index.js';
 import { fTelnetOptions } from './fTelnetOptions.js';
@@ -158,6 +162,7 @@ export class fTelnetClient {
   private _MenuButtons!: FMenuPopup;
   private _RIP!: RIP;
   private _ScrollbackBar!: FScrollbackBar;
+  private _SettingsPanel!: FSettingsPanel;
   /**
    * The status-bar component. Phase 2 collapsed what used to be
    * four separate fields (`_StatusBar`, `_StatusBarLabel`,
@@ -209,6 +214,32 @@ export class fTelnetClient {
       }
     } catch {
       // Ignore — just means browser doesn't support localStorage.
+    }
+
+    // Phase 3 Stage 2: restore the Settings panel's user choices
+    // (theme, mute, vibrate). Each one overrides the embed-time
+    // Options default if the user previously made a choice. Same
+    // try/catch dance for the same reason.
+    try {
+      const storedTheme = window.localStorage.getItem('fTelnet.theme');
+      if (storedTheme !== null && storedTheme.length > 0) {
+        this._Options.Theme = storedTheme;
+      }
+
+      const storedMute = window.localStorage.getItem('fTelnet.mute');
+      if (storedMute !== null) {
+        this._Options.MuteSounds = storedMute === 'true';
+      }
+
+      const storedVibrate = window.localStorage.getItem('fTelnet.vibrate');
+      if (storedVibrate !== null) {
+        const n = parseInt(storedVibrate, 10);
+        if (!Number.isNaN(n) && n >= 0 && n <= 100) {
+          this._Options.VirtualKeyboardVibrateDuration = n;
+        }
+      }
+    } catch {
+      // Ignore — same as above.
     }
 
     // Emulation-specific defaults that have to be applied before
@@ -342,6 +373,7 @@ export class fTelnetClient {
     this._Crt.BareLFtoCRLF = this._Options.BareLFtoCRLF;
     this._Crt.C64 = this._Options.Emulation === 'C64';
     this._Crt.LocalEcho = this._Options.LocalEcho;
+    this._Crt.Muted = this._Options.MuteSounds;
     this._Crt.SkipRedrawWhenSameFontSize = this._Options.SkipRedrawWhenSameFontSize;
     this._Crt.SetScreenSize(this._Options.ScreenColumns, this._Options.ScreenRows);
     this._Crt.SetFont(this._Options.Font);
@@ -559,6 +591,9 @@ export class fTelnetClient {
         case 'enter-scrollback':
           this.EnterScrollback();
           break;
+        case 'settings':
+          this.OpenSettings();
+          break;
       }
     });
 
@@ -587,6 +622,52 @@ export class fTelnetClient {
     // container.
     this._MenuButtons.setAttribute('data-theme', this._Options.Theme);
     document.body.appendChild(this._MenuButtons);
+
+    // ── Settings panel (Phase 3 Stage 2) ──
+    // Lit component <f-settings-panel>. Opens from the menu popup
+    // via the new "Settings..." action; floats over the page like
+    // the menu popup does. Dispatches one event per change which
+    // we apply immediately + persist to localStorage.
+    this._SettingsPanel = document.createElement('f-settings-panel') as FSettingsPanel;
+    this._SettingsPanel.currentTheme = this._Options.Theme;
+    this._SettingsPanel.muted = this._Options.MuteSounds;
+    this._SettingsPanel.vibrateDuration = this._Options.VirtualKeyboardVibrateDuration;
+
+    this._SettingsPanel.addEventListener('settings-theme-change', (e: Event): void => {
+      const detail = (e as CustomEvent<SettingsThemeChangeDetail>).detail;
+      this.ApplyTheme(detail.theme);
+      try {
+        window.localStorage.setItem('fTelnet.theme', detail.theme);
+      } catch {
+        // Ignore — browser doesn't support localStorage.
+      }
+    });
+    this._SettingsPanel.addEventListener('settings-mute-change', (e: Event): void => {
+      const detail = (e as CustomEvent<SettingsMuteChangeDetail>).detail;
+      this._Crt.Muted = detail.muted;
+      this._Options.MuteSounds = detail.muted;
+      try {
+        window.localStorage.setItem('fTelnet.mute', String(detail.muted));
+      } catch {
+        // Ignore.
+      }
+    });
+    this._SettingsPanel.addEventListener('settings-vibrate-change', (e: Event): void => {
+      const detail = (e as CustomEvent<SettingsVibrateChangeDetail>).detail;
+      this._Options.VirtualKeyboardVibrateDuration = detail.duration;
+      this._VirtualKeyboard.vibrateDuration = detail.duration;
+      try {
+        window.localStorage.setItem('fTelnet.vibrate', String(detail.duration));
+      } catch {
+        // Ignore.
+      }
+    });
+    this._SettingsPanel.addEventListener('settings-close', (): void => {
+      this._SettingsPanel.open = false;
+    });
+
+    this._SettingsPanel.setAttribute('data-theme', this._Options.Theme);
+    document.body.appendChild(this._SettingsPanel);
 
     // ── Virtual keyboard ──
     // Lit component <f-virtual-keyboard>. The Phase 1 class took
@@ -1520,6 +1601,40 @@ export class fTelnetClient {
       this._MenuButtons.pageY = e.pageY;
       this._MenuButtons.open = true;
     }
+  }
+
+  /**
+   * Open the settings panel, positioned near where the menu was
+   * (same coordinates the menu popup used). Closes the menu so
+   * the two don't visually overlap.
+   *
+   * Triggered by the 'settings' menu-action, which fires when the
+   * user clicks "Settings..." in the menu popup.
+   */
+  private OpenSettings(): void {
+    this._MenuButtons.open = false;
+    this._SettingsPanel.pageX = this._MenuButtons.pageX;
+    this._SettingsPanel.pageY = this._MenuButtons.pageY;
+    this._SettingsPanel.currentTheme = this._Options.Theme;
+    this._SettingsPanel.muted = this._Options.MuteSounds;
+    this._SettingsPanel.vibrateDuration = this._Options.VirtualKeyboardVibrateDuration;
+    this._SettingsPanel.open = true;
+  }
+
+  /**
+   * Switch the active theme at runtime. Updates the `data-theme`
+   * attribute on the container, the menu popup, and the settings
+   * panel — all the places we set it at construction time.
+   *
+   * Wired to the settings panel's `settings-theme-change` event.
+   * Persistence (localStorage write) happens in the event handler;
+   * this method just changes what's visible on the page.
+   */
+  private ApplyTheme(theme: string): void {
+    this._Options.Theme = theme;
+    this._fTelnetContainer.setAttribute('data-theme', theme);
+    this._MenuButtons.setAttribute('data-theme', theme);
+    this._SettingsPanel.setAttribute('data-theme', theme);
   }
 
   /**

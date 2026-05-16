@@ -28,6 +28,7 @@ describe('fTelnetOptions', () => {
     expect(opts.SendLocation).toBe(true);
     expect(opts.SkipRedrawWhenSameFontSize).toBe(false);
     expect(opts.SplashScreen).toBe('');
+    expect(opts.MuteSounds).toBe(false);
     expect(opts.Theme).toBe('classic');
     expect(opts.VirtualKeyboardVibrateDuration).toBe(25);
     expect(opts.WebSocketUrlPath).toBe('');

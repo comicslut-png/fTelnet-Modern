@@ -374,3 +374,123 @@
      them), but a faint tint helps locate the cursor. */
   background-color: #cccccc;
 }
+
+/* ──────────────────────────────────────────────────────────
+   Settings panel (Phase 3 Stage 2)
+
+   Lives at the top of the z-stack, like the menu popup. Default
+   styles are deliberately plain — the panel inherits theme
+   variables and looks like the surrounding chrome.
+   ────────────────────────────────────────────────────────── */
+
+.fTelnetSettingsPanel {
+  background-color: var(--ft-popup-bg);
+  border: 1px solid var(--ft-popup-border);
+  color: var(--ft-popup-fg);
+  font: var(--ft-ui-font);
+  min-width: 240px;
+  padding: 12px;
+  position: absolute;
+  text-shadow: var(--ft-ui-text-shadow);
+  /* Sits above the menu popup; the menu may still be open when
+     Settings... is clicked, though fTelnetClient closes it. */
+  z-index: 1600;
+}
+
+/* dos-classic: bevel the panel container, like the popup. */
+[data-theme='dos-classic'] .fTelnetSettingsPanel {
+  border-color: var(--ft-bevel-light) var(--ft-bevel-outer-dark) var(--ft-bevel-outer-dark)
+    var(--ft-bevel-light);
+  border-width: 2px;
+  box-shadow: inset 1px 1px 0 0 var(--ft-bevel-light),
+    inset -1px -1px 0 0 var(--ft-bevel-shadow);
+}
+
+.fTelnetSettingsPanelHeader {
+  font-weight: bold;
+  font-size: 1.1em;
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+/* dos-classic: header gets the classic Windows-3.1 blue title bar */
+[data-theme='dos-classic'] .fTelnetSettingsPanelHeader {
+  background-color: #000080;
+  color: #ffffff;
+  font-weight: bold;
+  margin: -8px -8px 8px -8px;
+  padding: 4px 8px;
+  text-align: left;
+}
+
+.fTelnetSettingsPanelGroup {
+  border: 1px solid var(--ft-ui-border-soft);
+  margin: 0 0 8px;
+  padding: 8px;
+}
+
+[data-theme='dos-classic'] .fTelnetSettingsPanelGroup {
+  /* Grouped fieldset gets a sunken bevel — TUI style */
+  border-color: var(--ft-bevel-shadow) var(--ft-bevel-light) var(--ft-bevel-light)
+    var(--ft-bevel-shadow);
+  border-width: 2px;
+}
+
+.fTelnetSettingsPanelGroup legend {
+  padding: 0 4px;
+}
+
+.fTelnetSettingsPanelOption {
+  cursor: pointer;
+  display: block;
+  padding: 2px 0;
+}
+
+.fTelnetSettingsPanelNumber {
+  border: var(--ft-button-border-width) solid var(--ft-ui-border);
+  font: var(--ft-ui-font);
+  width: 60px;
+}
+
+[data-theme='dos-classic'] .fTelnetSettingsPanelNumber {
+  /* Sunken bevel for the number input */
+  border-color: var(--ft-bevel-shadow) var(--ft-bevel-light) var(--ft-bevel-light)
+    var(--ft-bevel-shadow);
+  border-width: 2px;
+  background-color: var(--ft-ui-bg);
+}
+
+.fTelnetSettingsPanelFooter {
+  margin-top: 8px;
+  text-align: right;
+}
+
+.fTelnetSettingsPanelClose {
+  background-color: var(--ft-popup-button-bg);
+  border: var(--ft-button-border-width) solid var(--ft-popup-button-border);
+  border-radius: var(--ft-button-radius);
+  color: var(--ft-popup-button-fg);
+  cursor: pointer;
+  display: inline-block;
+  font: var(--ft-ui-font);
+  padding: var(--ft-button-padding);
+  text-decoration: none;
+}
+
+[data-theme='dos-classic'] .fTelnetSettingsPanelClose {
+  border-color: var(--ft-bevel-light) var(--ft-bevel-outer-dark) var(--ft-bevel-outer-dark)
+    var(--ft-bevel-light);
+  box-shadow: inset 1px 1px 0 0 var(--ft-bevel-light),
+    inset -1px -1px 0 0 var(--ft-bevel-shadow);
+}
+
+[data-theme='dos-classic'] .fTelnetSettingsPanelClose:active {
+  border-color: var(--ft-bevel-outer-dark) var(--ft-bevel-light) var(--ft-bevel-light)
+    var(--ft-bevel-outer-dark);
+  box-shadow: inset 1px 1px 0 0 var(--ft-bevel-shadow),
+    inset -1px -1px 0 0 var(--ft-bevel-light);
+}
+
+[data-theme='dos-classic'] .fTelnetSettingsPanelClose:hover {
+  background-color: #cccccc;
+}

@@ -60,6 +60,18 @@ export class fTelnetOptions {
   public SkipRedrawWhenSameFontSize = false;
   public SplashScreen = '';
   /**
+   * Mute the PC-speaker bell emulation. When true, `Crt.PlaySound()`
+   * early-returns without scheduling a Web Audio oscillator. Useful
+   * for users who don't want the bell from pasting or BBS-side bell
+   * characters.
+   *
+   * Default false (sounds enabled). The settings panel exposes a
+   * toggle, and the chosen value persists across reloads via
+   * localStorage. The default here is the embed-time fallback when
+   * localStorage doesn't have a saved preference.
+   */
+  public MuteSounds = false;
+  /**
    * Visual theme for the chrome around the BBS canvas (status bar,
    * menu popup, focus warning, scrollback bar, virtual keyboard).
    * The Crt canvas itself is not affected — the BBS controls its
@@ -78,6 +90,11 @@ export class fTelnetOptions {
    * the fTelnetClient. The theme is applied as a `data-theme`
    * attribute on the container; CSS variables in `ftelnet.css`
    * key off the attribute to switch palettes.
+   *
+   * The settings panel exposes a runtime theme picker, and the
+   * user's choice persists across reloads via localStorage.
+   * Options.Theme is the embed-time default when localStorage
+   * has no saved preference.
    */
   public Theme = 'classic';
   public VirtualKeyboardVibrateDuration = 25;

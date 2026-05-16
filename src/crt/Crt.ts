@@ -195,6 +195,14 @@ export class Crt implements AnsiTarget {
   // a console warning. We construct it lazily on first PlaySound call
   // instead. As of late 2024, every browser supports this pattern.
   private _audioContext: AudioContext | undefined;
+  /**
+   * When true, PlaySound silently drops requests (no queueing, no
+   * oscillator scheduling, no audible bell). Phase 3 Stage 2 added
+   * this for the settings panel's mute toggle. Driven via the
+   * `Muted` getter/setter — fTelnetClient updates it from the
+   * settings panel's event payload.
+   */
+  private _muted = false;
   private readonly _playSoundQueue: Point[] = [];
 
   // PETSCII control bytes that must flush the output buffer before
@@ -1771,11 +1779,36 @@ export class Crt implements AnsiTarget {
    * the "AudioContext not created on user gesture" console warning
    * that every browser prints when the eager construction would have
    * happened during page load.
+   *
+   * When `Muted` is true the call returns immediately — nothing is
+   * queued, no oscillator is created. The Phase 3 Stage 2 settings
+   * panel exposes this to users tired of paste-induced bell streams.
    */
   public PlaySound(freq: number, duration: number): void {
+    if (this._muted) {
+      return;
+    }
     this._playSoundQueue.push(new Point(freq, duration));
     if (this._playSoundQueue.length === 1) {
       this.playNextSound();
+    }
+  }
+
+  /**
+   * Read or write the mute flag. When set to true, also drains any
+   * currently-queued sounds so existing pending oscillators don't
+   * play after the user mutes. Phase 3 Stage 2.
+   */
+  public get Muted(): boolean {
+    return this._muted;
+  }
+
+  public set Muted(value: boolean) {
+    this._muted = value;
+    if (value) {
+      // Drop any queued bells so the user doesn't get a tail of
+      // sounds after pressing mute.
+      this._playSoundQueue.length = 0;
     }
   }
 
