@@ -41,7 +41,15 @@ import { FileRecord, YModemReceive, YModemSend } from '../filetransfer/index.js'
 // import the @customElement registrations never run in production
 // builds and <f-focus-warning> tags render as empty inline elements.
 import '../components/index.js';
-import { FFocusWarning, FScrollbackBar, FStatusBar, type MenuClickDetail } from '../components/index.js';
+import {
+  FFocusWarning,
+  FMenuPopup,
+  FScrollbackBar,
+  FStatusBar,
+  type MenuActionDetail,
+  type MenuClickDetail,
+  type ScreenSizeChangeDetail,
+} from '../components/index.js';
 import { fTelnetOptions } from './fTelnetOptions.js';
 import { VirtualKeyboard } from './VirtualKeyboard.js';
 
@@ -92,11 +100,14 @@ import { VirtualKeyboard } from './VirtualKeyboard.js';
  *
  *   - `OnMenuButtonClick(null)` was a call site passing null where
  *     MouseEvent was declared. Phase 1 fixed this by widening the
- *     parameter type to `MouseEvent | null`. Phase 2's <f-status-bar>
- *     migration widened it further to `{ pageX, pageY } | null`
- *     since the body only uses those two fields and the component
- *     now dispatches a MenuClickDetail object rather than the raw
- *     MouseEvent.
+ *     parameter type to `MouseEvent | null`. Phase 2 Stage 4
+ *     widened it further to `{ pageX, pageY } | null` since the
+ *     <f-status-bar> component dispatches a MenuClickDetail
+ *     object rather than the raw MouseEvent. Phase 2 Stage 5
+ *     narrowed back to non-null `{ pageX, pageY }` once the
+ *     <f-menu-popup> component took over: the screen-size-change
+ *     handler now closes the popup directly via `.open = false`,
+ *     so the null branch no longer has callers.
  *
  *   - `!window.cordova` guards dropped. Cordova support was already
  *     removed from DetectMobileBrowser in an earlier delta, so the
@@ -143,7 +154,7 @@ export class fTelnetClient {
    * Cleared back to 0 by the fetch's success/error handlers.
    */
   private _LoadingProxySettings = 0;
-  private _MenuButtons!: HTMLDivElement;
+  private _MenuButtons!: FMenuPopup;
   private _RIP!: RIP;
   private _ScrollbackBar!: FScrollbackBar;
   /**
@@ -455,146 +466,30 @@ export class fTelnetClient {
     });
     this._fTelnetContainer.appendChild(this._StatusBar);
 
-    // ── Menu popup (table of action buttons) ──
-    this._MenuButtons = document.createElement('div');
-    this._MenuButtons.className = 'fTelnetMenuButtons';
-    const MenuButtonsTable: HTMLTableElement = document.createElement('table');
+    // ── Menu popup (action buttons + screen-size dropdown) ──
+    // Lit component <f-menu-popup>. The largest piece of UI
+    // chrome refactored in Phase 2: replaces ~205 lines of
+    // imperative DOM construction in Phase 1, plus 8 scattered
+    // `this._MenuButtons.style.display = 'none'` lines across
+    // the public action methods (now `this._MenuButtons.open = false`).
+    //
+    // The component dispatches a single `menu-action` event with
+    // a typed action name in the detail. We dispatch via a
+    // switch statement on action — clearer than 8 separate
+    // addEventListener calls.
+    //
+    // The screen-size dropdown emits its own `screen-size-change`
+    // event since it carries data (new dimensions).
+    //
+    // Conditional rows (Copy/Paste, View Scrollback) are
+    // controlled via `showCopyPaste` and `showScrollback`
+    // properties — fTelnetClient still owns the conditional
+    // logic (DetectMobileBrowser, _UseModernScrollback), just
+    // forwards the result to the component.
 
-    // Row 1: Connect / Disconnect (always present).
-    const MenuButtonsRow1: HTMLTableRowElement = document.createElement('tr');
-    const MenuButtonsRow1Cell1: HTMLTableCellElement = document.createElement('td');
-    const MenuButtonsConnect: HTMLAnchorElement = document.createElement('a');
-    MenuButtonsConnect.href = '#';
-    MenuButtonsConnect.innerHTML = 'Connect';
-    MenuButtonsConnect.addEventListener('click', (me: MouseEvent): boolean => {
-      this.Connect();
-      me.preventDefault();
-      return false;
-    });
-    MenuButtonsRow1Cell1.appendChild(MenuButtonsConnect);
-    MenuButtonsRow1.appendChild(MenuButtonsRow1Cell1);
-    const MenuButtonsRow1Cell2: HTMLTableCellElement = document.createElement('td');
-    const MenuButtonsDisconnect: HTMLAnchorElement = document.createElement('a');
-    MenuButtonsDisconnect.href = '#';
-    MenuButtonsDisconnect.innerHTML = 'Disconnect';
-    MenuButtonsDisconnect.addEventListener('click', (me: MouseEvent): boolean => {
-      this.Disconnect(true);
-      me.preventDefault();
-      return false;
-    });
-    MenuButtonsRow1Cell2.appendChild(MenuButtonsDisconnect);
-    MenuButtonsRow1.appendChild(MenuButtonsRow1Cell2);
-    MenuButtonsTable.appendChild(MenuButtonsRow1);
-
-    // Row 2: Copy / Paste — desktop only (touch UI doesn't have
-    // meaningful click-and-drag selection in our canvas).
-    if (!DetectMobileBrowser.IsMobile) {
-      const MenuButtonsRow2: HTMLTableRowElement = document.createElement('tr');
-      const MenuButtonsRow2Cell1: HTMLTableCellElement = document.createElement('td');
-      const MenuButtonsCopy: HTMLAnchorElement = document.createElement('a');
-      MenuButtonsCopy.href = '#';
-      MenuButtonsCopy.innerHTML = 'Copy';
-      MenuButtonsCopy.addEventListener('click', (me: MouseEvent): boolean => {
-        this.ClipboardCopy();
-        me.preventDefault();
-        return false;
-      });
-      MenuButtonsRow2Cell1.appendChild(MenuButtonsCopy);
-      MenuButtonsRow2.appendChild(MenuButtonsRow2Cell1);
-      const MenuButtonsRow2Cell2: HTMLTableCellElement = document.createElement('td');
-      const MenuButtonsPaste: HTMLAnchorElement = document.createElement('a');
-      MenuButtonsPaste.href = '#';
-      MenuButtonsPaste.innerHTML = 'Paste';
-      MenuButtonsPaste.addEventListener('click', (me: MouseEvent): boolean => {
-        this.ClipboardPaste();
-        me.preventDefault();
-        return false;
-      });
-      MenuButtonsRow2Cell2.appendChild(MenuButtonsPaste);
-      MenuButtonsRow2.appendChild(MenuButtonsRow2Cell2);
-      MenuButtonsTable.appendChild(MenuButtonsRow2);
-    }
-
-    // Row 3: Upload / Download (always present now that YModem
-    // is always available — the original had a typeof-undefined
-    // check that's been removed since YModemSend/Receive are
-    // proper imports rather than maybe-globals).
-    {
-      const MenuButtonsRow3: HTMLTableRowElement = document.createElement('tr');
-      const MenuButtonsRow3Cell1: HTMLTableCellElement = document.createElement('td');
-      const MenuButtonsUpload: HTMLAnchorElement = document.createElement('a');
-      MenuButtonsUpload.href = '#';
-      MenuButtonsUpload.innerHTML = 'Upload';
-      MenuButtonsUpload.addEventListener('click', (me: MouseEvent): boolean => {
-        this.Upload();
-        me.preventDefault();
-        return false;
-      });
-      MenuButtonsRow3Cell1.appendChild(MenuButtonsUpload);
-      MenuButtonsRow3.appendChild(MenuButtonsRow3Cell1);
-      const MenuButtonsRow3Cell2: HTMLTableCellElement = document.createElement('td');
-      const MenuButtonsDownload: HTMLAnchorElement = document.createElement('a');
-      MenuButtonsDownload.href = '#';
-      MenuButtonsDownload.innerHTML = 'Download';
-      MenuButtonsDownload.addEventListener('click', (me: MouseEvent): boolean => {
-        this.Download();
-        me.preventDefault();
-        return false;
-      });
-      MenuButtonsRow3Cell2.appendChild(MenuButtonsDownload);
-      MenuButtonsRow3.appendChild(MenuButtonsRow3Cell2);
-      MenuButtonsTable.appendChild(MenuButtonsRow3);
-    }
-
-    // Row 4: Keyboard / Full Screen. Original guarded with
-    // `if (!window.cordova)` — cordova is gone now so the guard
-    // is dropped.
-    {
-      const MenuButtonsRow4: HTMLTableRowElement = document.createElement('tr');
-      const MenuButtonsRow4Cell1: HTMLTableCellElement = document.createElement('td');
-      const MenuButtonsKeyboard: HTMLAnchorElement = document.createElement('a');
-      MenuButtonsKeyboard.href = '#';
-      MenuButtonsKeyboard.innerHTML = 'Keyboard';
-      MenuButtonsKeyboard.addEventListener('click', (me: MouseEvent): boolean => {
-        this.VirtualKeyboardVisible = !this.VirtualKeyboardVisible;
-        me.preventDefault();
-        return false;
-      });
-      MenuButtonsRow4Cell1.appendChild(MenuButtonsKeyboard);
-      MenuButtonsRow4.appendChild(MenuButtonsRow4Cell1);
-      const MenuButtonsRow4Cell2: HTMLTableCellElement = document.createElement('td');
-      const MenuButtonsFullScreen: HTMLAnchorElement = document.createElement('a');
-      MenuButtonsFullScreen.href = '#';
-      MenuButtonsFullScreen.innerHTML = 'Full&nbsp;Screen';
-      MenuButtonsFullScreen.addEventListener('click', (me: MouseEvent): boolean => {
-        this.FullScreenToggle();
-        me.preventDefault();
-        return false;
-      });
-      MenuButtonsRow4Cell2.appendChild(MenuButtonsFullScreen);
-      MenuButtonsRow4.appendChild(MenuButtonsRow4Cell2);
-      MenuButtonsTable.appendChild(MenuButtonsRow4);
-    }
-
-    // Row 5: View Scrollback Buffer (classic-scrollback only).
-    if (!this._UseModernScrollback) {
-      const MenuButtonsRow5: HTMLTableRowElement = document.createElement('tr');
-      const MenuButtonsRow5Cell1: HTMLTableCellElement = document.createElement('td');
-      MenuButtonsRow5Cell1.colSpan = 2;
-      const MenuButtonsScrollback: HTMLAnchorElement = document.createElement('a');
-      MenuButtonsScrollback.href = '#';
-      MenuButtonsScrollback.innerHTML = 'View Scrollback Buffer';
-      MenuButtonsScrollback.addEventListener('click', (me: MouseEvent): boolean => {
-        this.EnterScrollback();
-        me.preventDefault();
-        return false;
-      });
-      MenuButtonsRow5Cell1.appendChild(MenuButtonsScrollback);
-      MenuButtonsRow5.appendChild(MenuButtonsRow5Cell1);
-      MenuButtonsTable.appendChild(MenuButtonsRow5);
-    }
-
-    // Row 6: Screen-size dropdown. Common BBS sizes from SyncTerm.
+    // Compute the screen-size dropdown options, including
+    // prepending the current size if it's not one of the
+    // standard 15. Logic preserved verbatim from Phase 1.
     const SupportedScreenSizes = [
       '80x25',
       '80x28',
@@ -617,49 +512,68 @@ export class fTelnetClient {
     if (SupportedScreenSizes.indexOf(CurrentScreenSize) === -1) {
       SupportedScreenSizes.unshift(CurrentScreenSize);
     }
-    const MenuButtonsRow6: HTMLTableRowElement = document.createElement('tr');
-    const MenuButtonsRow6Cell1: HTMLTableCellElement = document.createElement('td');
-    MenuButtonsRow6Cell1.colSpan = 2;
-    const MenuButtonsScreenSize: HTMLSelectElement = document.createElement('select');
-    for (let i = 0; i < SupportedScreenSizes.length; i++) {
-      const ColumnsRows = SupportedScreenSizes[i]!.split('x');
-      const option: HTMLOptionElement = document.createElement('option');
-      option.text = ColumnsRows[0] + ' columns x ' + ColumnsRows[1] + ' rows';
-      if (SupportedScreenSizes[i] === '132x37') {
-        option.text += ' (16:9)';
-      } else if (SupportedScreenSizes[i] === '132x52') {
-        option.text += ' (5:4)';
+
+    this._MenuButtons = document.createElement('f-menu-popup') as FMenuPopup;
+    this._MenuButtons.showCopyPaste = !DetectMobileBrowser.IsMobile;
+    this._MenuButtons.showScrollback = !this._UseModernScrollback;
+    this._MenuButtons.currentScreenSize = CurrentScreenSize;
+    this._MenuButtons.supportedScreenSizes = SupportedScreenSizes;
+
+    this._MenuButtons.addEventListener('menu-action', (e: Event): void => {
+      const detail = (e as CustomEvent<MenuActionDetail>).detail;
+      switch (detail.action) {
+        case 'connect':
+          this.Connect();
+          break;
+        case 'disconnect':
+          this.Disconnect(true);
+          break;
+        case 'copy':
+          this.ClipboardCopy();
+          break;
+        case 'paste':
+          // ClipboardPaste is async; fire-and-forget matches the
+          // original's synchronous click handler semantics.
+          void this.ClipboardPaste();
+          break;
+        case 'upload':
+          this.Upload();
+          break;
+        case 'download':
+          this.Download();
+          break;
+        case 'keyboard-toggle':
+          this.VirtualKeyboardVisible = !this.VirtualKeyboardVisible;
+          break;
+        case 'fullscreen':
+          this.FullScreenToggle();
+          break;
+        case 'enter-scrollback':
+          this.EnterScrollback();
+          break;
       }
-      option.value = SupportedScreenSizes[i]!;
-      if (SupportedScreenSizes[i] === CurrentScreenSize) {
-        option.selected = true;
-      }
-      MenuButtonsScreenSize.appendChild(option);
-    }
-    MenuButtonsScreenSize.addEventListener('change', (e: Event): void => {
-      const ColumnsRows = (e.target as HTMLSelectElement).value.split('x');
-      this._Crt.SetScreenSize(parseInt(ColumnsRows[0]!, 10), parseInt(ColumnsRows[1]!, 10));
+    });
+
+    this._MenuButtons.addEventListener('screen-size-change', (e: Event): void => {
+      const detail = (e as CustomEvent<ScreenSizeChangeDetail>).detail;
+      this._Crt.SetScreenSize(detail.columns, detail.rows);
       this._Crt.SetFont(this._Crt.Font.Name);
-      // Close the popup. OnMenuButtonClick accepts null for "no
-      // mouse event" (used here from a non-mouse event).
-      this.OnMenuButtonClick(null);
+      // Close the popup. The dropdown change isn't a click on
+      // the menu button, so we close without repositioning.
+      this._MenuButtons.open = false;
 
       // Persist the choice for next visit.
       try {
-        window.localStorage.setItem('ScreenColumns', ColumnsRows[0]!);
-        window.localStorage.setItem('ScreenRows', ColumnsRows[1]!);
+        window.localStorage.setItem('ScreenColumns', detail.columns.toString());
+        window.localStorage.setItem('ScreenRows', detail.rows.toString());
       } catch {
         // Ignore — browser doesn't support localStorage.
       }
     });
-    MenuButtonsRow6Cell1.appendChild(MenuButtonsScreenSize);
-    MenuButtonsRow6.appendChild(MenuButtonsRow6Cell1);
-    MenuButtonsTable.appendChild(MenuButtonsRow6);
 
-    this._MenuButtons.appendChild(MenuButtonsTable);
-    this._MenuButtons.style.display = 'none';
-    // TODO (preserved): use a shared z-index constant rather than a magic number.
-    this._MenuButtons.style.zIndex = '1500';
+    // Popup is attached to document.body (not _fTelnetContainer)
+    // so it can escape the container's overflow clipping. Same
+    // as the original.
     document.body.appendChild(this._MenuButtons);
 
     // ── Virtual keyboard ──
@@ -773,7 +687,7 @@ export class fTelnetClient {
    */
   public ClipboardCopy(): void {
     if (this._MenuButtons !== undefined) {
-      this._MenuButtons.style.display = 'none';
+      this._MenuButtons.open = false;
     }
     // eslint-disable-next-line no-alert
     alert('Click and drag your mouse over the text you want to copy');
@@ -796,7 +710,7 @@ export class fTelnetClient {
    */
   public async ClipboardPaste(): Promise<void> {
     if (this._MenuButtons !== undefined) {
-      this._MenuButtons.style.display = 'none';
+      this._MenuButtons.open = false;
     }
 
     if (this._Connection === undefined || !this._Connection.connected) {
@@ -847,7 +761,7 @@ export class fTelnetClient {
     }
 
     if (this._MenuButtons !== undefined) {
-      this._MenuButtons.style.display = 'none';
+      this._MenuButtons.open = false;
     }
 
     if (this._Connection !== undefined && this._Connection.connected) {
@@ -958,7 +872,7 @@ export class fTelnetClient {
    */
   public Disconnect(prompt: boolean): boolean {
     if (this._MenuButtons !== undefined) {
-      this._MenuButtons.style.display = 'none';
+      this._MenuButtons.open = false;
     }
 
     if (this._Connection === undefined || !this._Connection.connected) {
@@ -990,7 +904,7 @@ export class fTelnetClient {
    */
   public Download(): void {
     if (this._MenuButtons !== undefined) {
-      this._MenuButtons.style.display = 'none';
+      this._MenuButtons.open = false;
     }
 
     if (this._Connection === undefined || !this._Connection.connected) {
@@ -1033,7 +947,7 @@ export class fTelnetClient {
    */
   public EnterScrollback(): void {
     if (this._MenuButtons !== undefined) {
-      this._MenuButtons.style.display = 'none';
+      this._MenuButtons.open = false;
     }
 
     if (this._ScrollbackBar !== undefined && !this._ScrollbackBar.visible) {
@@ -1068,7 +982,7 @@ export class fTelnetClient {
    */
   public FullScreenToggle(fullscreen: boolean | null = null): void {
     if (this._MenuButtons !== undefined) {
-      this._MenuButtons.style.display = 'none';
+      this._MenuButtons.open = false;
     }
 
     if (
@@ -1556,22 +1470,28 @@ export class fTelnetClient {
    * without repositioning (used after a dropdown selection).
    */
   /**
-   * Show/hide the popup menu. Pass null as the event arg to close
-   * without repositioning (used after a dropdown selection).
+   * Toggle the popup menu open/closed in response to a click on
+   * the status bar's Menu button. Sets `pageX`/`pageY` on the
+   * component so it positions itself near the click.
    *
-   * The parameter is typed structurally as `{ pageX, pageY }`
-   * rather than `MouseEvent` so it accepts both the MouseEvent
-   * delivered from a direct user click (no longer used now that
-   * the status bar is a component) and the structured
-   * MenuClickDetail dispatched by `<f-status-bar>`. The body only
-   * uses these two fields.
+   * History: Phase 1 widened this from `MouseEvent` to
+   * `MouseEvent | null` because the screen-size dropdown's
+   * `change` handler called it with null to mean "close without
+   * repositioning." Phase 2 Stage 4 widened further to
+   * `{ pageX, pageY } | null` because the status bar now
+   * dispatches a structured MenuClickDetail rather than the raw
+   * MouseEvent. Phase 2 Stage 5 narrowed back to non-null
+   * `{ pageX, pageY }`: the screen-size-change handler now
+   * closes the popup directly via `this._MenuButtons.open = false`,
+   * so the null branch no longer has any callers.
    */
-  private OnMenuButtonClick(e: { pageX: number; pageY: number } | null): void {
-    this._MenuButtons.style.display =
-      this._MenuButtons.style.display === 'none' ? 'block' : 'none';
-    if (e !== null) {
-      this._MenuButtons.style.left = e.pageX + 'px';
-      this._MenuButtons.style.top = e.pageY - this._MenuButtons.clientHeight + 'px';
+  private OnMenuButtonClick(e: { pageX: number; pageY: number }): void {
+    if (this._MenuButtons.open) {
+      this._MenuButtons.open = false;
+    } else {
+      this._MenuButtons.pageX = e.pageX;
+      this._MenuButtons.pageY = e.pageY;
+      this._MenuButtons.open = true;
     }
   }
 
@@ -1661,7 +1581,7 @@ export class fTelnetClient {
    */
   public Upload(): void {
     if (this._MenuButtons !== undefined) {
-      this._MenuButtons.style.display = 'none';
+      this._MenuButtons.open = false;
     }
 
     if (this._Connection === undefined || !this._Connection.connected) {
@@ -1714,7 +1634,7 @@ export class fTelnetClient {
 
   public set VirtualKeyboardVisible(value: boolean) {
     if (this._MenuButtons !== undefined) {
-      this._MenuButtons.style.display = 'none';
+      this._MenuButtons.open = false;
     }
 
     this._Options.VirtualKeyboardVisible = value;

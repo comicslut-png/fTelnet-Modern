@@ -15,5 +15,11 @@
  *     import '@components/FFocusWarning.js';
  */
 export { FFocusWarning } from './FFocusWarning.js';
+export {
+  FMenuPopup,
+  type MenuActionDetail,
+  type MenuActionName,
+  type ScreenSizeChangeDetail,
+} from './FMenuPopup.js';
 export { FScrollbackBar } from './FScrollbackBar.js';
 export { FStatusBar, type MenuClickDetail } from './FStatusBar.js';

@@ -52,8 +52,11 @@ describe('fTelnetClient', () => {
     // document.body (the popup menu attaches there).
     document.body.removeChild(scriptTag);
     document.body.removeChild(container);
-    // Drop any straggler menu popups added directly to body.
-    for (const el of Array.from(document.getElementsByClassName('fTelnetMenuButtons'))) {
+    // Drop any straggler menu popups added directly to body. Phase 2
+    // Stage 5 turned the menu popup into <f-menu-popup>, so we look
+    // for that tag (the inner .fTelnetMenuButtons div renders one
+    // microtask later and would miss synchronous lookups anyway).
+    for (const el of Array.from(document.getElementsByTagName('f-menu-popup'))) {
       el.remove();
     }
     // Drop the CSS link injections too.
@@ -92,6 +95,20 @@ describe('fTelnetClient', () => {
       // test file with `await updateComplete`.
       const focusWarnings = container.getElementsByTagName('f-focus-warning');
       expect(focusWarnings.length).toBe(1);
+    });
+
+    it('attaches the menu popup directly to document.body (not the container)', () => {
+      createdClient = new fTelnetClient('fTelnetContainer', new fTelnetOptions());
+
+      // Menu popup escapes the container's overflow clipping by
+      // being a direct child of document.body. The inner
+      // .fTelnetMenuButtons div renders one microtask later, so
+      // we check for the custom-element tag.
+      const popupsInContainer = container.getElementsByTagName('f-menu-popup');
+      expect(popupsInContainer.length).toBe(0);
+
+      const popupsInBody = document.body.getElementsByTagName('f-menu-popup');
+      expect(popupsInBody.length).toBe(1);
     });
 
     it('injects the fTelnetCss link if missing', () => {
