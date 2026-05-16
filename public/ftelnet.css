@@ -1,132 +1,345 @@
-﻿.fTelnetContainer {
-    box-sizing: content-box;
-    margin: auto;
+/*
+  fTelnet: theme-aware stylesheet
+  Copyright (C) Rick Parrish, R&M Software
+
+  Phase 3 introduces CSS custom properties (variables) for all
+  chrome colors, fonts, spacing, and shape. Themes override the
+  variables; the base rules below read them.
+
+  Active theme is controlled by `data-theme` on the fTelnet
+  container (and on the menu popup, since the popup escapes the
+  container by living on body for overflow reasons).
+
+  Built-in themes:
+    - classic     (default) — the original Phase 1 look
+    - dos-classic — Windows 3.1-era gray bevels, CGA accents
+*/
+
+/* ──────────────────────────────────────────────────────────
+   Theme: classic (default)
+
+   Targets: explicit `data-theme="classic"`, empty data-theme,
+   or no data-theme attribute at all. The `:not()` patterns make
+   the classic theme the "default" without requiring callers to
+   set the attribute on every embed.
+   ────────────────────────────────────────────────────────── */
+[data-theme='classic'],
+.fTelnetContainer:not([data-theme]),
+.fTelnetMenuButtons:not([data-theme]) {
+  /* Colors */
+  --ft-ui-bg: white;
+  --ft-ui-fg: black;
+  --ft-ui-border: #000;
+  --ft-ui-border-soft: #666;
+
+  --ft-status-active-bg: blue;
+  --ft-status-active-fg: white;
+  --ft-status-active-border: blue;
+
+  --ft-status-error-bg: red;
+  --ft-status-error-fg: white;
+  --ft-status-error-border: red;
+
+  --ft-focus-warning-bg: red;
+  --ft-focus-warning-fg: white;
+  --ft-focus-warning-border: red;
+
+  --ft-scrollback-bg: green;
+  --ft-scrollback-fg: white;
+  --ft-scrollback-border: green;
+  --ft-scrollback-link-fg: white;
+
+  --ft-popup-bg: white;
+  --ft-popup-fg: black;
+  --ft-popup-border: #666;
+  --ft-popup-button-bg: white;
+  --ft-popup-button-fg: black;
+  --ft-popup-button-border: black;
+
+  /* Typography */
+  --ft-ui-font: 14px Arial, Helvetica, sans-serif;
+  --ft-ui-text-shadow: 0 1px 0 rgba(0, 0, 0, 0.1);
+
+  /* Shape & spacing */
+  --ft-button-radius: 5px;
+  --ft-button-border-width: 1px;
+  --ft-button-padding: 8px 12px;
+
+  /* Bevel — classic theme has no bevel, but vars must exist so
+     the base rules can reference them unconditionally. The
+     dos-classic theme overrides these. */
+  --ft-bevel-light: transparent;
+  --ft-bevel-shadow: transparent;
+  --ft-bevel-outer-dark: transparent;
 }
 
-    .fTelnetContainer .fTelnetButtons,
-    .fTelnetContainer .fTelnetScrollback,
-    .fTelnetContainer .fTelnetFocusWarning,
-    .fTelnetContainer .fTelnetClientContainer,
-    .fTelnetContainer .fTelnetStatusBar {
-        box-sizing: content-box;
-    }
+/* ──────────────────────────────────────────────────────────
+   Theme: dos-classic (Windows 3.1-era gray bevels + CGA accents)
+   ────────────────────────────────────────────────────────── */
+[data-theme='dos-classic'] {
+  /* The 25%-gray Windows 3.1 panel color. Every panel-shareware
+     program of '88-'95 used this exact shade (#c0c0c0); it's
+     recognizable on sight to anyone over 35. */
+  --ft-ui-bg: #c0c0c0;
+  --ft-ui-fg: #000000;
+  --ft-ui-border: #000000;
+  --ft-ui-border-soft: #808080;
 
-    .fTelnetContainer canvas {
-        display: block;
-        margin: auto;
-    }
+  /* Status bar: gray panel with a CGA-blue accent border.
+     Error state replaces blue with red. */
+  --ft-status-active-bg: #c0c0c0;
+  --ft-status-active-fg: #000000;
+  --ft-status-active-border: #000080; /* CGA dark blue */
+
+  --ft-status-error-bg: #c0c0c0;
+  --ft-status-error-fg: #800000;
+  --ft-status-error-border: #800000; /* CGA dark red */
+
+  /* Focus warning: yellow-on-black warning strip. DOS apps used
+     yellow heavily for "attention" callouts (e.g. PKZIP's
+     "OK to overwrite?" prompts). */
+  --ft-focus-warning-bg: #000000;
+  --ft-focus-warning-fg: #ffff00; /* CGA yellow */
+  --ft-focus-warning-border: #ffff00;
+
+  /* Scrollback bar: dark cyan / black, mimicking the Norton
+     Commander info bars. */
+  --ft-scrollback-bg: #008080; /* CGA dark cyan */
+  --ft-scrollback-fg: #ffffff;
+  --ft-scrollback-border: #008080;
+  --ft-scrollback-link-fg: #ffff00;
+
+  /* Popup menu: gray panel with beveled buttons. */
+  --ft-popup-bg: #c0c0c0;
+  --ft-popup-fg: #000000;
+  --ft-popup-border: #000000;
+  --ft-popup-button-bg: #c0c0c0;
+  --ft-popup-button-fg: #000000;
+  --ft-popup-button-border: transparent; /* bevels do the work */
+
+  /* Typography: keep system sans-serif (Win 3.1 used MS Sans
+     Serif, which on modern systems falls back to whatever the
+     system has). Bolder text-shadow killed. */
+  --ft-ui-font: 11px 'MS Sans Serif', Tahoma, Geneva, sans-serif;
+  --ft-ui-text-shadow: none;
+
+  /* Shape: square corners, slightly tighter padding. */
+  --ft-button-radius: 0;
+  --ft-button-border-width: 2px;
+  --ft-button-padding: 4px 12px;
+
+  /* Bevel colors — light edge on top/left, shadow on bottom/right.
+     The classic 4-color bevel for a "raised" element. */
+  --ft-bevel-light: #ffffff;
+  --ft-bevel-shadow: #808080;
+  --ft-bevel-outer-dark: #000000;
+}
+
+/* ──────────────────────────────────────────────────────────
+   Base styles — all read through CSS variables
+   ────────────────────────────────────────────────────────── */
+
+.fTelnetContainer {
+  box-sizing: content-box;
+  margin: auto;
+}
+
+.fTelnetContainer .fTelnetButtons,
+.fTelnetContainer .fTelnetScrollback,
+.fTelnetContainer .fTelnetFocusWarning,
+.fTelnetContainer .fTelnetClientContainer,
+.fTelnetContainer .fTelnetStatusBar {
+  box-sizing: content-box;
+}
+
+.fTelnetContainer canvas {
+  display: block;
+  margin: auto;
+}
 
 .fTelnetClientContainer {
-    border: 1px solid black;
-    position: relative;
-    margin: auto;
-}
-
-.fTelnetConnectButton {
-    background-color: white;
-    border: 1px solid black;
-    border-radius: 5px;
-    color: black;
-    display: inline-block;
-    font: 14px Arial, Helvetica, sans-serif;
-    margin-right: 10px;
-    padding: 8px 12px;
-    text-align: center;
-    text-decoration: none;
-    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--ft-ui-border);
+  position: relative;
+  margin: auto;
 }
 
 .fTelnetCrtCanvas {
-    cursor: text;
-    display: block;
-    margin: auto;
+  cursor: text;
+  display: block;
+  margin: auto;
 }
 
-.fTelnetFocusWarning {
-    background-color: red;
-    border: 1px solid red;
-    color: white;
-    font: 14px Arial, Helvetica, sans-serif;
-    margin: auto;
-    padding: 5px;
-    text-align: center;
-}
-
-.fTelnetMenuButton {
-    background-color: white;
-    border: 1px solid #666;
-    border-radius: 5px;
-    color: black;
-    display: inline-block;
-    margin-right: 10px;
-    padding: 8px 12px;
-    text-decoration: none;
-    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.1);
-}
-
-.fTelnetMenuButtons {
-    background-color: white;
-    border: 1px solid #666;
-    color: black;
-    margin-right: 10px;
-    padding: 8px 12px;
-    position: absolute;
-    text-decoration: none;
-    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.1);
-}
-
-    .fTelnetMenuButtons a {
-        background-color: white;
-        border: 1px solid black;
-        border-radius: 5px;
-        color: black;
-        display: block;
-        font: 14px Arial, Helvetica, sans-serif;
-        padding: 8px 12px;
-        text-align: center;
-        text-decoration: none;
-    }
-
-    .fTelnetMenuButtons select {
-        border: 1px solid black;
-        border-radius: 5px;
-        color: black;
-        display: block;
-        font: 14px Arial, Helvetica, sans-serif;
-        padding: 8px 12px;
-        width: 100%;
-    }
-
-    .fTelnetMenuButtons table {
-        background-color: white;
-    }
-
-    .fTelnetMenuButtons td {
-        padding: 2px;
-    }
-
-.fTelnetScrollback {
-    background-color: green;
-    border: 1px solid green;
-    color: white;
-    font: 14px Arial, Helvetica, sans-serif;
-    margin: auto;
-    padding: 5px;
-    text-align: center;
-}
-
-    .fTelnetScrollback a {
-        color: white;
-        padding: 0 5px;
-        text-decoration: none;
-    }
+/* ── Status bar ── */
 
 .fTelnetStatusBar {
-    background-color: blue;
-    border: 1px solid blue;
-    color: white;
-    font: 14px Arial, Helvetica, sans-serif;
-    margin: auto;
-    padding: 5px;
-    text-align: left;
+  background-color: var(--ft-status-active-bg);
+  border: var(--ft-button-border-width) solid var(--ft-status-active-border);
+  color: var(--ft-status-active-fg);
+  font: var(--ft-ui-font);
+  margin: auto;
+  padding: 5px;
+  text-align: left;
+}
+
+/* dos-classic: bevel the status bar (sunken / inverted bevel,
+   like an old TUI "info bar"). */
+[data-theme='dos-classic'] .fTelnetStatusBar {
+  border-top-color: var(--ft-bevel-shadow);
+  border-left-color: var(--ft-bevel-shadow);
+  border-bottom-color: var(--ft-bevel-light);
+  border-right-color: var(--ft-bevel-light);
+}
+
+.fTelnetMenuButton,
+.fTelnetConnectButton {
+  background-color: var(--ft-ui-bg);
+  border: var(--ft-button-border-width) solid var(--ft-ui-border);
+  border-radius: var(--ft-button-radius);
+  color: var(--ft-ui-fg);
+  display: inline-block;
+  font: var(--ft-ui-font);
+  margin-right: 10px;
+  padding: var(--ft-button-padding);
+  text-align: center;
+  text-decoration: none;
+  text-shadow: var(--ft-ui-text-shadow);
+  cursor: pointer;
+}
+
+/* dos-classic: beveled buttons. Border becomes the bevel; press
+   state inverts the bevel for a "pressed" look. */
+[data-theme='dos-classic'] .fTelnetMenuButton,
+[data-theme='dos-classic'] .fTelnetConnectButton {
+  border-color: var(--ft-bevel-light) var(--ft-bevel-outer-dark) var(--ft-bevel-outer-dark)
+    var(--ft-bevel-light);
+  box-shadow: inset 1px 1px 0 0 var(--ft-bevel-light),
+    inset -1px -1px 0 0 var(--ft-bevel-shadow);
+}
+
+[data-theme='dos-classic'] .fTelnetMenuButton:active,
+[data-theme='dos-classic'] .fTelnetConnectButton:active {
+  border-color: var(--ft-bevel-outer-dark) var(--ft-bevel-light) var(--ft-bevel-light)
+    var(--ft-bevel-outer-dark);
+  box-shadow: inset 1px 1px 0 0 var(--ft-bevel-shadow),
+    inset -1px -1px 0 0 var(--ft-bevel-light);
+}
+
+/* ── Focus warning ── */
+
+.fTelnetFocusWarning {
+  background-color: var(--ft-focus-warning-bg);
+  border: var(--ft-button-border-width) solid var(--ft-focus-warning-border);
+  color: var(--ft-focus-warning-fg);
+  font: var(--ft-ui-font);
+  margin: auto;
+  padding: 5px;
+  text-align: center;
+}
+
+/* ── Scrollback bar ── */
+
+.fTelnetScrollback {
+  background-color: var(--ft-scrollback-bg);
+  border: var(--ft-button-border-width) solid var(--ft-scrollback-border);
+  color: var(--ft-scrollback-fg);
+  font: var(--ft-ui-font);
+  margin: auto;
+  padding: 5px;
+  text-align: center;
+}
+
+.fTelnetScrollback a {
+  color: var(--ft-scrollback-link-fg);
+  padding: 0 5px;
+  text-decoration: none;
+}
+
+/* ── Menu popup ── */
+
+.fTelnetMenuButtons {
+  background-color: var(--ft-popup-bg);
+  border: 1px solid var(--ft-popup-border);
+  color: var(--ft-popup-fg);
+  margin-right: 10px;
+  padding: 8px 12px;
+  position: absolute;
+  text-decoration: none;
+  text-shadow: var(--ft-ui-text-shadow);
+  /* Phase 3 Stage 1: moved from inline style.zIndex='1500' in
+     fTelnetClient.ts to CSS. Same value. */
+  z-index: 1500;
+}
+
+/* dos-classic: bevel the popup container itself */
+[data-theme='dos-classic'] .fTelnetMenuButtons {
+  border-color: var(--ft-bevel-light) var(--ft-bevel-outer-dark) var(--ft-bevel-outer-dark)
+    var(--ft-bevel-light);
+  border-width: 2px;
+  box-shadow: inset 1px 1px 0 0 var(--ft-bevel-light),
+    inset -1px -1px 0 0 var(--ft-bevel-shadow);
+}
+
+.fTelnetMenuButtons a {
+  background-color: var(--ft-popup-button-bg);
+  border: var(--ft-button-border-width) solid var(--ft-popup-button-border);
+  border-radius: var(--ft-button-radius);
+  color: var(--ft-popup-button-fg);
+  display: block;
+  font: var(--ft-ui-font);
+  padding: var(--ft-button-padding);
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+/* dos-classic: bevel popup buttons too */
+[data-theme='dos-classic'] .fTelnetMenuButtons a {
+  border-color: var(--ft-bevel-light) var(--ft-bevel-outer-dark) var(--ft-bevel-outer-dark)
+    var(--ft-bevel-light);
+  box-shadow: inset 1px 1px 0 0 var(--ft-bevel-light),
+    inset -1px -1px 0 0 var(--ft-bevel-shadow);
+}
+
+[data-theme='dos-classic'] .fTelnetMenuButtons a:active {
+  border-color: var(--ft-bevel-outer-dark) var(--ft-bevel-light) var(--ft-bevel-light)
+    var(--ft-bevel-outer-dark);
+  box-shadow: inset 1px 1px 0 0 var(--ft-bevel-shadow),
+    inset -1px -1px 0 0 var(--ft-bevel-light);
+}
+
+.fTelnetMenuButtons select {
+  border: var(--ft-button-border-width) solid var(--ft-ui-border);
+  border-radius: var(--ft-button-radius);
+  color: var(--ft-ui-fg);
+  display: block;
+  font: var(--ft-ui-font);
+  padding: var(--ft-button-padding);
+  width: 100%;
+}
+
+/* dos-classic: sunken-bevel select (inverted from the buttons) */
+[data-theme='dos-classic'] .fTelnetMenuButtons select {
+  background-color: var(--ft-ui-bg);
+  border-color: var(--ft-bevel-shadow) var(--ft-bevel-light) var(--ft-bevel-light)
+    var(--ft-bevel-shadow);
+  border-width: 2px;
+}
+
+.fTelnetMenuButtons table {
+  background-color: var(--ft-popup-bg);
+}
+
+.fTelnetMenuButtons td {
+  padding: 2px;
+}
+
+/* ── Hover effects: classic has none; dos-classic adds a subtle
+      tint so modern mouse users can locate the cursor. ── */
+
+[data-theme='dos-classic'] .fTelnetMenuButton:hover,
+[data-theme='dos-classic'] .fTelnetConnectButton:hover,
+[data-theme='dos-classic'] .fTelnetMenuButtons a:hover {
+  /* Win 3.1 didn't have hover states (the focus model predated
+     them), but a faint tint helps locate the cursor. */
+  background-color: #cccccc;
 }

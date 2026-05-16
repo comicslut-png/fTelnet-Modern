@@ -290,14 +290,20 @@ export class FMenuPopup extends LitElement {
    * clientHeight after the first render to compute this; if
    * clientHeight is 0 (initial render before layout), we fall
    * back to placing the popup at pageY directly.
+   *
+   * Phase 3 Stage 1 note: the original code's `z-index: 1500` is
+   * now in ftelnet.css under the `.fTelnetMenuButtons` rule, so
+   * we don't include it in the inline style anymore. Removing
+   * the magic number from inline-JS code was a long-standing
+   * TODO; CSS is where it belongs.
    */
   private buildInlineStyle(): string {
     if (!this.open) {
-      return 'display: none; z-index: 1500;';
+      return 'display: none;';
     }
 
     const top = this.pageY - this.clientHeight;
-    return `display: block; left: ${this.pageX}px; top: ${top}px; z-index: 1500;`;
+    return `display: block; left: ${this.pageX}px; top: ${top}px;`;
   }
 
   /**

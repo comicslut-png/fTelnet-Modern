@@ -251,6 +251,13 @@ export class fTelnetClient {
       throw new Error(Message);
     }
 
+    // Apply the chosen theme as a data-attribute on the container.
+    // The CSS in ftelnet.css keys off `[data-theme="..."]` to swap
+    // colors, fonts, and bevel styles. The classic theme is the
+    // default for backward compatibility; callers opt into the
+    // dos-classic theme (or any future theme) via `Options.Theme`.
+    this._fTelnetContainer.setAttribute('data-theme', this._Options.Theme);
+
     // Host page must include the fTelnet script tag with the
     // expected id — we use it to resolve relative asset paths.
     if (document.getElementById('fTelnetScript') === null) {
@@ -574,7 +581,11 @@ export class fTelnetClient {
 
     // Popup is attached to document.body (not _fTelnetContainer)
     // so it can escape the container's overflow clipping. Same
-    // as the original.
+    // as the original. The theme attribute has to be set
+    // explicitly on the popup too, since CSS variables don't
+    // cascade across the document-body boundary from our
+    // container.
+    this._MenuButtons.setAttribute('data-theme', this._Options.Theme);
     document.body.appendChild(this._MenuButtons);
 
     // ── Virtual keyboard ──

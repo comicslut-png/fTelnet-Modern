@@ -111,6 +111,24 @@ describe('fTelnetClient', () => {
       expect(popupsInBody.length).toBe(1);
     });
 
+    it('applies the default "classic" theme to container and popup', () => {
+      createdClient = new fTelnetClient('fTelnetContainer', new fTelnetOptions());
+
+      expect(container.getAttribute('data-theme')).toBe('classic');
+      const popup = document.body.getElementsByTagName('f-menu-popup')[0];
+      expect(popup?.getAttribute('data-theme')).toBe('classic');
+    });
+
+    it('applies the configured theme when Options.Theme is set', () => {
+      const opts = new fTelnetOptions();
+      opts.Theme = 'dos-classic';
+      createdClient = new fTelnetClient('fTelnetContainer', opts);
+
+      expect(container.getAttribute('data-theme')).toBe('dos-classic');
+      const popup = document.body.getElementsByTagName('f-menu-popup')[0];
+      expect(popup?.getAttribute('data-theme')).toBe('dos-classic');
+    });
+
     it('injects the fTelnetCss link if missing', () => {
       expect(document.getElementById('fTelnetCss')).toBeNull();
       createdClient = new fTelnetClient('fTelnetContainer', new fTelnetOptions());

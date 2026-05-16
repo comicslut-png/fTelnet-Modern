@@ -59,6 +59,27 @@ export class fTelnetOptions {
   public SendLocation = true;
   public SkipRedrawWhenSameFontSize = false;
   public SplashScreen = '';
+  /**
+   * Visual theme for the chrome around the BBS canvas (status bar,
+   * menu popup, focus warning, scrollback bar, virtual keyboard).
+   * The Crt canvas itself is not affected — the BBS controls its
+   * own colors via ANSI sequences.
+   *
+   * Built-in values:
+   *   - 'classic'    (default) — the original look from the Phase 1
+   *                  CSS: solid blue/red/green bars, white buttons
+   *                  with rounded corners, sans-serif text.
+   *   - 'dos-classic' — Windows-3.1-era gray bevels, square buttons
+   *                  with a beveled "pressable" appearance, CGA-
+   *                  accented status colors. Reads as "1991 SysOp's
+   *                  tower."
+   *
+   * Set via `Options.Theme = 'dos-classic'` before constructing
+   * the fTelnetClient. The theme is applied as a `data-theme`
+   * attribute on the container; CSS variables in `ftelnet.css`
+   * key off the attribute to switch palettes.
+   */
+  public Theme = 'classic';
   public VirtualKeyboardVibrateDuration = 25;
   public VirtualKeyboardVisible: boolean = DetectMobileBrowser.IsMobile;
   public WebSocketUrlPath = '';

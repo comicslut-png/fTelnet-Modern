@@ -56,11 +56,6 @@ describe('<f-menu-popup>', () => {
       const inner = el.querySelector<HTMLElement>('.fTelnetMenuButtons');
       expect(inner?.getAttribute('style') ?? '').toContain('display: none');
     });
-
-    it('still applies z-index: 1500 even when hidden', () => {
-      const inner = el.querySelector<HTMLElement>('.fTelnetMenuButtons');
-      expect(inner?.getAttribute('style') ?? '').toContain('z-index: 1500');
-    });
   });
 
   describe('action buttons always present', () => {
