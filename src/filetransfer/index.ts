@@ -6,9 +6,9 @@
  *   Stage 1 ✓ — CRC-32 (in common/CRC.ts) and protocol constants
  *   Stage 2 ✓ — ZModemDecoder (streaming parser)
  *   Stage 3 ✓ — ZModemEncoder (frame builder)
- *   Stage 4 ✓ — ZModemReceive state machine (this stage)
- *   Stage 5 — ZModemSend state machine (next)
- *   Stage 6 — auto-detect in the ANSI parser
+ *   Stage 4 ✓ — ZModemReceive state machine
+ *   Stage 5 ✓ — ZModemSend state machine (this stage)
+ *   Stage 6 — auto-detect in the ANSI parser (next)
  *   Stage 7 — transfer-progress UI
  *
  * Earlier plans suggested replacing this module with an external
@@ -32,6 +32,11 @@ export {
   ZModemReceive,
   type ZModemReceiveCallbacks,
 } from './ZModemReceive.js';
+export {
+  ZModemSend,
+  type ZModemFileToSend,
+  type ZModemSendCallbacks,
+} from './ZModemSend.js';
 export { YModemReceive } from './YModemReceive.js';
 export { YModemSend } from './YModemSend.js';
 export { YModemSendState } from './YModemSendState.js';
