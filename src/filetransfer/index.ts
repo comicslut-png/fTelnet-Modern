@@ -5,8 +5,9 @@
  * ZMODEM implementation. Phase 4 ships ZMODEM in stages:
  *   Stage 1 ✓ — CRC-32 (in common/CRC.ts) and protocol constants
  *   Stage 2 ✓ — ZModemDecoder (streaming parser)
- *   Stage 3 ✓ — ZModemEncoder (frame builder, this stage)
- *   Stages 4-5 — receive/send state machines (next)
+ *   Stage 3 ✓ — ZModemEncoder (frame builder)
+ *   Stage 4 ✓ — ZModemReceive state machine (this stage)
+ *   Stage 5 — ZModemSend state machine (next)
  *   Stage 6 — auto-detect in the ANSI parser
  *   Stage 7 — transfer-progress UI
  *
@@ -22,7 +23,15 @@ export {
   type ZModemDecoderEvents,
 } from './ZModemDecoder.js';
 export { ZModemEncoder } from './ZModemEncoder.js';
+export {
+  parseZFileSubpacket,
+  type ZModemFileInfo,
+} from './ZModemFileInfo.js';
 export { ZModemHeader } from './ZModemHeader.js';
+export {
+  ZModemReceive,
+  type ZModemReceiveCallbacks,
+} from './ZModemReceive.js';
 export { YModemReceive } from './YModemReceive.js';
 export { YModemSend } from './YModemSend.js';
 export { YModemSendState } from './YModemSendState.js';
