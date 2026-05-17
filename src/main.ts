@@ -23,16 +23,16 @@ import { fTelnetClient, fTelnetOptions } from './ftelnetclient/index.js';
 
 const Options = new fTelnetOptions();
 Options.Theme = 'dos-classic';
-Options.Hostname = 'sbbs.dmine.net';
+Options.Hostname = 'bbs.ftelnet.ca';
 
 // Direct WebSocket connection (commented out — bbs.ftelnet.ca doesn't
 // speak WebSocket natively, so we need the proxy below):
-// Options.Port = 6502;
+// Options.Port = 23;
 
 // Proxied connection via fTelnet's public WebSocket-to-TCP proxy. This
 // matches the release/index.html config in the original repo. The
 // proxy translates WebSocket frames to/from raw TCP telnet bytes.
-Options.Port = 24;
+Options.Port = 23;
 Options.ProxyHostname = 'p-us-east.ftelnet.ca';
 Options.ProxyPort = 80;
 Options.ProxyPortSecure = 443;

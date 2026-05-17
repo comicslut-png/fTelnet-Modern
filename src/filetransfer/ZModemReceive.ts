@@ -431,6 +431,30 @@ export class ZModemReceive {
   }
 
   private handleSubpacketEnd(marker: number, crcValid: boolean): void {
+    // [stage6-mystic-debug] Log entry to handleSubpacketEnd with
+    // marker, CRC validity, and receive-side state. This is where
+    // the receive state machine decides whether to call
+    // expectSubpacket(), send ZACK, etc. — the key node for
+    // tracking the subpacket → IDLE → next-subpacket cycle.
+    if (ZmDebug.enabled) {
+      const markerName =
+        marker === 0x68
+          ? 'ZCRCE'
+          : marker === 0x69
+          ? 'ZCRCG'
+          : marker === 0x6a
+          ? 'ZCRCQ'
+          : marker === 0x6b
+          ? 'ZCRCW'
+          : `?(0x${marker.toString(16)})`;
+      ZmDebug.log(
+        'receive',
+        `handleSubpacketEnd  marker=${markerName}  crcValid=${crcValid}  ` +
+          `receiveState=${ZModemReceive.receiveStateName(this._state)}  ` +
+          `useCrc32=${this._useCrc32}  fileBytes=${this._currentFileBytes}`,
+      );
+    }
+
     if (!crcValid) {
       // CRC failure. Ask the sender to resume from our last confirmed
       // position. (For file-info subpackets, that's position 0 of
@@ -542,5 +566,24 @@ export class ZModemReceive {
   private fail(message: string): void {
     this._state = ReceiveState.ENDED;
     this._callbacks.onError?.(message);
+  }
+
+  /**
+   * [stage6-mystic-debug] Map ReceiveState enum values to readable
+   * names for trace logging. Same purpose as DecoderState.stateName
+   * over in ZModemDecoder.
+   */
+  private static receiveStateName(s: ReceiveState): string {
+    switch (s) {
+      case ReceiveState.IDLE: return 'IDLE';
+      case ReceiveState.WAITING_FOR_ZFILE: return 'WAITING_FOR_ZFILE';
+      case ReceiveState.READING_FILE_INFO: return 'READING_FILE_INFO';
+      case ReceiveState.WAITING_FOR_ZDATA: return 'WAITING_FOR_ZDATA';
+      case ReceiveState.READING_FILE_DATA: return 'READING_FILE_DATA';
+      case ReceiveState.WAITING_FOR_NEXT_FILE: return 'WAITING_FOR_NEXT_FILE';
+      case ReceiveState.FINISHING: return 'FINISHING';
+      case ReceiveState.ENDED: return 'ENDED';
+      default: return `?${s}?`;
+    }
   }
 }

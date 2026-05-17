@@ -22,8 +22,10 @@ import { CRC } from '../common/CRC.js';
 import {
   ZPAD, ZDLE, ZHEX, ZBIN, ZBIN32,
   ZCRCE, ZCRCG, ZCRCQ, ZCRCW,
+  ZRUB0, ZRUB1,
 } from './ZModem.js';
 import { ZModemHeader } from './ZModemHeader.js';
+import { ZmDebug } from './ZmDebug.js';
 
 /**
  * Decoder events. The consumer registers callbacks; the decoder
@@ -246,6 +248,18 @@ export class ZModemDecoder {
    * ZMODEM flow.
    */
   public expectSubpacket(crcMode: 'crc16' | 'crc32'): void {
+    // [stage6-mystic-debug] Log when the receive state machine
+    // asks for another subpacket. Useful for confirming the
+    // expectSubpacket flag is reaching us at the right moment in
+    // the subpacket → IDLE → READING_SUBPACKET cycle.
+    if (ZmDebug.enabled) {
+      ZmDebug.log(
+        'decoder',
+        `expectSubpacket(${crcMode}) called  ` +
+          `[state=${ZModemDecoder.stateName(this._state)}  ` +
+          `escaping=${this._escaping}]`,
+      );
+    }
     this._expectingSubpacket = true;
     this._subpacketCrcMode = crcMode;
     this._subpacketBuffer.length = 0;
@@ -272,6 +286,13 @@ export class ZModemDecoder {
   // ───────────────────────── single-byte dispatch ─────────────────
 
   private feedByte(b: number): void {
+    // [stage6-mystic-debug] Capture entry state for transition logging.
+    // Only the case where state changes gets logged at exit, so a
+    // streaming subpacket's worth of normal-data bytes stays quiet
+    // unless something unusual happens.
+    const stateAtEntry = this._state;
+    const expectingAtEntry = this._expectingSubpacket;
+
     // If we're waiting for a subpacket and not currently in any
     // frame-parsing state, the byte starts the subpacket.
     if (
@@ -315,6 +336,29 @@ export class ZModemDecoder {
       case DecoderState.SUBPACKET_CRC:
         this.handleSubpacketCrc(b);
         break;
+    }
+
+    // [stage6-mystic-debug] Log only when state changed or when the
+    // `expectingSubpacket` flag changed. Skips the 99% case of
+    // streaming subpacket data bytes that all stay in
+    // READING_SUBPACKET — those are not interesting and would drown
+    // the console. The traces we DO log show every state-transition
+    // edge, which is what we need to find where the decoder loses
+    // track during Mystic's binary-content subpackets.
+    if (
+      ZmDebug.enabled &&
+      (stateAtEntry !== this._state ||
+        expectingAtEntry !== this._expectingSubpacket)
+    ) {
+      const hexByte = b.toString(16).padStart(2, '0');
+      ZmDebug.log(
+        'decoder',
+        `byte 0x${hexByte}: ${ZModemDecoder.stateName(stateAtEntry)} → ` +
+          `${ZModemDecoder.stateName(this._state)}` +
+          (this._expectingSubpacket !== expectingAtEntry
+            ? `  (expectSubpacket: ${expectingAtEntry} → ${this._expectingSubpacket})`
+            : ''),
+      );
     }
   }
 
@@ -375,7 +419,15 @@ export class ZModemDecoder {
         break;
       default:
         // Unknown frame format. Treat as garbage.
-        this._events.onHeaderError?.(`unknown frame format byte 0x${b.toString(16)}`);
+        // [stage6-mystic-debug] Include a hint about whether we
+        // arrived here via a real garbage scan or due to false
+        // positives during subpacket data. The expectingSubpacket
+        // flag tells us if the receive state machine still thinks
+        // we should be reading subpacket data.
+        this._events.onHeaderError?.(
+          `unknown frame format byte 0x${b.toString(16)}  ` +
+            `[expectingSubpacket=${this._expectingSubpacket}]`,
+        );
         this._state = DecoderState.IDLE;
         break;
     }
@@ -475,8 +527,10 @@ export class ZModemDecoder {
       this._escaping = false;
       // ZDLE special markers don't appear in headers (they only
       // mark subpacket ends), so any post-ZDLE byte here is an
-      // escaped data byte: XOR with 0x40.
-      this._headerBytes.push(b ^ 0x40);
+      // escaped data byte. Use the unescape helper to honor the
+      // ZRUB0/ZRUB1 special cases (decoding to 0x7f and 0xff)
+      // in addition to the general XOR-0x40 rule.
+      this._headerBytes.push(ZModemDecoder.unescapeZdle(b));
     } else if (b === ZDLE) {
       this._escaping = true;
       return;
@@ -580,8 +634,11 @@ export class ZModemDecoder {
       this._state = DecoderState.SUBPACKET_CRC;
       return;
     }
-    // Otherwise it's an escaped data byte (XOR 0x40).
-    const dataByte = b ^ 0x40;
+    // Otherwise it's an escaped data byte. Use the unescape helper
+    // so ZRUB0 (0x6c) and ZRUB1 (0x6d) decode to their literal
+    // values (0x7f and 0xff respectively) per the Forsberg spec,
+    // instead of being wrongly XOR'd to 0x2c and 0x2d.
+    const dataByte = ZModemDecoder.unescapeZdle(b);
     this._subpacketBuffer.push(dataByte);
     this.updateSubpacketCrc(dataByte);
     this._state = DecoderState.READING_SUBPACKET;
@@ -591,7 +648,12 @@ export class ZModemDecoder {
     // CRC bytes are also ZDLE-escaped. Reuse the escape state.
     if (this._escaping) {
       this._escaping = false;
-      this._subpacketCrcBytes.push(b ^ 0x40);
+      // Use the unescape helper rather than a bare XOR so the
+      // ZRUB0/ZRUB1 special escapes work correctly here too.
+      // A subpacket CRC byte that happens to be 0x7f or 0xff
+      // would otherwise be silently corrupted, leading to a
+      // spurious CRC-mismatch on otherwise-valid subpackets.
+      this._subpacketCrcBytes.push(ZModemDecoder.unescapeZdle(b));
     } else if (b === ZDLE) {
       this._escaping = true;
       return;
@@ -624,7 +686,47 @@ export class ZModemDecoder {
       crcValid = crc === received;
     }
 
+    // [stage6-mystic-debug] Log subpacket completion: marker
+    // (ZCRCE/G/Q/W as ASCII char + hex), CRC validity, length of
+    // data flushed, and whether expectSubpacket flag is set going
+    // in (which tells us whether the state machine has already
+    // asked for the next subpacket).
+    if (ZmDebug.enabled) {
+      const markerName =
+        this._subpacketMarker === ZCRCE
+          ? 'ZCRCE'
+          : this._subpacketMarker === ZCRCG
+          ? 'ZCRCG'
+          : this._subpacketMarker === ZCRCQ
+          ? 'ZCRCQ'
+          : this._subpacketMarker === ZCRCW
+          ? 'ZCRCW'
+          : '?';
+      ZmDebug.log(
+        'decoder',
+        `subpacket complete: marker=${markerName} ` +
+          `(0x${this._subpacketMarker.toString(16)})  ` +
+          `crcValid=${crcValid}  bufLen=${this._subpacketBuffer.length}  ` +
+          `expectingSubpacket(before-onEnd)=${this._expectingSubpacket}  ` +
+          `escaping=${this._escaping}`,
+      );
+    }
+
     this._events.onSubpacketEnd?.(this._subpacketMarker, crcValid);
+
+    // [stage6-mystic-debug] Log post-callback state: did the
+    // receive state machine call expectSubpacket from inside
+    // onSubpacketEnd? Did it leave the state machine consistent?
+    if (ZmDebug.enabled) {
+      ZmDebug.log(
+        'decoder',
+        `subpacket post-callback: ` +
+          `expectingSubpacket=${this._expectingSubpacket}  ` +
+          `escaping=${this._escaping}  ` +
+          `state=${ZModemDecoder.stateName(this._state)} ` +
+          `(about to transition to IDLE)`,
+      );
+    }
 
     // After a subpacket ends, what comes next depends on the marker
     // and on what the state machine wants. ZCRCG / ZCRCQ mean "more
@@ -635,6 +737,30 @@ export class ZModemDecoder {
     this._subpacketCrcBytes.length = 0;
     this._crc16 = 0;
     this._crc32 = 0xffffffff;
+  }
+
+  /**
+   * Decode the byte that follows ZDLE inside an escaped data
+   * stream. The general ZMODEM rule is "XOR with 0x40," but two
+   * special escapes (ZRUB0=0x6c and ZRUB1=0x6d) decode to specific
+   * literal values (0x7f and 0xff respectively) so those bytes
+   * can survive 7-bit links that would otherwise drop them.
+   *
+   * The caller is responsible for ensuring `b` is not a subpacket
+   * marker (ZCRCE/G/Q/W) — those are handled separately and never
+   * reach this function.
+   *
+   * Stage 6 ZRUB fix: pre-fix, this method didn't exist and every
+   * call site did `b ^ 0x40` directly. That mis-decoded
+   * `ZDLE 0x6d` as 0x2d (when it should be 0xff), corrupting any
+   * file containing 0xff bytes when transferred over Mystic
+   * (which uses ZRUB1 properly per spec). Synchronet's plain-text
+   * test never hit a 0xff byte so the bug was invisible there.
+   */
+  private static unescapeZdle(b: number): number {
+    if (b === ZRUB0) return 0x7f; // ZDLE 'l' = literal 0x7f (DEL)
+    if (b === ZRUB1) return 0xff; // ZDLE 'm' = literal 0xff
+    return b ^ 0x40;
   }
 
   private updateSubpacketCrc(b: number): void {
@@ -650,5 +776,27 @@ export class ZModemDecoder {
     const chunk = new Uint8Array(this._subpacketBuffer);
     this._events.onSubpacketData?.(chunk);
     this._subpacketBuffer.length = 0;
+  }
+
+  /**
+   * [stage6-mystic-debug] Map DecoderState enum values to readable
+   * names for trace logging. TypeScript const-enums lose their
+   * names at runtime, so this is the lookup table for human-friendly
+   * state-transition logs.
+   */
+  private static stateName(s: DecoderState): string {
+    switch (s) {
+      case DecoderState.IDLE: return 'IDLE';
+      case DecoderState.AFTER_ZPAD: return 'AFTER_ZPAD';
+      case DecoderState.AFTER_ZPAD_ZPAD: return 'AFTER_ZPAD_ZPAD';
+      case DecoderState.AFTER_ZDLE: return 'AFTER_ZDLE';
+      case DecoderState.READING_HEX: return 'READING_HEX';
+      case DecoderState.READING_BIN16: return 'READING_BIN16';
+      case DecoderState.READING_BIN32: return 'READING_BIN32';
+      case DecoderState.READING_SUBPACKET: return 'READING_SUBPACKET';
+      case DecoderState.SUBPACKET_AFTER_ZDLE: return 'SUBPACKET_AFTER_ZDLE';
+      case DecoderState.SUBPACKET_CRC: return 'SUBPACKET_CRC';
+      default: return `?${s}?`;
+    }
   }
 }

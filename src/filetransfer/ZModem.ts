@@ -117,6 +117,15 @@ export const ZCRCQ = 0x6a; // 'j'
 /** End of subpacket, frame continues, sender wants the receiver to
  *  send a ZACK back so it knows where the receiver got to. */
 export const ZCRCW = 0x6b; // 'k'
+/** ZDLE-escape for 0x7f (RUBOUT / DEL). Per Forsberg, the receiver
+ *  decodes `ZDLE 0x6c` as a literal 0x7f data byte. This is NOT the
+ *  generic "XOR with 0x40" rule — it's a special escape so 0x7f
+ *  can survive 7-bit links that would otherwise eat it. */
+export const ZRUB0 = 0x6c; // 'l' — decodes to 0x7f
+/** ZDLE-escape for 0xff. Same special-case as ZRUB0 above. Without
+ *  this, the generic XOR-0x40 rule would mis-decode `ZDLE 0x6d` as
+ *  0x2d, corrupting any byte that should have been 0xff. */
+export const ZRUB1 = 0x6d; // 'm' — decodes to 0xff
 
 // ─────────────────────────────────────────────────────────────────
 // Bytes that need ZDLE-escaping when sent in a subpacket
