@@ -464,11 +464,26 @@ describe('ZModemReceive', () => {
 
       receive.abort();
 
-      // We expect 8 CAN bytes + 10 BS bytes
+      // We expect three components, concatenated:
+      //   1. ZABORT hex header (21 bytes: **\x18B07 + 8 hex + 4 CRC hex + \r\n + XON)
+      //   2. 8 CAN bytes (the out-of-band burst)
+      //   3. 10 BS bytes (terminal cleanup)
       const out = allBytesSent();
-      expect(out.length).toBe(18);
-      for (let i = 0; i < 8; i++) expect(out[i]).toBe(0x18);
-      for (let i = 8; i < 18; i++) expect(out[i]).toBe(0x08);
+      // The hex header length depends on the exact encoder
+      // implementation, but the total must end with 8 CANs + 10 BS.
+      const totalLen = out.length;
+      // The last 18 bytes must be 8 CANs followed by 10 BS:
+      const tailStart = totalLen - 18;
+      for (let i = 0; i < 8; i++) {
+        expect(out[tailStart + i]).toBe(0x18);
+      }
+      for (let i = 0; i < 10; i++) {
+        expect(out[tailStart + 8 + i]).toBe(0x08);
+      }
+      // The header must start with ZPAD ZPAD ZDLE:
+      expect(out[0]).toBe(0x2a);
+      expect(out[1]).toBe(0x2a);
+      expect(out[2]).toBe(0x18);
 
       expect(errors.length).toBe(1);
       expect(errors[0]!).toContain('user');

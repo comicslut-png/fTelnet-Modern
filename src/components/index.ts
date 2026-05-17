@@ -30,4 +30,8 @@ export {
   type ThemeChoice,
 } from './FSettingsPanel.js';
 export { FStatusBar, type MenuClickDetail } from './FStatusBar.js';
+export {
+  FTransferProgress,
+  type TransferAbortDetail,
+} from './FTransferProgress.js';
 export { FVirtualKeyboard, type VKKeyEventDetail } from './FVirtualKeyboard.js';

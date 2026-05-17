@@ -25,6 +25,7 @@ const Options = new fTelnetOptions();
 Options.Theme = 'dos-classic';
 Options.Hostname = 'bbs.ftelnet.ca';
 
+
 // Direct WebSocket connection (commented out — bbs.ftelnet.ca doesn't
 // speak WebSocket natively, so we need the proxy below):
 // Options.Port = 23;

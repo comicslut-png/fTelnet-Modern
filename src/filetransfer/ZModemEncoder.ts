@@ -371,17 +371,47 @@ export class ZModemEncoder {
   }
 
   /**
-   * The out-of-band abort sequence — five CAN bytes in a row,
-   * optionally followed by backspaces to clean up the terminal.
-   * Used when the state machine can't recover the protocol; lrzsz
-   * always recognizes this even mid-frame.
+   * The out-of-band abort sequence — eight CAN bytes in a row.
+   * Used when the state machine can't recover the protocol;
+   * lrzsz always recognizes this even mid-frame.
    *
-   * Eight CANs + ten backspaces matches what zmodem.js sends.
+   * Eight CANs matches what zmodem.js sends. We send the CANs
+   * and backspace cleanup as SEPARATE writes (see
+   * buildAbortBackspaces) because empirical testing suggests
+   * some sender implementations (SEXYZ in particular) need the
+   * CANs to arrive as a clean contiguous run with no other bytes
+   * appended in the same socket read. The 10 BS bytes appended
+   * in the canonical sequence may reset the sender's
+   * consecutive-CAN counter before it acts on the abort.
+   */
+  public static buildAbortCans(): Uint8Array {
+    const out = new Uint8Array(8);
+    for (let i = 0; i < 8; i++) out[i] = 0x18; // CAN
+    return out;
+  }
+
+  /**
+   * The terminal-cleanup half of the abort sequence — ten
+   * backspaces. Sent AFTER the CAN burst (as a separate write)
+   * so the CANs arrive cleanly. The BS bytes erase any visible
+   * `^X` characters that command interpreters might print if
+   * they ended up echoing our CAN bytes.
+   */
+  public static buildAbortBackspaces(): Uint8Array {
+    const out = new Uint8Array(10);
+    for (let i = 0; i < 10; i++) out[i] = 0x08; // BS
+    return out;
+  }
+
+  /**
+   * @deprecated Use buildAbortCans() + buildAbortBackspaces()
+   * separately. Kept temporarily for backward compatibility
+   * with any external callers.
    */
   public static buildAbortSequence(): Uint8Array {
     const out = new Uint8Array(8 + 10);
-    for (let i = 0; i < 8; i++) out[i] = 0x18; // CAN
-    for (let i = 0; i < 10; i++) out[8 + i] = 0x08; // BS
+    for (let i = 0; i < 8; i++) out[i] = 0x18;
+    for (let i = 0; i < 10; i++) out[8 + i] = 0x08;
     return out;
   }
 

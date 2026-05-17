@@ -246,14 +246,50 @@ export class ZModemReceive {
   }
 
   /**
-   * User-initiated abort. Sends the out-of-band abort sequence
-   * (8 CANs + 10 backspaces) so the sender stops immediately,
-   * then transitions to ENDED.
+   * User-initiated abort. Sends multiple abort signals in
+   * sequence to maximize the chance the sender notices:
+   *
+   *   1. **ZABORT hex header** — the protocol-canonical "abort
+   *      the entire transfer" frame. Starts with `**\x18B...`
+   *      (ZPAD ZPAD ZDLE ZBIN) which is what most senders are
+   *      sampling the reverse stream for at subpacket boundaries.
+   *
+   *   2. **8 CAN bytes alone** — the out-of-band abort sequence.
+   *      Sent as its own write so the CANs aren't coalesced with
+   *      anything that could reset the sender's CAN counter.
+   *
+   *   3. **10 BS bytes** — terminal cleanup. Separate write so
+   *      they don't poison the CAN burst from step 2.
+   *
+   * State goes ENDED after step 1 so no ZACK/ZRPOS responses
+   * interleave with the abort bytes. Each emit() goes through
+   * onBytesToSend → flush → WebSocket.send as a separate message,
+   * giving each piece a clean shot at the sender's input pipeline.
+   *
+   * Why all three: empirical testing on Synchronet (SEXYZ) and
+   * PCBoard showed that sending just the 8-CAN burst is not
+   * enough — neither sender stops streaming. The ZABORT hex
+   * header is the spec-canonical interrupt and is what well-
+   * behaved senders sample for at subpacket boundaries. Sending
+   * both gives maximum compatibility.
    */
   public abort(): void {
     if (this._state === ReceiveState.ENDED) return;
-    this.emit(ZModemEncoder.buildAbortSequence());
+    // Step 1: protocol-canonical ZABORT hex header. Sender
+    // samples the reverse stream for ZPAD at subpacket boundaries;
+    // this header starts with ZPAD ZPAD ZDLE ZBIN so it's caught
+    // at the next sampling point.
+    this.emit(ZModemEncoder.buildZABORT());
+    // State must transition before subsequent writes so no
+    // protocol responses (ZACK/ZRPOS) interleave with the abort
+    // bytes that follow.
     this._state = ReceiveState.ENDED;
+    // Step 2: out-of-band CAN burst. lrzsz-derived senders
+    // recognize 5+ consecutive CANs even mid-frame.
+    this.emit(ZModemEncoder.buildAbortCans());
+    // Step 3: terminal cleanup backspaces. Separate write so
+    // they don't dilute the CAN burst.
+    this.emit(ZModemEncoder.buildAbortBackspaces());
     this._callbacks.onError?.('aborted by user');
   }
 
@@ -262,6 +298,34 @@ export class ZModemReceive {
    */
   public get state(): string {
     return ReceiveState[this._state]!;
+  }
+
+  /**
+   * Number of CRC failures we've encountered so far in this
+   * session. Each failed subpacket bumps this counter; ZNAK or
+   * ZRPOS responses are sent automatically. Exposed for the
+   * progress panel's "Errors:" display, replacing the original
+   * "Efficiency:" placeholder which was harder to compute and
+   * less useful for diagnosing flaky links.
+   *
+   * Phase 4 Stage 7 (fixes).
+   */
+  public get errorCount(): number {
+    return this._errorCount;
+  }
+  private _errorCount = 0;
+
+  /**
+   * The negotiated subpacket CRC width — 32 once we've seen any
+   * bin32 frame from the sender, otherwise 16. Used by the
+   * progress UI to display the protocol name ('ZMODEM-CRC32' vs
+   * 'ZMODEM-CRC16'). Reads as 32 (the default) until the first
+   * binary frame arrives.
+   *
+   * Phase 4 Stage 7.
+   */
+  public get useCrc32(): boolean {
+    return this._useCrc32;
   }
 
   // ─────────────────────── header dispatch ───────────────────────
@@ -459,6 +523,7 @@ export class ZModemReceive {
       // CRC failure. Ask the sender to resume from our last confirmed
       // position. (For file-info subpackets, that's position 0 of
       // this file; for data subpackets, the byte count we have.)
+      this._errorCount++;
       if (this._state === ReceiveState.READING_FILE_DATA) {
         this.sendZRPOS(this._currentFileBytes);
         this._state = ReceiveState.WAITING_FOR_ZDATA;

@@ -56,6 +56,7 @@ import {
   FScrollbackBar,
   FSettingsPanel,
   FStatusBar,
+  FTransferProgress,
   FVirtualKeyboard,
   type MenuActionDetail,
   type MenuClickDetail,
@@ -66,6 +67,7 @@ import {
   type VKKeyEventDetail,
 } from '../components/index.js';
 import { fTelnetOptions } from './fTelnetOptions.js';
+import { TransferStats } from '../filetransfer/TransferStats.js';
 
 /**
  * Top-level fTelnet client.
@@ -208,6 +210,62 @@ export class fTelnetClient {
   private _ZModemReceive: ZModemReceive | undefined;
   private readonly _ZModemFileBuffers = new Map<string, number[]>();
   private _ZModemCurrentFile: ZModemFileInfo | undefined;
+
+  /**
+   * Phase 4 Stage 7 — file-transfer progress panel.
+   *
+   * `_TransferProgressPanel` is the Lit component that renders the
+   * SyncTERM-style retro overlay. It's appended to the container
+   * once during construction and stays in the DOM forever; the
+   * `visible` property gates whether anything renders.
+   *
+   * `_TransferStats` is the pure stats engine fed by ZModemReceive's
+   * onProgress callback. Recreated per transfer session.
+   *
+   * `_TransferStatsTimer` drives the rendering clock — 10 Hz updates
+   * so the CPS / ETA / elapsed-time fields don't appear frozen
+   * between subpacket arrivals. Set on session start, cleared on
+   * session end (or linger-done).
+   */
+  private _TransferProgressPanel!: FTransferProgress;
+  private _TransferStats: TransferStats | undefined;
+  private _TransferStatsTimer: ReturnType<typeof setInterval> | undefined;
+
+  /**
+   * Phase 4 Stage 7 (final) — short fixed post-abort drop window.
+   *
+   * History of why this is here:
+   *
+   *   The "no cooldown" approach inspired by zmodem.js/xterm.js
+   *   integrations leaked a handful of binary file-content bytes
+   *   into the ANSI parser after abort. Real-world log from a
+   *   user test showed 3-4 lines of `unexpected post-ESC char`
+   *   with raw binary buffer content (high-bit characters) hitting
+   *   the parser immediately after the abort fired.
+   *
+   *   That happens because our detector resets the moment we abort,
+   *   so trailing in-flight ZMODEM file bytes have nowhere to go
+   *   but the ANSI passthrough. zmodem.js's architecture avoids
+   *   this differently (the Sentry keeps watching the stream); our
+   *   architecture needs a brief window where post-abort bytes get
+   *   discarded.
+   *
+   *   1.5 seconds is short enough to NOT interfere with normal BBS
+   *   interaction (the user sees a brief pause but the BBS prompt
+   *   appears quickly afterward) and long enough to catch the
+   *   typical in-flight ZMODEM buffer drain.
+   *
+   *   For very large files where the in-flight buffer is bigger
+   *   than 1.5s of draining, some bytes may still leak through.
+   *   The ANSI parser handles them gracefully (drops them in
+   *   recovery mode); a few may render as CP437 glyphs on the
+   *   canvas before the BBS prompt arrives. This is an acceptable
+   *   tradeoff — the alternative (longer drop) would suppress
+   *   legitimate BBS output if the post-abort BBS prompt arrives
+   *   within the drop window.
+   */
+  private _PostAbortDropUntil = 0;
+  private static readonly POST_ABORT_DROP_MS = 1_500;
 
   /** User-supplied configuration. Defaults are in fTelnetOptions. */
   private readonly _Options: fTelnetOptions;
@@ -719,6 +777,67 @@ export class fTelnetClient {
     });
 
     this._fTelnetContainer.appendChild(this._VirtualKeyboard);
+
+    // ── Transfer progress panel (Phase 4 Stage 7) ──
+    // Centered overlay shown during ZMODEM/YMODEM transfers. Hidden
+    // by default; activated by `beginZModemReceive`. Listens for ESC
+    // and click-to-abort, both routed to ZModemReceive.abort().
+    this._TransferProgressPanel = document.createElement(
+      'f-transfer-progress',
+    ) as FTransferProgress;
+    this._TransferProgressPanel.addEventListener('transfer-abort', (): void => {
+      // Send the protocol abort: ZABORT hex header, 8 CAN burst,
+      // 10 BS cleanup (each as a separate WebSocket message). The
+      // sender sees this at its next subpacket boundary and aborts
+      // on its end.
+      this._ZModemReceive?.abort();
+
+      // ── Drain the inbound buffer ──────────────────────────
+      // The architectural insight: post-abort "garbage" you see in
+      // the browser is NOT the BBS still sending. The BBS aborts
+      // promptly on receipt of the ZABORT. The bytes are sitting
+      // in OUR _InputBuffer, having arrived via WebSocket at full
+      // speed while OnConnectionData drips them out at the
+      // configured BitsPerSecond throttle (a deliberate "BBS feel"
+      // simulation, see Rick's fTelnet docs).
+      //
+      // Drain it right now without throttling, discarding the
+      // backlog so it doesn't drip out as garbage long after the
+      // BBS has stopped. The small 1.5s drop window below catches
+      // anything that arrives in the gap between abort delivery
+      // and the BBS post-abort prompt.
+      if (this._Connection !== undefined) {
+        const queued = this._Connection.bytesAvailable;
+        if (queued > 0) {
+          // eslint-disable-next-line no-console
+          console.log(
+            `[fTelnetClient] post-abort: draining ${queued} buffered bytes from inbound`,
+          );
+          this._Connection.readString(queued); // discard
+        }
+      }
+
+      // Short drop window for the trickle between drain and the
+      // BBS prompt. See _PostAbortDropUntil field doc.
+      this._PostAbortDropUntil = Date.now() + fTelnetClient.POST_ABORT_DROP_MS;
+    });
+    this._TransferProgressPanel.addEventListener(
+      'transfer-linger-done',
+      (): void => {
+        // The panel finished its post-completion linger; hide it.
+        this._TransferProgressPanel.visible = false;
+        this._TransferProgressPanel.reset();
+      },
+    );
+    // Append to document.body (not _fTelnetContainer) so position:
+    // fixed works correctly against the viewport. If the panel were
+    // a descendant of _fTelnetContainer it would inherit whatever
+    // containing-block context the container or its ancestors
+    // establish, which can constrain "fixed" elements to the
+    // container's bounds instead of the viewport. The menu popup
+    // already does this for the same reason (see _MenuButtons
+    // append above).
+    document.body.appendChild(this._TransferProgressPanel);
 
     // Recompute sizes for the bars and keyboard now that everything
     // is in place.
@@ -1453,18 +1572,34 @@ export class fTelnetClient {
         const Data: string = this._Connection.readString(BytesToRead);
         if (Data.length > 0) {
           ZmDebug.bytes('wire', 'OnConnectionData read', Data);
-          this.ondata.trigger(Data);
-          if (
-            this._Options.ZModemAutoDetect &&
-            this._ZModemDetector !== undefined
-          ) {
-            // Route through the detector. Its callbacks handle
-            // both passthrough-to-ANSI and divert-to-ZMODEM.
-            this._ZModemDetector.feed(Data);
+
+          // Short post-abort drop. After the explicit drain in the
+          // transfer-abort handler, this catches any small trickle
+          // of bytes that arrives between the drain and the BBS's
+          // post-abort prompt.
+          if (this._PostAbortDropUntil > 0 && Date.now() < this._PostAbortDropUntil) {
+            ZmDebug.log(
+              'wire',
+              `post-abort drop: ${Data.length} bytes ` +
+                `(${this._PostAbortDropUntil - Date.now()}ms left)`,
+            );
           } else {
-            // Detector disabled — go straight to the renderer.
-            ZmDebug.log('wire', 'detector disabled/missing, going straight to renderer');
-            this.routeToRenderer(Data);
+            if (this._PostAbortDropUntil > 0) {
+              this._PostAbortDropUntil = 0;
+            }
+            this.ondata.trigger(Data);
+            if (
+              this._Options.ZModemAutoDetect &&
+              this._ZModemDetector !== undefined
+            ) {
+              // Route through the detector. Its callbacks handle
+              // both passthrough-to-ANSI and divert-to-ZMODEM.
+              this._ZModemDetector.feed(Data);
+            } else {
+              // Detector disabled — go straight to the renderer.
+              ZmDebug.log('wire', 'detector disabled/missing, going straight to renderer');
+              this.routeToRenderer(Data);
+            }
           }
         }
 
@@ -1539,6 +1674,37 @@ export class fTelnetClient {
     this._ZModemFileBuffers.clear();
     this._ZModemCurrentFile = undefined;
 
+    // Phase 4 Stage 7 — bring up the progress panel.
+    // The panel starts visible right away even though we don't have
+    // a filename yet (ZRQINIT just arrived; ZFILE hasn't). The first
+    // few hundred ms show "???" for the filename, then update as
+    // soon as ZFILE's metadata subpacket is parsed.
+    this._TransferStats = new TransferStats();
+    this._TransferProgressPanel.reset();
+    this._TransferProgressPanel.protocolName = 'ZMODEM'; // refined on first bin32 header
+    this._TransferProgressPanel.fileName = '';
+    this._TransferProgressPanel.fileNumber = 1;
+    this._TransferProgressPanel.filesInBatch = 1;
+    this._TransferProgressPanel.snapshot = this._TransferStats.snapshot();
+    this._TransferProgressPanel.statusMessage = '';
+    this._TransferProgressPanel.errorCount = 0;
+    this._TransferProgressPanel.visible = true;
+    // 10 Hz render clock — feeds the panel a fresh snapshot every
+    // 100ms so the elapsed-time/CPS/ETA/errors fields keep ticking
+    // even between subpacket arrivals. Cleared in endZModemReceive.
+    this._TransferStatsTimer = setInterval((): void => {
+      if (this._TransferStats !== undefined) {
+        this._TransferProgressPanel.snapshot = this._TransferStats.snapshot();
+      }
+      // Pull the latest error count from the receive state machine.
+      // We could plumb this through onProgress instead, but a pull
+      // on the render tick is simpler and matches how the panel
+      // already gets its other stats.
+      if (this._ZModemReceive !== undefined) {
+        this._TransferProgressPanel.errorCount = this._ZModemReceive.errorCount;
+      }
+    }, 100);
+
     this._ZModemReceive = new ZModemReceive({
       onBytesToSend: (bytes) => {
         if (this._Connection !== undefined && this._Connection.connected) {
@@ -1552,6 +1718,20 @@ export class fTelnetClient {
       onFileStart: (file) => {
         this._ZModemCurrentFile = file;
         this._ZModemFileBuffers.set(file.name, []);
+        // Update the panel for the new file. fileNumber/filesInBatch
+        // come from the ZFILE metadata when provided (Stage 4 parses
+        // them); senders that don't supply send 1/1 which is fine.
+        this._TransferProgressPanel.fileName = file.name;
+        this._TransferProgressPanel.fileNumber = file.fileNumber;
+        this._TransferProgressPanel.filesInBatch = file.filesInBatch;
+        // By the time onFileStart fires, the ZFILE header has been
+        // processed and useCrc32 reflects whether the sender went
+        // bin32 (Synchronet, Mystic, most modern senders) or stuck
+        // to bin16 (some older DOS senders).
+        this._TransferProgressPanel.protocolName = this._ZModemReceive?.useCrc32
+          ? 'ZMODEM-CRC32'
+          : 'ZMODEM-CRC16';
+        this._TransferStats?.reset(file.size);
       },
       onFileData: (chunk) => {
         if (this._ZModemCurrentFile === undefined) return;
@@ -1561,6 +1741,13 @@ export class fTelnetClient {
           buf.push(chunk[i]!);
         }
       },
+      onProgress: (received, total) => {
+        // Feed the stats engine. The 10 Hz render clock picks up
+        // the new state on its next tick. We could push a snapshot
+        // immediately here, but the rendering clock keeps things
+        // consistent — no need to also re-render on every subpacket.
+        this._TransferStats?.update(received, total);
+      },
       onFileComplete: (file) => {
         const buf = this._ZModemFileBuffers.get(file.name);
         if (buf === undefined || buf.length === 0) return;
@@ -1569,11 +1756,20 @@ export class fTelnetClient {
         this._ZModemFileBuffers.delete(file.name);
       },
       onSessionComplete: () => {
+        // Pin the panel at "Complete!" with the bar at 100% for
+        // ~1500ms so the user actually sees the result, then the
+        // panel's `transfer-linger-done` event hides it.
+        this._TransferProgressPanel.markComplete();
         this.endZModemReceive();
       },
       onError: (msg) => {
         // eslint-disable-next-line no-console
         console.warn('ZMODEM transfer error:', msg);
+        // Surface the error in the panel's status line and let the
+        // linger handle hiding. For now we treat any error as a
+        // session end — no retry UI.
+        this._TransferProgressPanel.statusMessage = msg;
+        this._TransferProgressPanel.markComplete();
         this.endZModemReceive();
       },
     });
@@ -1596,6 +1792,16 @@ export class fTelnetClient {
     this._ZModemCurrentFile = undefined;
     this._ZModemFileBuffers.clear();
     this._ZModemDetector?.reset();
+    // Phase 4 Stage 7 — tear down the stats render clock. The panel
+    // itself stays visible if `markComplete` was called (the linger
+    // is handling the fade); the `transfer-linger-done` listener
+    // hides it. If the session ended without markComplete (an
+    // immediate failure), hide the panel directly.
+    if (this._TransferStatsTimer !== undefined) {
+      clearInterval(this._TransferStatsTimer);
+      this._TransferStatsTimer = undefined;
+    }
+    this._TransferStats = undefined;
   }
 
   private OnConnectionLocalEcho(value: boolean): void {
