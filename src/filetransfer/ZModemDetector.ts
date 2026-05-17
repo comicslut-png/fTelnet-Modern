@@ -19,6 +19,7 @@
 */
 
 import { ZMODEM_AUTO_TRIGGER } from './ZModem.js';
+import { ZmDebug } from './ZmDebug.js';
 
 /**
  * Callbacks for ZModemDetector. The detector splits its input
@@ -130,6 +131,7 @@ export class ZModemDetector {
    * as-char data flow), a Uint8Array, or a number array.
    */
   public feed(input: string | Uint8Array | number[]): void {
+    ZmDebug.bytes('detector', 'feed()', input);
     if (this._triggered) {
       // Already in ZMODEM mode — pass everything straight through.
       this._callbacks.onZmodemBytes?.(toUint8Array(input));
@@ -204,6 +206,7 @@ export class ZModemDetector {
         // onTrigger so the ZMODEM decoder sees them. They are NOT
         // sent to passthrough.
         this._triggered = true;
+        ZmDebug.log('detector', 'TRIGGER FIRED');
         this.flushPassthrough(); // flush any pre-trigger normal bytes first
         this._callbacks.onTrigger?.(new Uint8Array(ZModemDetector.TRIGGER));
         // Caller code calls .feed(rest_of_buffer) which we'll handle

@@ -43,11 +43,11 @@ describe('ZModem constants', () => {
       ['ZSKIP', Z.ZSKIP, 0x05],
       ['ZNAK', Z.ZNAK, 0x06],
       ['ZABORT', Z.ZABORT, 0x07],
-      ['ZEOF', Z.ZEOF, 0x08],
-      ['ZFERR', Z.ZFERR, 0x09],
+      ['ZFIN', Z.ZFIN, 0x08],
+      ['ZRPOS', Z.ZRPOS, 0x09],
       ['ZDATA', Z.ZDATA, 0x0a],
-      ['ZFIN', Z.ZFIN, 0x0b],
-      ['ZRPOS', Z.ZRPOS, 0x0c],
+      ['ZEOF', Z.ZEOF, 0x0b],
+      ['ZFERR', Z.ZFERR, 0x0c],
     ])('%s is 0x%s', (_name, value, expected) => {
       expect(value).toBe(expected);
     });

@@ -327,19 +327,28 @@ describe('ZModemEncoder', () => {
       expect([...headers[0]!.data]).toEqual([0, 0, 0, 0]);
     });
 
-    it('buildZACK encodes position as bin32 by default', () => {
+    it('buildZACK encodes position as a hex header (spec-compliant)', () => {
+      // Per ZMODEM spec, ZACK is sent as HEX, not binary. (Receiver
+      // responses always go hex so the sender can sample for them.)
+      // Pre-Stage-6, this encoder defaulted to bin32, which our
+      // round-trip tests accepted but real BBSes never see —
+      // ZModemReceive only ever sends ZACK to confirm subpackets.
       const bytes = ZModemEncoder.buildZACK(2048);
       const { headers } = decodeFrame(bytes);
       expect(headers[0]!.type).toBe(ZACK);
-      expect(headers[0]!.encoding).toBe('bin32');
+      expect(headers[0]!.encoding).toBe('hex');
       expect(headers[0]!.getPosition()).toBe(2048);
     });
 
-    it('buildZACK with useCrc32=false produces bin16', () => {
-      const bytes = ZModemEncoder.buildZACK(2048, false);
-      const { headers } = decodeFrame(bytes);
-      expect(headers[0]!.encoding).toBe('bin16');
-      expect(headers[0]!.getPosition()).toBe(2048);
+    it('buildZACK omits the XON trailer (spec exception)', () => {
+      // XON is appended to every hex header EXCEPT ZACK and ZFIN.
+      // ZACK omits XON to protect software flow control during
+      // streaming transfers — an inadvertent XON would unstick
+      // the sender's flow control state.
+      const bytes = ZModemEncoder.buildZACK(0);
+      // 4 leader + 14 hex chars + CR + LF = 20 bytes (no trailing XON)
+      expect(bytes.length).toBe(20);
+      expect(bytes[bytes.length - 1]).toBe(0x0a); // LF, not XON
     });
 
     it('buildZRPOS as hex header', () => {
@@ -414,14 +423,18 @@ describe('ZModemEncoder', () => {
       expect(bytes[20]).toBe(0x11);
     });
 
-    it('ZACK bin32 at position 0 starts with the right leader', () => {
+    it('ZACK hex at position 0 starts with the right leader', () => {
+      // ZACK is now hex-encoded per spec (Stage 6 fix). The leader
+      // is ZPAD ZPAD ZDLE ZHEX (`* * \x18 B`) instead of the old
+      // pre-fix ZPAD ZDLE ZBIN32 (`* \x18 C`).
       const bytes = ZModemEncoder.buildZACK(0);
-      // ZPAD ZDLE ZBIN32 = 0x2A 0x18 0x43
-      expect(bytes[0]).toBe(0x2a);
-      expect(bytes[1]).toBe(0x18);
-      expect(bytes[2]).toBe(0x43);
-      // Type byte ZACK = 0x03 (no escape needed)
-      expect(bytes[3]).toBe(0x03);
+      expect(bytes[0]).toBe(0x2a); // ZPAD
+      expect(bytes[1]).toBe(0x2a); // ZPAD
+      expect(bytes[2]).toBe(0x18); // ZDLE
+      expect(bytes[3]).toBe(0x42); // ZHEX ('B')
+      // Type byte ZACK = 0x03 → two hex chars '0' '3'
+      expect(bytes[4]).toBe(0x30);
+      expect(bytes[5]).toBe(0x33);
     });
 
     it('encoder + decoder agree on 100 random round trips', () => {

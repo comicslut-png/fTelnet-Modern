@@ -22,7 +22,7 @@ import { CRC } from '../common/CRC.js';
 import {
   ZPAD, ZDLE, ZHEX, ZBIN, ZBIN32,
   ZESCAPED_BYTES,
-  ZRINIT, ZACK, ZRPOS, ZRQINIT, ZNAK, ZABORT, ZFIN,
+  ZRINIT, ZACK, ZRPOS, ZRQINIT, ZNAK, ZABORT, ZFIN, ZSKIP,
   CANFC32, CANFDX, CANOVIO,
 } from './ZModem.js';
 
@@ -71,6 +71,7 @@ export class ZModemEncoder {
   public static buildHexHeader(
     type: number,
     data: readonly [number, number, number, number],
+    noXon = false,
   ): Uint8Array {
     // CRC-16 over the 5 payload bytes (type + ZP0..3), then the
     // standard two-zero shift-out to flush the register.
@@ -82,8 +83,11 @@ export class ZModemEncoder {
     const crcHi = (crc >> 8) & 0xff;
     const crcLo = crc & 0xff;
 
-    // 4 frame-leader bytes + 14 hex chars + CR + LF + XON = 21 bytes.
-    const out = new Uint8Array(4 + 14 + 3);
+    // 4 frame-leader + 14 hex chars + CR + LF (+ XON unless noXon).
+    // The XON is omitted for ZACK (to protect flow control in
+    // streaming) and ZFIN (to allow proper session cleanup) per
+    // the ZMODEM spec.
+    const out = new Uint8Array(4 + 14 + (noXon ? 2 : 3));
     let i = 0;
     out[i++] = ZPAD;
     out[i++] = ZPAD;
@@ -97,7 +101,9 @@ export class ZModemEncoder {
 
     out[i++] = 0x0d; // CR
     out[i++] = 0x0a; // LF
-    out[i++] = 0x11; // XON
+    if (!noXon) {
+      out[i++] = 0x11; // XON
+    }
     return out;
   }
 
@@ -281,19 +287,24 @@ export class ZModemEncoder {
    *
    * `position` is encoded as little-endian 32-bit.
    */
-  public static buildZACK(position: number, useCrc32 = true): Uint8Array {
+  /**
+   * Build a ZACK header at the given file offset. Receiver sends
+   * this to acknowledge a ZCRCQ/ZCRCW subpacket and report progress.
+   *
+   * Per the ZMODEM spec, ZACK is sent as a HEX frame and the XON
+   * trailer is omitted (the XON would otherwise interfere with
+   * software flow control during streaming).
+   *
+   * `position` is encoded as little-endian 32-bit.
+   */
+  public static buildZACK(position: number): Uint8Array {
     const data: [number, number, number, number] = [
       position & 0xff,
       (position >>> 8) & 0xff,
       (position >>> 16) & 0xff,
       (position >>> 24) & 0xff,
     ];
-    // ZACK is typically hex during handshake, binary during transfer.
-    // Default to bin32 since most ZACKs happen mid-transfer where
-    // binary is faster.
-    return useCrc32
-      ? ZModemEncoder.buildBin32Header(ZACK, data)
-      : ZModemEncoder.buildBin16Header(ZACK, data);
+    return ZModemEncoder.buildHexHeader(ZACK, data, /* noXon */ true);
   }
 
   /**
@@ -327,9 +338,24 @@ export class ZModemEncoder {
    * Build a ZFIN — "I'm done with this batch, ack to confirm and
    * we'll both hang up the ZMODEM session." Sender and receiver
    * exchange a pair of ZFINs at the end of a transfer.
+   *
+   * Per spec, ZFIN omits the XON trailer to allow proper session
+   * cleanup (the trailing XON would otherwise be consumed by the
+   * peer after the session ended).
    */
   public static buildZFIN(): Uint8Array {
-    return ZModemEncoder.buildHexHeader(ZFIN, [0, 0, 0, 0]);
+    return ZModemEncoder.buildHexHeader(ZFIN, [0, 0, 0, 0], /* noXon */ true);
+  }
+
+  /**
+   * Build a ZSKIP — "skip this file, move on to the next." Receiver
+   * sends this when the user declines a specific file in a batch
+   * (e.g., when a duplicate would overwrite a newer local copy).
+   * The sender responds by either advancing to the next file or
+   * by sending ZFIN if no more files remain.
+   */
+  public static buildZSKIP(): Uint8Array {
+    return ZModemEncoder.buildHexHeader(ZSKIP, [0, 0, 0, 0]);
   }
 
   /**

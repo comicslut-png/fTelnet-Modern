@@ -41,6 +41,7 @@ export {
   type ZModemFileToSend,
   type ZModemSendCallbacks,
 } from './ZModemSend.js';
+export { ZmDebug } from './ZmDebug.js';
 export { YModemReceive } from './YModemReceive.js';
 export { YModemSend } from './YModemSend.js';
 export { YModemSendState } from './YModemSendState.js';

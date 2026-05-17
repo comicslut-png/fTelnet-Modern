@@ -27,7 +27,7 @@ Options.Hostname = 'sbbs.dmine.net';
 
 // Direct WebSocket connection (commented out — bbs.ftelnet.ca doesn't
 // speak WebSocket natively, so we need the proxy below):
-// Options.Port = 1123;
+// Options.Port = 6502;
 
 // Proxied connection via fTelnet's public WebSocket-to-TCP proxy. This
 // matches the release/index.html config in the original repo. The

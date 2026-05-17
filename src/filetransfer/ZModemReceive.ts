@@ -18,6 +18,7 @@
   along with fTelnet.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+import { ZmDebug } from './ZmDebug.js';
 import {
   ZRQINIT, ZFILE, ZDATA, ZEOF, ZFIN, ZABORT, ZNAK, ZSKIP, ZFERR,
   ZCRCE, ZCRCG, ZCRCQ, ZCRCW,
@@ -224,6 +225,7 @@ export class ZModemReceive {
    * Bytes received in ENDED state are silently dropped.
    */
   public feedBytes(bytes: Uint8Array | number[]): void {
+    ZmDebug.bytes('receive', 'feedBytes()', bytes);
     if (this._state === ReceiveState.ENDED) return;
     // Check for the out-of-band CAN-storm abort before handing to decoder.
     // The decoder eats CANs as part of escape sequences; we need to count
@@ -265,6 +267,10 @@ export class ZModemReceive {
   // ─────────────────────── header dispatch ───────────────────────
 
   private handleHeader(h: ZModemHeader): void {
+    ZmDebug.log('receive', `header type=0x${h.type.toString(16)} encoding=${h.encoding}`, {
+      data: [...h.data].map((b) => b.toString(16).padStart(2, '0')).join(' '),
+      state: ReceiveState[this._state],
+    });
     // Note the sender's CRC mode based on encoding. Once we see
     // a bin32 frame from the sender, lock to CRC-32 for subpackets;
     // otherwise default to CRC-16. (We advertise CANFC32 in our
@@ -485,6 +491,7 @@ export class ZModemReceive {
   }
 
   private handleHeaderError(_msg: string): void {
+    ZmDebug.log('receive', `header CRC error: ${_msg}`);
     // A header's CRC didn't match. Send ZNAK so the sender retransmits.
     this.sendZNAK();
   }
@@ -504,7 +511,11 @@ export class ZModemReceive {
   }
 
   private sendZACK(position: number): void {
-    const bytes = ZModemEncoder.buildZACK(position, this._useCrc32);
+    // ZACK is always sent as a hex header per spec (the bin variant
+    // was a pre-Stage-6 mistake — see the wire-vector tests for
+    // the byte-level rationale). The `_useCrc32` flag here only
+    // determined which binary variant to use, which is moot now.
+    const bytes = ZModemEncoder.buildZACK(position);
     this._lastSent = bytes;
     this.emit(bytes);
   }
@@ -524,6 +535,7 @@ export class ZModemReceive {
   // ─────────────────────── housekeeping ───────────────────────
 
   private emit(bytes: Uint8Array): void {
+    ZmDebug.bytes('receive', 'sending to wire', bytes);
     this._callbacks.onBytesToSend?.(bytes);
   }
 

@@ -19,7 +19,7 @@
 */
 
 import {
-  ZRINIT, ZRPOS, ZFILE, ZACK, ZSKIP, ZABORT, ZNAK, ZFIN,
+  ZRINIT, ZRPOS, ZFILE, ZACK, ZSKIP, ZABORT, ZNAK, ZFIN, ZEOF,
   ZCRCE, ZCRCG,
   CANFC32,
 } from './ZModem.js';
@@ -536,8 +536,8 @@ export class ZModemSend {
       (file.data.length >>> 24) & 0xff,
     ];
     const zeof = this._useCrc32
-      ? ZModemEncoder.buildBin32Header(0x08 /* ZEOF */, sizeBytes)
-      : ZModemEncoder.buildBin16Header(0x08, sizeBytes);
+      ? ZModemEncoder.buildBin32Header(ZEOF, sizeBytes)
+      : ZModemEncoder.buildBin16Header(ZEOF, sizeBytes);
     this._lastSent = zeof;
     this.sendBytes(zeof);
 

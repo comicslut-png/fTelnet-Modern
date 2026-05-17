@@ -549,7 +549,7 @@ describe('ZModemReceive', () => {
 // helper assertions above. (The test file imports the matching name
 // at the top in cleaner files; here we shimmed it to avoid import
 // noise inside the simulateSingleFileTransfer body.)
-const ZRPOS_TYPE = 0x0c;
+const ZRPOS_TYPE = 0x09;
 const ZACK = 0x03;
 const ZRPOS = ZRPOS_TYPE;
 void ZRPOS;

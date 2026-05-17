@@ -71,27 +71,29 @@ export const ZACK = 0x03;
 export const ZFILE = 0x04;
 /** Skip this file (receiver tells sender). */
 export const ZSKIP = 0x05;
-/** "I have no more data" — used when receiver doesn't expect anything else. */
+/** Last packet was garbled, receiver telling sender to retransmit. */
 export const ZNAK = 0x06;
 /** Abort the entire batch. */
 export const ZABORT = 0x07;
-/** End-of-file marker (sender tells receiver this file is done). */
-export const ZEOF = 0x08;
-/** Frame CRC failed — receiver telling sender to retransmit. */
-export const ZFERR = 0x09;
+/** End of file batch — sender tells receiver "no more files."
+ *  (Followed by "OO" on the wire to release the receiver.) */
+export const ZFIN = 0x08;
+/** Resume data transmission from a given offset (crash recovery, or
+ *  start-of-file ZRPOS(0) right after the file-info subpacket). */
+export const ZRPOS = 0x09;
 /** Data packet header — precedes a subpacket of file content. */
 export const ZDATA = 0x0a;
-/** End of file batch — sender tells receiver "no more files." */
-export const ZFIN = 0x0b;
-/** Resume data transmission from a given offset (crash recovery). */
-export const ZRPOS = 0x0c;
-/** Receiver acknowledges receipt of data up to a given offset. */
-export const ZRQ = 0x0d; // also called ZRACK
-/** Sender requesting the receiver's challenge response. */
+/** End-of-file marker (sender tells receiver this file is done). */
+export const ZEOF = 0x0b;
+/** Receiver-side file I/O error, protocol-equivalent to ZABORT. */
+export const ZFERR = 0x0c;
+/** Request / response for file polynomial (rare). */
+export const ZCRC = 0x0d;
+/** Sender requesting the receiver to echo a random number (anti-Trojan). */
 export const ZCHALLENGE = 0x0e;
-/** Compare file contents (rarely implemented). */
+/** Request completed (rarely used). */
 export const ZCOMPL = 0x0f;
-/** A "can't open file" or other unrecoverable error from the sender. */
+/** Session abort sequence. */
 export const ZCAN = 0x10;
 /** Free disk space query/response. */
 export const ZFREECNT = 0x11;

@@ -38,6 +38,7 @@ import {
   FileRecord,
   YModemReceive,
   YModemSend,
+  ZmDebug,
   ZModemDetector,
   ZModemReceive,
   type ZModemFileInfo,
@@ -1451,6 +1452,7 @@ export class fTelnetClient {
 
         const Data: string = this._Connection.readString(BytesToRead);
         if (Data.length > 0) {
+          ZmDebug.bytes('wire', 'OnConnectionData read', Data);
           this.ondata.trigger(Data);
           if (
             this._Options.ZModemAutoDetect &&
@@ -1461,6 +1463,7 @@ export class fTelnetClient {
             this._ZModemDetector.feed(Data);
           } else {
             // Detector disabled — go straight to the renderer.
+            ZmDebug.log('wire', 'detector disabled/missing, going straight to renderer');
             this.routeToRenderer(Data);
           }
         }
@@ -1531,6 +1534,7 @@ export class fTelnetClient {
    * Phase 4 Stage 6.
    */
   private beginZModemReceive(initialBytes: Uint8Array): void {
+    ZmDebug.log('client', 'beginZModemReceive — spinning up state machine');
     if (this._Connection === undefined) return;
     this._ZModemFileBuffers.clear();
     this._ZModemCurrentFile = undefined;
