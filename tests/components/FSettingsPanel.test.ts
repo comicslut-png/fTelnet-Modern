@@ -5,6 +5,7 @@ import type {
   SettingsMuteChangeDetail,
   SettingsThemeChangeDetail,
   SettingsVibrateChangeDetail,
+  SettingsZModemAutoDetectChangeDetail,
 } from '@components/index.js';
 
 /*
@@ -102,16 +103,67 @@ describe('<f-settings-panel>', () => {
       expect(inner?.getAttribute('style') ?? '').not.toContain('display: none');
     });
 
-    it('positions itself via pageX/pageY (top = pageY - clientHeight)', async () => {
+    it('renders viewport-centered when open (ignores pageX/pageY)', async () => {
+      // Phase 5 polish: positioning model changed from
+      // pageX/pageY anchor to viewport-centered modal-style
+      // overlay. The pageX/pageY props are kept for API
+      // compatibility but no longer affect rendered position;
+      // the panel always centers itself in the viewport.
       el.pageX = 300;
       el.pageY = 500;
       el.open = true;
       await el.updateComplete;
       const inner = el.querySelector<HTMLElement>('.fTelnetSettingsPanel');
       const style = inner?.getAttribute('style') ?? '';
-      expect(style).toContain('left: 300px');
-      // In jsdom clientHeight is 0 so top stays at pageY.
-      expect(style).toContain('top: 500px');
+      // Should center via top/left 50% + translate(-50%, -50%).
+      expect(style).toContain('position: fixed');
+      expect(style).toContain('top: 50%');
+      expect(style).toContain('left: 50%');
+      expect(style).toContain('translate(-50%, -50%)');
+      // Old pageX/pageY pixel values should NOT appear.
+      expect(style).not.toContain('left: 300px');
+      expect(style).not.toContain('top: 500px');
+    });
+  });
+
+  describe('click-outside-to-close', () => {
+    it('clicking outside the panel closes it', async () => {
+      el.open = true;
+      await el.updateComplete;
+      await Promise.resolve();
+
+      const event = new MouseEvent('mousedown', { bubbles: true });
+      document.body.dispatchEvent(event);
+
+      expect(el.open).toBe(false);
+    });
+
+    it('clicking inside the panel does not close it', async () => {
+      el.open = true;
+      await el.updateComplete;
+      await Promise.resolve();
+
+      const inner = el.querySelector<HTMLElement>('.fTelnetSettingsPanel');
+      const event = new MouseEvent('mousedown', { bubbles: true });
+      inner?.dispatchEvent(event);
+
+      expect(el.open).toBe(true);
+    });
+
+    it('dispatches settings-close event when closed by outside click', async () => {
+      el.open = true;
+      await el.updateComplete;
+      await Promise.resolve();
+
+      let closeFired = false;
+      el.addEventListener('settings-close', () => {
+        closeFired = true;
+      });
+
+      const event = new MouseEvent('mousedown', { bubbles: true });
+      document.body.dispatchEvent(event);
+
+      expect(closeFired).toBe(true);
     });
   });
 
@@ -254,6 +306,91 @@ describe('<f-settings-panel>', () => {
 
       // Empty value parses to NaN; handler bails without dispatching.
       expect(fired).toBe(0);
+    });
+  });
+
+  describe('zmodem auto-detect reactivity', () => {
+    /**
+     * The Protocol → Auto Detect checkbox toggles
+     * Options.ZModemAutoDetect at runtime. The change event
+     * propagates the new value as a SettingsZModemAutoDetectChangeDetail.
+     */
+    it('defaults to enabled (checked)', () => {
+      const checkboxes = el.querySelectorAll<HTMLInputElement>(
+        'input[type="checkbox"]',
+      );
+      // Three checkboxes: mute, (none for vibrate which is number), auto-detect
+      // Find the one in the Protocol fieldset
+      const protocolFieldset = Array.from(
+        el.querySelectorAll<HTMLFieldSetElement>('fieldset'),
+      ).find((f) => f.querySelector('legend')?.textContent === 'Protocol');
+      expect(protocolFieldset).toBeTruthy();
+      const checkbox = protocolFieldset!.querySelector<HTMLInputElement>(
+        'input[type="checkbox"]',
+      );
+      expect(checkbox?.checked).toBe(true);
+    });
+
+    it('reflects the zmodemAutoDetect property in the checkbox state', async () => {
+      el.zmodemAutoDetect = false;
+      await el.updateComplete;
+      const protocolFieldset = Array.from(
+        el.querySelectorAll<HTMLFieldSetElement>('fieldset'),
+      ).find((f) => f.querySelector('legend')?.textContent === 'Protocol');
+      const checkbox = protocolFieldset!.querySelector<HTMLInputElement>(
+        'input[type="checkbox"]',
+      );
+      expect(checkbox?.checked).toBe(false);
+    });
+
+    it('unchecking dispatches settings-zmodem-auto-detect-change with enabled=false', () => {
+      const protocolFieldset = Array.from(
+        el.querySelectorAll<HTMLFieldSetElement>('fieldset'),
+      ).find((f) => f.querySelector('legend')?.textContent === 'Protocol');
+      const checkbox = protocolFieldset!.querySelector<HTMLInputElement>(
+        'input[type="checkbox"]',
+      );
+
+      let captured: SettingsZModemAutoDetectChangeDetail | undefined;
+      el.addEventListener(
+        'settings-zmodem-auto-detect-change',
+        (e): void => {
+          captured = (
+            e as CustomEvent<SettingsZModemAutoDetectChangeDetail>
+          ).detail;
+        },
+      );
+
+      checkbox!.checked = false;
+      checkbox!.dispatchEvent(new Event('change', { bubbles: true }));
+
+      expect(captured).toEqual({ enabled: false });
+    });
+
+    it('checking again dispatches with enabled=true', async () => {
+      el.zmodemAutoDetect = false;
+      await el.updateComplete;
+      const protocolFieldset = Array.from(
+        el.querySelectorAll<HTMLFieldSetElement>('fieldset'),
+      ).find((f) => f.querySelector('legend')?.textContent === 'Protocol');
+      const checkbox = protocolFieldset!.querySelector<HTMLInputElement>(
+        'input[type="checkbox"]',
+      );
+
+      let captured: SettingsZModemAutoDetectChangeDetail | undefined;
+      el.addEventListener(
+        'settings-zmodem-auto-detect-change',
+        (e): void => {
+          captured = (
+            e as CustomEvent<SettingsZModemAutoDetectChangeDetail>
+          ).detail;
+        },
+      );
+
+      checkbox!.checked = true;
+      checkbox!.dispatchEvent(new Event('change', { bubbles: true }));
+
+      expect(captured).toEqual({ enabled: true });
     });
   });
 

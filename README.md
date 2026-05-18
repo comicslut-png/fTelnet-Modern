@@ -26,6 +26,8 @@ applicable.
 | 4. ZMODEM file transfer + transfer progress panel                      | ✅ Complete (7 stages)        |
 | 5. Polish (PWA, performance, upload UI, docs)                          | ⏳ Planned                    |
 
+Latest release: [v2.0.0-alpha.2](https://github.com/comicslut-png/fTelnet-Modern/releases/tag/v2.0.0-alpha.2) — Phase 4 (ZMODEM file transfer) shipped.
+
 ### What works today
 
 - **Modern build**: TypeScript 5.9 strict, Vite 5, ESM, Vitest 2 — full

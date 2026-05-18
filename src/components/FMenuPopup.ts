@@ -289,31 +289,85 @@ export class FMenuPopup extends LitElement {
   }
 
   /**
-   * Assemble the inline style for the wrapper div. Combines:
-   *   - display: none/block based on `open`
-   *   - left/top based on pageX/pageY (when open)
-   *   - z-index: 1500 (TODO: move to CSS in Phase 3 — preserved
-   *     from the original `style.zIndex = '1500'` assignment)
+   * Assemble the inline style for the wrapper div. Anchors the
+   * popup so its BOTTOM edge sits at the click point (pageY),
+   * extending UPWARD from there. Implementation:
    *
-   * Top position is `pageY - clientHeight` to float the popup
-   * *above* the click point. The component reads its own
-   * clientHeight after the first render to compute this; if
-   * clientHeight is 0 (initial render before layout), we fall
-   * back to placing the popup at pageY directly.
+   *   position: fixed              (escape any parent stacking)
+   *   left: pageX
+   *   top: pageY
+   *   transform: translateY(-100%) (shift up by popup's own height,
+   *                                computed by the browser at
+   *                                paint time — no JS measurement
+   *                                step required, works on first
+   *                                render)
    *
-   * Phase 3 Stage 1 note: the original code's `z-index: 1500` is
-   * now in ftelnet.css under the `.fTelnetMenuButtons` rule, so
-   * we don't include it in the inline style anymore. Removing
-   * the magic number from inline-JS code was a long-standing
-   * TODO; CSS is where it belongs.
+   * This replaces the old `top = pageY - clientHeight` formula,
+   * which depended on reading the element's own clientHeight after
+   * render. On first open clientHeight was 0 (no prior layout) so
+   * the popup would appear AT the click point and extend DOWN
+   * (off-screen, requiring scroll). The translateY(-100%) trick
+   * is the bulletproof CSS-only solution.
+   *
+   * Phase 5 polish: z-index lives in ftelnet.css under
+   * `.fTelnetMenuButtons`.
    */
   private buildInlineStyle(): string {
     if (!this.open) {
       return 'display: none;';
     }
+    return (
+      'display: block;' +
+      ' position: fixed;' +
+      ` left: ${this.pageX}px;` +
+      ` top: ${this.pageY}px;` +
+      ' transform: translateY(-100%);'
+    );
+  }
 
-    const top = this.pageY - this.clientHeight;
-    return `display: block; left: ${this.pageX}px; top: ${top}px;`;
+  /**
+   * Click-outside-to-close. Listens for clicks anywhere in the
+   * document and closes the popup if the click was outside this
+   * element AND the popup is open.
+   *
+   * Uses capture phase + a microtask-deferred attach so the same
+   * click that OPENED the popup (which propagates up from the
+   * menu button) doesn't immediately close it. The deferral
+   * ensures the open-click finishes propagating before our
+   * outside-click handler starts listening.
+   */
+  private _outsideClickHandler = (e: MouseEvent): void => {
+    if (!this.open) return;
+    const target = e.target as Node;
+    if (!this.contains(target)) {
+      this.open = false;
+      // Dispatch a close event so the parent can sync state if
+      // it tracks open/closed externally.
+      this.dispatchEvent(
+        new CustomEvent('menu-close', { bubbles: true, composed: true }),
+      );
+    }
+  };
+
+  public override updated(changed: Map<string, unknown>): void {
+    super.updated(changed);
+    if (changed.has('open')) {
+      if (this.open) {
+        // Defer one microtask so the opening click finishes
+        // propagating before we start listening for outside
+        // clicks.
+        queueMicrotask(() => {
+          document.addEventListener('mousedown', this._outsideClickHandler, true);
+        });
+      } else {
+        document.removeEventListener('mousedown', this._outsideClickHandler, true);
+      }
+    }
+  }
+
+  public override disconnectedCallback(): void {
+    document.removeEventListener('mousedown', this._outsideClickHandler, true);
+    super.disconnectedCallback();
   }
 
   /**

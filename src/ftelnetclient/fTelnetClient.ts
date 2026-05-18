@@ -70,6 +70,7 @@ import {
   type SettingsMuteChangeDetail,
   type SettingsThemeChangeDetail,
   type SettingsVibrateChangeDetail,
+  type SettingsZModemAutoDetectChangeDetail,
   type VKKeyEventDetail,
 } from '../components/index.js';
 import { fTelnetOptions } from './fTelnetOptions.js';
@@ -350,6 +351,17 @@ export class fTelnetClient {
         if (!Number.isNaN(n) && n >= 0 && n <= 100) {
           this._Options.VirtualKeyboardVibrateDuration = n;
         }
+      }
+
+      // Phase 5: the Auto-Detect checkbox under Settings →
+      // Protocol. When the user has explicitly disabled
+      // auto-detect, we honor that across sessions. Stored
+      // value is the literal string 'true' or 'false'.
+      const storedZModemAutoDetect = window.localStorage.getItem(
+        'fTelnet.zmodemAutoDetect',
+      );
+      if (storedZModemAutoDetect !== null) {
+        this._Options.ZModemAutoDetect = storedZModemAutoDetect === 'true';
       }
     } catch {
       // Ignore — same as above.
@@ -745,6 +757,7 @@ export class fTelnetClient {
     this._SettingsPanel.currentTheme = this._Options.Theme;
     this._SettingsPanel.muted = this._Options.MuteSounds;
     this._SettingsPanel.vibrateDuration = this._Options.VirtualKeyboardVibrateDuration;
+    this._SettingsPanel.zmodemAutoDetect = this._Options.ZModemAutoDetect;
 
     this._SettingsPanel.addEventListener('settings-theme-change', (e: Event): void => {
       const detail = (e as CustomEvent<SettingsThemeChangeDetail>).detail;
@@ -775,6 +788,25 @@ export class fTelnetClient {
         // Ignore.
       }
     });
+    this._SettingsPanel.addEventListener(
+      'settings-zmodem-auto-detect-change',
+      (e: Event): void => {
+        const detail = (e as CustomEvent<SettingsZModemAutoDetectChangeDetail>)
+          .detail;
+        // Update the runtime flag. OnConnectionData checks this on
+        // every read, so the change takes effect immediately — no
+        // reconnect needed.
+        this._Options.ZModemAutoDetect = detail.enabled;
+        try {
+          window.localStorage.setItem(
+            'fTelnet.zmodemAutoDetect',
+            String(detail.enabled),
+          );
+        } catch {
+          // Ignore.
+        }
+      },
+    );
     this._SettingsPanel.addEventListener('settings-close', (): void => {
       this._SettingsPanel.open = false;
     });
@@ -2074,6 +2106,7 @@ export class fTelnetClient {
     this._SettingsPanel.currentTheme = this._Options.Theme;
     this._SettingsPanel.muted = this._Options.MuteSounds;
     this._SettingsPanel.vibrateDuration = this._Options.VirtualKeyboardVibrateDuration;
+    this._SettingsPanel.zmodemAutoDetect = this._Options.ZModemAutoDetect;
     this._SettingsPanel.open = true;
   }
 

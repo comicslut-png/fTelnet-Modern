@@ -193,15 +193,21 @@ describe('<f-menu-popup>', () => {
       expect(inner?.getAttribute('style') ?? '').toContain('left: 250px');
     });
 
-    it('positions top above the click point (pageY - clientHeight)', async () => {
+    it('positions top at click point with translateY(-100%) for above-anchoring', async () => {
+      // Phase 5 polish: positioning model uses
+      // `top: pageY; transform: translateY(-100%)` instead of
+      // the old `top: pageY - clientHeight`. The CSS transform
+      // shifts the popup up by its own measured height at paint
+      // time, so it works on first render without needing a JS
+      // measurement pass.
       el.open = true;
       el.pageY = 500;
       await el.updateComplete;
       const inner = el.querySelector<HTMLElement>('.fTelnetMenuButtons');
       const style = inner?.getAttribute('style') ?? '';
-      // top = pageY - clientHeight. In jsdom clientHeight is 0
-      // (no layout), so top should be 500.
+      expect(style).toContain('position: fixed');
       expect(style).toContain('top: 500px');
+      expect(style).toContain('translateY(-100%)');
     });
 
     it('omits left/top when closed', async () => {
@@ -213,6 +219,51 @@ describe('<f-menu-popup>', () => {
       const style = inner?.getAttribute('style') ?? '';
       expect(style).not.toContain('left:');
       expect(style).not.toContain('top:');
+    });
+  });
+
+  describe('click-outside-to-close', () => {
+    it('clicking outside the popup closes it', async () => {
+      el.open = true;
+      await el.updateComplete;
+      // Wait a microtask so the outside-click listener attaches
+      // (it's deferred via queueMicrotask in updated()).
+      await Promise.resolve();
+
+      // Simulate a click on document.body (outside the popup).
+      const event = new MouseEvent('mousedown', { bubbles: true });
+      document.body.dispatchEvent(event);
+
+      expect(el.open).toBe(false);
+    });
+
+    it('clicking inside the popup does not close it', async () => {
+      el.open = true;
+      await el.updateComplete;
+      await Promise.resolve();
+
+      // Click on an element inside the popup.
+      const inner = el.querySelector<HTMLElement>('.fTelnetMenuButtons');
+      const event = new MouseEvent('mousedown', { bubbles: true });
+      inner?.dispatchEvent(event);
+
+      expect(el.open).toBe(true);
+    });
+
+    it('dispatches menu-close event when closed by outside click', async () => {
+      el.open = true;
+      await el.updateComplete;
+      await Promise.resolve();
+
+      let closeFired = false;
+      el.addEventListener('menu-close', () => {
+        closeFired = true;
+      });
+
+      const event = new MouseEvent('mousedown', { bubbles: true });
+      document.body.dispatchEvent(event);
+
+      expect(closeFired).toBe(true);
     });
   });
 

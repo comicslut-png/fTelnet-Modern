@@ -27,6 +27,7 @@ export {
   type SettingsMuteChangeDetail,
   type SettingsThemeChangeDetail,
   type SettingsVibrateChangeDetail,
+  type SettingsZModemAutoDetectChangeDetail,
   type ThemeChoice,
 } from './FSettingsPanel.js';
 export { FStatusBar, type MenuClickDetail } from './FStatusBar.js';

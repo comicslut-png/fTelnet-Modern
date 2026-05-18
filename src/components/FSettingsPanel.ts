@@ -42,6 +42,11 @@ export interface SettingsVibrateChangeDetail {
   duration: number;
 }
 
+/** Payload for the `settings-zmodem-auto-detect-change` event. */
+export interface SettingsZModemAutoDetectChangeDetail {
+  enabled: boolean;
+}
+
 /**
  * `<f-settings-panel>` — runtime user preferences UI. Opened from
  * the menu popup via the new "Settings..." action; floats over the
@@ -119,6 +124,18 @@ export class FSettingsPanel extends LitElement {
   @property({ type: Number, attribute: 'vibrate-duration' })
   vibrateDuration = 25;
 
+  /**
+   * Whether the ZMODEM auto-detector is enabled. When true (the
+   * default), the client watches inbound data for the ZMODEM
+   * header and diverts to the receive state machine when it sees
+   * one. When false, ZMODEM bytes pass through as terminal text
+   * (which renders as garbage; the off-switch is for debugging or
+   * for edge cases where auto-detect causes problems on a specific
+   * BBS).
+   */
+  @property({ type: Boolean, attribute: 'zmodem-auto-detect' })
+  zmodemAutoDetect = true;
+
   protected override createRenderRoot(): HTMLElement {
     return this;
   }
@@ -130,101 +147,123 @@ export class FSettingsPanel extends LitElement {
       <div class="fTelnetSettingsPanel" style=${inlineStyle}>
         <div class="fTelnetSettingsPanelHeader">Settings</div>
 
-        <fieldset class="fTelnetSettingsPanelGroup">
-          <legend>Theme</legend>
-          ${this.themes.map(
-            (t): TemplateResult => html`
+        <div class="fTelnetSettingsPanelColumns">
+          <div class="fTelnetSettingsPanelColumn">
+            <fieldset class="fTelnetSettingsPanelGroup">
+              <legend>Theme</legend>
+              ${this.themes.map(
+                (t): TemplateResult => html`
+                  <label class="fTelnetSettingsPanelOption">
+                    <input
+                      type="radio"
+                      name="theme"
+                      value=${t.id}
+                      ?checked=${t.id === this.currentTheme}
+                      @change=${this.handleThemeChange}
+                    />
+                    🎨 ${t.label}
+                  </label>
+                `
+              )}
+            </fieldset>
+          </div>
+
+          <div class="fTelnetSettingsPanelColumn">
+            <fieldset class="fTelnetSettingsPanelGroup">
+              <legend>Sound</legend>
               <label class="fTelnetSettingsPanelOption">
                 <input
-                  type="radio"
-                  name="theme"
-                  value=${t.id}
-                  ?checked=${t.id === this.currentTheme}
-                  @change=${this.handleThemeChange}
+                  type="checkbox"
+                  ?checked=${this.muted}
+                  @change=${this.handleMuteChange}
                 />
-                🎨 ${t.label}
+                🔇 Mute bell sounds
               </label>
-            `
-          )}
-        </fieldset>
+            </fieldset>
 
-        <fieldset class="fTelnetSettingsPanelGroup">
-          <legend>Sound</legend>
-          <label class="fTelnetSettingsPanelOption">
-            <input
-              type="checkbox"
-              ?checked=${this.muted}
-              @change=${this.handleMuteChange}
-            />
-            🔇 Mute bell sounds
-          </label>
-        </fieldset>
+            <fieldset class="fTelnetSettingsPanelGroup">
+              <legend>Touch</legend>
+              <label class="fTelnetSettingsPanelOption">
+                📳 Vibrate duration:
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="5"
+                  .value=${String(this.vibrateDuration)}
+                  @change=${this.handleVibrateChange}
+                  class="fTelnetSettingsPanelNumber"
+                />
+                ms
+              </label>
+            </fieldset>
 
-        <fieldset class="fTelnetSettingsPanelGroup">
-          <legend>Touch</legend>
-          <label class="fTelnetSettingsPanelOption">
-            📳 Vibrate duration:
-            <input
-              type="number"
-              min="0"
-              max="100"
-              step="5"
-              .value=${String(this.vibrateDuration)}
-              @change=${this.handleVibrateChange}
-              class="fTelnetSettingsPanelNumber"
-            />
-            ms
-          </label>
-        </fieldset>
+            <fieldset class="fTelnetSettingsPanelGroup">
+              <legend>Protocol</legend>
+              <label class="fTelnetSettingsPanelOption">
+                <input
+                  type="checkbox"
+                  ?checked=${this.zmodemAutoDetect}
+                  @change=${this.handleZModemAutoDetectChange}
+                />
+                🔍 Auto Detect
+              </label>
+            </fieldset>
+          </div>
+        </div>
 
-        <fieldset class="fTelnetSettingsPanelGroup">
+        <fieldset class="fTelnetSettingsPanelGroup fTelnetSettingsPanelGroupFullWidth">
           <legend>About</legend>
           <div class="fTelnetSettingsPanelAbout">
-            <div class="fTelnetSettingsPanelAboutLine">
-              <strong>fTelnet-Modern</strong> v${FSettingsPanel.VERSION}
-            </div>
-            <div class="fTelnetSettingsPanelAboutLine">
-              Modern fork by
-              <a
-                href="mailto:dangerbaybbs@hotmail.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                >Tom Swartz</a
-              >
-            </div>
-            <div class="fTelnetSettingsPanelAboutLine">
-              <a
-                href="https://github.com/comicslut-png/fTelnet-Modern"
-                target="_blank"
-                rel="noopener noreferrer"
-                >github.com/comicslut-png/fTelnet-Modern</a
-              >
-            </div>
-            <div class="fTelnetSettingsPanelAboutSpacer"></div>
-            <div class="fTelnetSettingsPanelAboutLine">
-              Based on <strong>fTelnet</strong>
-            </div>
-            <div class="fTelnetSettingsPanelAboutLine">
-              Copyright © 2009–2026
-              <a
-                href="https://www.rickparrish.ca"
-                target="_blank"
-                rel="noopener noreferrer"
-                >R&amp;M Software</a
-              >
-            </div>
-            <div class="fTelnetSettingsPanelAboutLine">
-              Original by Rick Parrish
-            </div>
-            <div class="fTelnetSettingsPanelAboutSpacer"></div>
-            <div class="fTelnetSettingsPanelAboutLine">
-              Licensed under
-              <a
-                href="https://www.gnu.org/licenses/agpl-3.0.html"
-                target="_blank"
-                rel="noopener noreferrer"
-                >AGPL-3.0</a
-              >
+            <div class="fTelnetSettingsPanelAboutColumns">
+              <div class="fTelnetSettingsPanelAboutColumn">
+                <div class="fTelnetSettingsPanelAboutLine">
+                  <strong>fTelnet-Modern</strong> v${FSettingsPanel.VERSION}
+                </div>
+                <div class="fTelnetSettingsPanelAboutLine">
+                  Modern fork by
+                  <a
+                    href="mailto:dangerbaybbs@hotmail.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    >Tom Swartz</a
+                  >
+                </div>
+                <div class="fTelnetSettingsPanelAboutLine">
+                  <a
+                    href="https://github.com/comicslut-png/fTelnet-Modern"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    >github.com/comicslut-png/fTelnet-Modern</a
+                  >
+                </div>
+              </div>
+              <div class="fTelnetSettingsPanelAboutColumn">
+                <div class="fTelnetSettingsPanelAboutLine">
+                  Based on <strong>fTelnet</strong>
+                </div>
+                <div class="fTelnetSettingsPanelAboutLine">
+                  Copyright © 2009–2026
+                  <a
+                    href="https://www.rickparrish.ca"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    >R&amp;M Software</a
+                  >
+                </div>
+                <div class="fTelnetSettingsPanelAboutLine">
+                  Original by Rick Parrish
+                </div>
+                <div class="fTelnetSettingsPanelAboutLine">
+                  Licensed under
+                  <a
+                    href="https://www.gnu.org/licenses/agpl-3.0.html"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    >AGPL-3.0</a
+                  >
+                </div>
+              </div>
             </div>
           </div>
         </fieldset>
@@ -239,19 +278,76 @@ export class FSettingsPanel extends LitElement {
         </div>
       </div>
     `;
+
   }
 
   /**
-   * Position the panel where the click happened, accounting for
-   * its own height so it floats above the click point. Same
-   * positioning logic as FMenuPopup.
+   * Position the panel as a viewport-centered modal-style overlay.
+   * The settings panel is larger than the menu popup; anchoring it
+   * to a click point can push it off-screen on shorter windows.
+   * Centering it via the bulletproof CSS pattern (top/left 50% +
+   * translate -50%) means it always renders fully visible and
+   * always overlays the canvas area cleanly.
+   *
+   * Phase 5 polish: switched from `top = pageY - clientHeight`
+   * (which depended on reading clientHeight post-render and
+   * collapsed to AT-the-click-point on first open) to fixed
+   * viewport-centered positioning. The pageX/pageY properties
+   * are now ignored — kept for backward API compatibility but
+   * the panel always renders centered.
    */
   private buildInlineStyle(): string {
     if (!this.open) {
       return 'display: none;';
     }
-    const top = this.pageY - this.clientHeight;
-    return `display: block; left: ${this.pageX}px; top: ${top}px;`;
+    return (
+      'display: block;' +
+      ' position: fixed;' +
+      ' top: 50%;' +
+      ' left: 50%;' +
+      ' transform: translate(-50%, -50%);' +
+      ' max-height: 90vh;' +
+      ' overflow-y: auto;'
+    );
+  }
+
+  /**
+   * Click-outside-to-close. Same pattern as FMenuPopup:
+   * listens for clicks anywhere in the document and closes the
+   * panel if the click was outside this element. Microtask-deferred
+   * attach so the click that opened the panel doesn't immediately
+   * close it.
+   */
+  private _outsideClickHandler = (e: MouseEvent): void => {
+    if (!this.open) return;
+    const target = e.target as Node;
+    if (!this.contains(target)) {
+      this.open = false;
+      this.dispatchEvent(
+        new CustomEvent('settings-close', {
+          bubbles: true,
+          composed: true,
+        }),
+      );
+    }
+  };
+
+  public override updated(changed: Map<string, unknown>): void {
+    super.updated(changed);
+    if (changed.has('open')) {
+      if (this.open) {
+        queueMicrotask(() => {
+          document.addEventListener('mousedown', this._outsideClickHandler, true);
+        });
+      } else {
+        document.removeEventListener('mousedown', this._outsideClickHandler, true);
+      }
+    }
+  }
+
+  public override disconnectedCallback(): void {
+    document.removeEventListener('mousedown', this._outsideClickHandler, true);
+    super.disconnectedCallback();
   }
 
   private handleThemeChange = (e: Event): void => {
@@ -290,6 +386,20 @@ export class FSettingsPanel extends LitElement {
         bubbles: true,
         composed: true,
       })
+    );
+  };
+
+  private handleZModemAutoDetectChange = (e: Event): void => {
+    const checked = (e.target as HTMLInputElement).checked;
+    this.dispatchEvent(
+      new CustomEvent<SettingsZModemAutoDetectChangeDetail>(
+        'settings-zmodem-auto-detect-change',
+        {
+          detail: { enabled: checked },
+          bubbles: true,
+          composed: true,
+        },
+      ),
     );
   };
 
