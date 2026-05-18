@@ -215,7 +215,33 @@ export class fTelnetClient {
    */
   private _ZModemDetector: ZModemDetector | undefined;
   private _ZModemReceive: ZModemReceive | undefined;
-  private readonly _ZModemFileBuffers = new Map<string, number[]>();
+  /**
+   * Per-file byte buffers, keyed by filename. Phase 5 polish:
+   * stores `Uint8Array[]` (array of subpacket chunks) instead of
+   * the previous `number[]` (single growing flat array of byte
+   * values).
+   *
+   * Why: ZModemReceive's `onFileData` callback delivers chunks
+   * as `Uint8Array` already. The old code copied each chunk
+   * byte-by-byte into a `number[]` via per-byte `Array.push`,
+   * then on completion did `new Uint8Array(numberArray)` —
+   * another per-element conversion-copy. For multi-MB files
+   * that's millions of per-byte operations on the main thread,
+   * producing a multi-second UI freeze between "100%" on the
+   * progress panel and the browser save dialog appearing.
+   *
+   * The new approach: push each Uint8Array chunk directly into
+   * the array (one push per subpacket — typically ~1024 bytes
+   * each, so ~1000 pushes for a 1 MB file rather than 1,000,000).
+   * On completion, `new Blob(chunks)` accepts an array of
+   * Uint8Array directly — no concat step needed. The Blob
+   * constructor handles the multi-chunk case natively in C++
+   * inside the browser, not in JavaScript.
+   *
+   * Expected impact: the visible freeze on multi-MB transfers
+   * collapses from several seconds to sub-100ms.
+   */
+  private readonly _ZModemFileBuffers = new Map<string, Uint8Array[]>();
   private _ZModemCurrentFile: ZModemFileInfo | undefined;
 
   /**
@@ -1848,9 +1874,16 @@ export class fTelnetClient {
         if (this._ZModemCurrentFile === undefined) return;
         const buf = this._ZModemFileBuffers.get(this._ZModemCurrentFile.name);
         if (buf === undefined) return;
-        for (let i = 0; i < chunk.length; i++) {
-          buf.push(chunk[i]!);
-        }
+        // Phase 5 polish: push the Uint8Array chunk reference
+        // directly. The previous per-byte `buf.push(chunk[i])`
+        // loop was the main contributor to the multi-second UI
+        // freeze on large transfers. One push per subpacket
+        // (typically ~1024 bytes) is dramatically cheaper than
+        // 1024 pushes per subpacket.
+        //
+        // Note: we keep the reference, not a copy. ZModemReceive
+        // is responsible for not mutating chunks after dispatch.
+        buf.push(chunk);
       },
       onProgress: (received, total) => {
         // Feed the stats engine. The 10 Hz render clock picks up
@@ -1860,9 +1893,25 @@ export class fTelnetClient {
         this._TransferStats?.update(received, total);
       },
       onFileComplete: (file) => {
-        const buf = this._ZModemFileBuffers.get(file.name);
-        if (buf === undefined || buf.length === 0) return;
-        const blob = new Blob([new Uint8Array(buf)]);
+        const chunks = this._ZModemFileBuffers.get(file.name);
+        if (chunks === undefined || chunks.length === 0) return;
+        // Phase 5 polish: Blob's constructor accepts an array of
+        // BlobParts (including Uint8Array) and concatenates them
+        // natively in browser-internal C++ — no JavaScript-level
+        // copy loop. The previous code was
+        // `new Blob([new Uint8Array(numberArray)])` which forced a
+        // per-element copy of every byte through a JS-level
+        // Uint8Array constructor call. With the chunks-array
+        // approach the entire save step is one Blob allocation,
+        // no copies.
+        //
+        // TS cast note: in TS 5.7+ `Uint8Array` became generic over
+        // its backing buffer (ArrayBuffer | SharedArrayBuffer), and
+        // Blob's BlobPart type only accepts ArrayBuffer-backed
+        // arrays. Our chunks always come from ZModemDecoder which
+        // allocates plain Uint8Array (ArrayBuffer-backed), so the
+        // cast is safe.
+        const blob = new Blob(chunks as BlobPart[]);
         saveAs(blob, file.name);
         this._ZModemFileBuffers.delete(file.name);
       },
