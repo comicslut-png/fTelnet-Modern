@@ -6,6 +6,10 @@ by Rick Parrish (R&M Software), bringing the 2017-era TypeScript
 codebase up to a current toolchain while preserving every feature and
 the BBS-era aesthetic.
 
+![fTelnet-Modern](./assets/screenshots/Title.png)
+
+![ZMODEM file transfer in progress](./assets/screenshots/Zmodem.png)
+
 > **fTelnet-Modern** — Copyright © 2026 Tom Swartz
 > &lt;dangerbaybbs@hotmail.com&gt;
 > Based on **fTelnet** — Copyright © 2009-2026 R&M Software (Rick Parrish)
@@ -25,8 +29,6 @@ applicable.
 | 3. Neo-retro chrome facelift (theming system, settings panel, 6 themes) | ✅ Complete (3 main + deltas) |
 | 4. ZMODEM file transfer + transfer progress panel                      | ✅ Complete (7 stages)        |
 | 5. Polish (PWA, performance, upload UI, docs)                          | ⏳ Planned                    |
-
-Latest release: [v2.0.0-alpha.2](https://github.com/comicslut-png/fTelnet-Modern/releases/tag/v2.0.0-alpha.2) — Phase 4 (ZMODEM file transfer) shipped.
 
 ### What works today
 
@@ -116,8 +118,11 @@ BBS to exercise the full ANSI + ZMODEM stack.
   - **8-Bit Boyz** (`bbs.8bitboyz.com:6502`) — Mystic BBS. Smaller
     file area, good for verifying Mystic/SEXYZ compatibility.
 
-  - **Danger Bay** — PCBoard BBS run by the maintainer of this fork.
-    Active community with door games and a large file library.
+  - **Danger Bay** (`dangerbaybbs.dyndns.org:1337`) 
+    The Official BBS Door Games & Apps Museum
+    — A PCBoard BBS run by the maintainer of this fork.
+    Active community with over 1900 door games and a large 
+    file library.
 
   - **bbs.ftelnet.ca:23** — the upstream fTelnet demo server (Rick
     Parrish, R&M Software). Smaller, primarily a connectivity demo;
