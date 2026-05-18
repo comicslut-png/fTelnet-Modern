@@ -1,0 +1,51 @@
+fTelnet-Modern
+==============
+
+A modernized fork of fTelnet for connecting browsers to BBSes and
+text-mode hosts.
+
+Copyright (C) 2026 Tom Swartz <dangerbaybbs@hotmail.com>
+https://github.com/comicslut-png/fTelnet-Modern
+
+Based on fTelnet
+================
+
+Copyright (C) 2009-2026 R&M Software
+Original work by Rick Parrish
+https://github.com/rickparrish/fTelnet
+https://www.rickparrish.ca
+
+License
+=======
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+Affero General Public License for more details.
+
+See the LICENSE file for the full license text. You should have
+received a copy of the GNU Affero General Public License along with
+this program. If not, see <https://www.gnu.org/licenses/agpl-3.0.html>.
+
+Acknowledgments
+===============
+
+The hard work in this codebase — the ANSI/CTERM parser, RIPscrip
+interpreter, telnet negotiation, font collection, and architectural
+design — is Rick Parrish's. This fork is maintenance and
+modernization on top of that foundation.
+
+Phase 4 ZMODEM implementation is cleanroom TypeScript informed by:
+  - FGasper's zmodem.js (Apache-2.0) — the de facto JS reference
+  - zxdong262's zmodem2-js (MIT) — TypeScript port of the Rust
+    zmodem2 crate
+  - lrzsz by Uwe Ohse (public domain) — the wire-format reference
+    every BBS server uses
+
+We consult these implementations when the spec is ambiguous; we do
+not copy code from them. See docs/phase4-references.md.

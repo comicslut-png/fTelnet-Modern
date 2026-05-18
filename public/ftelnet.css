@@ -476,6 +476,42 @@
   text-align: right;
 }
 
+/* About section — attribution + version info. Tighter, smaller,
+   muted color to feel like metadata rather than a control. Links
+   inherit body foreground color and rely on underline + bold for
+   differentiation, so they're readable in every theme without
+   depending on theme-accent vars that may collide with the panel
+   background (early DOS-Classic bug: --ft-popup-button-bg evaluated
+   to #c0c0c0 which was identical to the panel bg, making links
+   invisible). */
+.fTelnetSettingsPanelAbout {
+  font: var(--ft-ui-font);
+  font-size: 0.92em;
+  line-height: 1.4;
+  color: var(--ft-ui-fg);
+  opacity: 0.9;
+}
+
+.fTelnetSettingsPanelAboutLine {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fTelnetSettingsPanelAboutSpacer {
+  height: 0.5em;
+}
+
+.fTelnetSettingsPanelAbout a {
+  color: inherit;
+  font-weight: bold;
+  text-decoration: underline;
+}
+
+.fTelnetSettingsPanelAbout a:hover {
+  text-decoration: none;
+}
+
 .fTelnetSettingsPanelClose {
   background-color: var(--ft-popup-button-bg);
   border: var(--ft-button-border-width) solid var(--ft-popup-button-border);

@@ -1,14 +1,34 @@
 {
-  "name": "ftelnet",
-  "version": "2.0.0-alpha.1",
-  "description": "fTelnet: An HTML5 WebSocket client for BBSes and text-mode hosts",
+  "name": "ftelnet-modern",
+  "version": "2.0.0-alpha.2",
+  "description": "fTelnet-Modern: a maintained, modernized fork of fTelnet (Rick Parrish, R&M Software) — an HTML5 WebSocket client for BBSes and text-mode hosts. ZMODEM file transfer, theming, Lit-based UI.",
   "type": "module",
   "license": "AGPL-3.0-or-later",
-  "author": "Rick Parrish, R&M Software (original); modernization contributors",
+  "author": "Tom Swartz <dangerbaybbs@hotmail.com>",
+  "contributors": [
+    {
+      "name": "Rick Parrish (R&M Software)",
+      "url": "https://github.com/rickparrish/fTelnet"
+    }
+  ],
+  "homepage": "https://github.com/comicslut-png/fTelnet-Modern",
+  "bugs": {
+    "url": "https://github.com/comicslut-png/fTelnet-Modern/issues"
+  },
   "repository": {
     "type": "git",
-    "url": "https://github.com/rickparrish/fTelnet.git"
+    "url": "https://github.com/comicslut-png/fTelnet-Modern.git"
   },
+  "keywords": [
+    "bbs",
+    "telnet",
+    "websocket",
+    "ansi",
+    "rip",
+    "zmodem",
+    "ymodem",
+    "ftelnet"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",

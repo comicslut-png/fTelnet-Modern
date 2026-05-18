@@ -1,21 +1,27 @@
 /*
   fTelnet: An HTML5 WebSocket client
-  Copyright (C) Rick Parrish, R&M Software
+  Copyright (C) 2009-2026 Rick Parrish, R&M Software
 
-  This file is part of fTelnet.
+  fTelnet-Modern: modernized fork
+  Copyright (C) 2026 Tom Swartz <dangerbaybbs@hotmail.com>
 
-  fTelnet is free software: you can redistribute it and/or modify
-  it under the terms of the GNU Affero General Public License as
-  published by the Free Software Foundation, either version 3 of the
-  License, or any later version.
+  This file is part of fTelnet-Modern.
 
-  fTelnet is distributed in the hope that it will be useful,
+  fTelnet-Modern is free software: you can redistribute it and/or
+  modify it under the terms of the GNU Affero General Public License
+  as published by the Free Software Foundation, either version 3 of
+  the License, or any later version.
+
+  fTelnet-Modern is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
   GNU Affero General Public License for more details.
 
-  You should have received a copy of the GNU Affero General Public License
-  along with fTelnet.  If not, see <http://www.gnu.org/licenses/>.
+  You should have received a copy of the GNU Affero General Public
+  License along with fTelnet-Modern.  If not, see
+  <http://www.gnu.org/licenses/>.
+
+  SPDX-License-Identifier: AGPL-3.0-or-later
 */
 
 import {
@@ -266,6 +272,25 @@ export class fTelnetClient {
    */
   private _PostAbortDropUntil = 0;
   private static readonly POST_ABORT_DROP_MS = 1_500;
+
+  /**
+   * Base64-encoded CP437/ANSI splash screen for fTelnet-Modern.
+   * Hand-crafted ANSI block-art designed by Tom Swartz for this
+   * fork. 4458 bytes raw, ~22 rows × 75 cols, uses CP437 box
+   * drawing and shaded blocks for the "fTelnet" and "Modern" big
+   * letters, followed by a tagline and the GitHub URL.
+   *
+   * Used by the default ANSI splash path and the RIP path
+   * (RIPscrip is an ANSI superset so the same blob works). The
+   * Atari and C64 paths use entirely different character sets and
+   * still render their original 2009-era splashes; redesigning
+   * those is future work.
+   *
+   * Sysops can still override per-instance via
+   * `Options.SplashScreen` (base64-encoded ANSI of their own).
+   */
+  private static readonly SPLASH_ANSI_DEFAULT =
+    'G1swbQ0KICAgICAgG1sxbdrExMTExMTEvxtbMG0gG1sxbdrExMTExMTEvxtbMG0gG1sxbdrExMTExMTEvxtbMG0gG1sxbdrExMS/G1swbSAgICAgG1sxbdrExMTExMTEvxtbMG0gG1sxbdrExMTExMTEvxtbMG0gG1sxbdrExMTExMTEvxtbMG0NCiAgICAgG1szMW3NG1sxOzM3bbMbWzMwbfkbWzBtICDVzRtbMW24G1szMG35G1swbbMbWzMxbc0bWzM3bdTNG1sxbbgbWzMwbfkbWzBtIBtbMTszMG35G1swbdXNvhtbMzFtzRtbMTszN22zG1szMG35G1swbSAg1c0bWzFtuBtbMzBt+RtbMG2zG1szMW3NG1sxOzM3bbMbWzMwbfkbWzBtICCzG1szMW3Nzc3NzRtbMTszN22zG1szMG35G1swbSAg1c0bWzFtuBtbMzBt+RtbMzdtsxtbMDszMW3NG1sxOzM3bbMbWzMwbfkbWzBtICDVzRtbMW24G1szMG35G1swbbMbWzMxbc0bWzM3bdTNG1sxbbgbWzMwbfkbWzBtIBtbMTszMG35G1swbdXNvg0KICAgICAbWzQ0bSAbWzE7NDBtsxtbMG0gICDAG1sxbb/AxBtbMG3ZG1sxOzM0OzQ0bbCwsRtbMzc7NDBtsxtbMG0gICCzG1sxOzM0bbEbWzQ0bbAbWzA7NDRtIBtbMTs0MG2zG1swbSAgIMAbWzFtv8DEG1swbdkbWzE7MzQ7NDRtsBtbMzc7NDBtsxtbMG0gICCzG1sxOzM0OzQ0bdsbWzQwbbKyshtbMDs0NG0gG1sxOzQwbbMbWzBtICAgsxtbMTszNG2yG1szN22zG1swbSCzG1s0NG0gG1sxOzQwbbMbWzBtICAgwBtbMW2/wMQbWzBt2RtbMTszNDs0NG2wsLEbWzM3OzQwbbMbWzBtICAgsxtbMTszNG2xG1s0NG2wG1swbQ0KICAgICAbWzE7MzQ7NDRtsBtbMzc7NDBtsxtbMG0gICDa2RtbMTszNG2wsbIbWzQ0bbCwsRtbMzc7NDBtsxtbMG0gICCzG1sxOzM0OzQ0bbGwsBtbMzc7NDBtsxtbMG0gICDa2RtbMW3axL8bWzM0OzQ0bbEbWzM3OzQwbbMbWzBtICAgsxtbMTszNDs0NG2yG1szNzs0MG3axL8bWzM0OzQ0bbAbWzM3OzQwbbMbWzBtICAgsxtbMTszNG2xG1szN22zG1swbSCzG1sxOzM0OzQ0bbAbWzM3OzQwbbMbWzBtICAg2tkbWzFt2sS/G1szNDs0NG2wsLEbWzM3OzQwbbMbWzBtICAgsxtbMTszNDs0NG2xsBtbMG0NCiAgICAgG1sxOzM0OzQ0bbEbWzM3OzQwbbMbWzBtICAgsxtbMTszNDs0NG2wsLGysLCxG1szNzs0MG2zG1swbSAgILMbWzE7MzQ7NDRtsbCxG1szNzs0MG2zG1swbSAgILMbWzE7MzQ7NDRtsBtbMzc7NDBtsxtbMG0gsxtbMTszNDs0NG2yG1szNzs0MG2zG1swbSAgIMAbWzFtxNkbWzBtILMbWzE7MzQ7NDRtsRtbMzc7NDBtsxtbMG0gICCzG1sxOzM0OzQ0bbAbWzM3OzQwbbMbWzBtILMbWzE7MzQ7NDRtsRtbMzc7NDBtsxtbMG0gICCzG1sxOzM0OzQ0bbAbWzM3OzQwbbMbWzBtILMbWzE7MzQ7NDRtsLCxG1szNzs0MG2zG1swbSAgILMbWzE7MzQ7NDRtsbAbWzBtDQogICAgIBtbMzFtzRtbMTszN22zG1szMG35G1swbSAgsxtbMzFtzc3Nzc3NzRtbMTszN22zG1szMG35G1swbSAbWzE7MzBt+RtbMG2zG1szMW3Nzc0bWzE7MzdtsxtbMzBt+RtbMG0gINTNG1sxbb4bWzMwbfkbWzBtsxtbMzFtzRtbMTszN22zG1szMG35G1swbSAgICAgG1sxOzMwbfkbWzBtsxtbMzFtzRtbMTszN22zG1szMG35G1swbSAgsxtbMzFtzRtbMTszN22zG1szMG35G1swbbMbWzMxbc0bWzE7MzdtsxtbMzBt+RtbMG0gINTNG1sxbb4bWzMwbfkbWzBtsxtbMzFtzc3NG1sxOzM3bbMbWzMwbfkbWzBtIBtbMTszMG35G1swbbMbWzMxbc3NG1szN20NCiAgICAgIBtbMW3UG1swbc3Nzb4gICAgICAgG1sxbdQbWzBtzc3NviAgIBtbMW3UG1swbc3Nzc3Nzc2+IBtbMW3UG1swbc3Nzc3Nzc2+IBtbMW3UG1swbc3Nzb4gG1sxbdQbWzBtzb4gG1sxbdQbWzBtzc3Nzc3Nzb4gICAbWzFt1BtbMG3Nzc2+ICANCg0KICAgICAgICAgICAbWzFt2sTExMTExMS/G1swbSAbWzFt2sTExMTExMS/G1swbSAbWzFt2sTExMTExL8bWzBtICAbWzFt2sTExMTExMS/G1swbSAbWzFt2sTExMTExMS/G1swbSAbWzFt2sTExMTExMS/G1swbSANCiAgICAgICAgICAbWzMxbc0bWzE7MzdtsxtbMzBt+RtbMG0g1RtbMW241bgbWzMwbfkbWzM3bbMbWzA7MzFtzRtbMTszN22zG1szMG35G1swbSAg1c0bWzFtuBtbMzBt+RtbMG2zG1szMW3NG1sxOzM3bbMbWzMwbfkbWzBtICDVzRtbMW24wL8bWzA7MzFtzRtbMTszN22zG1szMG35G1swbSAg1c0bWzFtuBtbMzBt+RtbMG2zG1szMW3NG1sxOzM3bbMbWzMwbfkbWzBtICDVzRtbMW24G1szMG35G1swbbMbWzMxbc0bWzE7MzdtsxtbMzBt+RtbMG0gINXNG1sxbbgbWzMwbfkbWzM3bbMbWzA7MzFtzRtbMzdtDQogICAgICAgICAgG1s0NG0gG1sxOzQwbbMbWzBtICCzG1sxbdS+sxtbMG0gsxtbMTszNDs0NG2wG1szNzs0MG2zG1swbSAgILMbWzE7MzQ7NDRt2xtbMzc7NDBtsxtbMG0gsxtbNDRtIBtbMTs0MG2zG1swbSAgILMbWzE7MzQ7NDRt2xtbMzc7NDBtsxtbMG0gsxtbNDRtIBtbMTs0MG2zG1swbSAgIMAbWzFtv8DEG1swbdkbWzQ0bSAbWzE7NDBtsxtbMG0gICDAG1sxbcTZ2tkbWzM0OzQ0bbIbWzM3OzQwbbMbWzBtICAgsxtbMTszNG2yG1szN22zG1swbSCzG1sxOzM0OzQ0bbAbWzBtDQogICAgICAgICAgG1sxOzM0OzQ0bbAbWzM3OzQwbbMbWzBtICCzG1sxOzM0bbKxG1szN22zG1swbSCzG1sxOzM0OzQ0bbEbWzM3OzQwbbMbWzBtICAgsxtbMTszNDs0NG2yG1szNzs0MG2zG1swbSCzG1sxOzM0OzQ0bbAbWzM3OzQwbbMbWzBtICAgsxtbMTszNDs0NG2yG1szNzs0MG2zG1swbSCzG1sxOzM0OzQ0bbAbWzM3OzQwbbMbWzBtICAg2tkbWzFt2sS/G1szNDs0NG2wG1szNzs0MG2zG1swbSAgINXNuBtbMW3AvxtbMzQ7NDRt2xtbMzc7NDBtsxtbMG0gICCzG1sxOzM0bbEbWzM3bbMbWzBtILMbWzE7MzQ7NDRtsRtbMG0NCiAgICAgICAgICAbWzE7MzQ7NDRtsRtbMzc7NDBtsxtbMG0gILMbWzE7MzRtsRtbNDRtsBtbMzc7NDBtsxtbMG0gsxtbMTszNDs0NG2yG1szNzs0MG2zG1swbSAgIMAbWzFtxNkbWzBtILMbWzE7MzQ7NDRtsRtbMzc7NDBtsxtbMG0gICDAG1sxbcTZG1swbSCzG1sxOzM0OzQ0bbEbWzM3OzQwbbMbWzBtICAgsxtbMTszNDs0NG2wG1szNzs0MG2zG1swbSCzG1sxOzM0OzQ0bbEbWzM3OzQwbbMbWzBtICAgsxtbMTszNDs0NG2wG1szNzs0MG2zG1swbSCzG1sxOzM0OzQ0bbIbWzM3OzQwbbMbWzBtICAgsxtbMTszNDs0NG2wG1szNzs0MG2zG1swbSCzG1sxOzM0OzQ0bbIbWzBtDQogICAgICAgICAgG1szMW3NG1sxOzM3bbMbWzMwbfkbWzBtILMbWzMxbc3NG1sxOzM3bbMbWzMwbfkbWzBtsxtbMzFtzRtbMTszN22zG1szMG35G1swbSAgICAgG1sxOzMwbfkbWzBtsxtbMzFtzRtbMTszN22zG1szMG35G1swbSAgICAg2tkbWzMxbc0bWzE7MzdtsxtbMzBt+RtbMG0gINTNG1sxbb4bWzMwbfkbWzBtsxtbMzFtzRtbMTszN22zG1szMG35G1swbSAgsxtbMzFtzRtbMTszN22zG1szMG35G1swbbMbWzMxbc0bWzE7MzdtsxtbMzBt+RtbMG0gILMbWzMxbc0bWzE7MzdtsxtbMzBt+RtbMG2zG1szMW3NG1szN20NCiAgICAgICAgICAgG1sxbdQbWzBtzc2+ICAbWzFt1BtbMG3NviAbWzFt1BtbMG3Nzc3Nzc3NviAbWzFt1BtbMG3Nzc3Nzc2+ICAbWzFt1BtbMG3Nzc3Nzc3NviAbWzFt1BtbMG3Nzc2+IBtbMW3UG1swbc2+IBtbMW3UG1swbc3Nzb4gG1sxbdQbWzBtzb4gDQoNCiAgICAbWzE7MzBtxNzEG1swbSAgICAbWzE7MzBt3BtbMG0gG1szMW0gICAgIBtbMzdtIBtbMzFtIBtbMzdtIBtbMTszMG3cG1swOzMxbSAbWzM3bSAgICAgICAgG1sxOzMwbdzExNwbWzBtIBtbMTszMG3cG1swOzMxbSAgIBtbMzdtICAgICAgICAgG1sxOzMwbdwbWzBtICAgICAgICAgICAgG1sxOzMwbcTcxBtbMDszMW0gG1sxOzMwbdzExNwbWzBtIBtbMTszMG3cxMTcG1swbQ0KICAgIBtbMzFtINsg3MTcG1szN20gG1szMW3bG1szN20gG1szMW3cxNwbWzM3bSAbWzMxbdzE3BtbMzdtIBtbMzFt28QbWzM3bSAgG1sxOzMwbdwbWzA7MzFt3NwbWzE7MzBt3BtbMG0gIBtbMzFt28Tc3xtbMzdtIBtbMzFt2yAgIBtbMzdtIBtbMzFt3MTcG1szN20gG1szMW3cxNwbWzM3bSAbWzMxbdwbWzM3bSAbWzMxbdzE3BtbMzdtICAbWzE7MzBt3BtbMDszMW3c3BtbMTszMG3cG1swbSAgG1szMW0g2yDe3SAgIBtbMzdtIBtbMzFt28TE3xtbMzdtDQogICAgG1szMW0gG1sxbd8bWzA7MzFtIBtbMW3fxMQbWzBtIBtbMTszMW3fG1swbSAbWzE7MzFt3xtbMDszMW0gG1sxbd8bWzBtIBtbMTszMW3fxMQbWzBtIBtbMTszMW3fxBtbMG0gICAgICAgIBtbMTszMW3fG1swOzMxbSAgG1sxbd8bWzBtIBtbMTszMW3fxMTfG1swbSAbWzE7MzFt38TfG1swbSAbWzE7MzFt38TbG1swbSAbWzE7MzFt3xtbMG0gG1sxOzMxbd8bWzA7MzFtIBtbMW3fG1swbSAgICAgICAgG1szMW0gG1sxbd8bWzA7MzFtICAbWzFt38TE3xtbMG0gG1sxOzMxbd8bWzA7MzFtICAgG1szN20NCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIBtbMTszMW3AxN8bWzBtDQobWzE7MzVtICAgICAgICAgICAgICAgICAgICAgZ2l0aHViLmNvbS9jb21pY3NsdXQtcG5nL2ZUZWxuZXQtTW9kZXJuG1swbQ==';
 
   /** User-supplied configuration. Defaults are in fTelnetOptions. */
   private readonly _Options: fTelnetOptions;
@@ -829,14 +854,15 @@ export class fTelnetClient {
         this._TransferProgressPanel.reset();
       },
     );
-    // Append to document.body (not _fTelnetContainer) so position:
-    // fixed works correctly against the viewport. If the panel were
-    // a descendant of _fTelnetContainer it would inherit whatever
-    // containing-block context the container or its ancestors
-    // establish, which can constrain "fixed" elements to the
-    // container's bounds instead of the viewport. The menu popup
-    // already does this for the same reason (see _MenuButtons
-    // append above).
+    // Append to document.body (not _ClientContainer) so positioning
+    // works against the viewport. Appending inside _ClientContainer
+    // was attempted but the panel didn't render at all (cause not
+    // fully diagnosed — possibly an interaction with the Crt canvas
+    // siblings or _ClientContainer's overflow: hidden/scroll). The
+    // viewport-centered approach has the minor cosmetic downside of
+    // sitting at viewport-center rather than canvas-center on wide
+    // monitors, but it RELIABLY appears. Phase 5 can revisit
+    // canvas-relative centering with a more careful approach.
     document.body.appendChild(this._TransferProgressPanel);
 
     // Recompute sizes for the bars and keyboard now that everything
@@ -859,7 +885,13 @@ export class fTelnetClient {
           atob('m2ZUZWxuZXQgLS0gVGVsbmV0IGZvciB0aGUgV2VimyAgV2ViIGJhc2VkIEJCUyB0ZXJtaW5hbCBjbGllbnSbm0NvcHlyaWdodCAoYykgMjAwOS0')
         );
         this._Crt.Write(new Date().getFullYear().toString());
-        this._Crt.Write(atob('IFImTSBTb2Z0d2FyZS6bQWxsIFJpZ2h0cyBSZXNlcnZlZJub'));
+        this._Crt.Write(atob('IFImTSBTb2Z0d2FyZS6bQWxsIFJpZ2h0cyBSZXNlcnZlZJs='));
+        // Fork attribution (Atari ATASCII: \x9b = EOL). Single
+        // line; plain hyphen separator since ATASCII has no box-
+        // drawing equivalent to CP437's \xc4.
+        this._Crt.Write(
+          'Modernized fork by Tom Swartz - dangerbaybbs@hotmail.com\x9b\x9b'
+        );
       } else {
         this._Crt.Write(atob(this._Options.SplashScreen));
       }
@@ -869,31 +901,78 @@ export class fTelnetClient {
           atob('DQpGdEVMTkVUIC0tIHRFTE5FVCBGT1IgVEhFIHdFQg0KICB3RUIgQkFTRUQgYmJzIFRFUk1JTkFMIENMSUVOVA0KDQpjT1BZUklHSFQgKGMpIDIwMDkt')
         );
         this._Crt.Write(new Date().getFullYear().toString());
-        this._Crt.Write(atob('IHImbSBzT0ZUV0FSRS4NCmFMTCBySUdIVFMgckVTRVJWRUQNCg0K'));
+        this._Crt.Write(atob('IHImbSBzT0ZUV0FSRS4NCmFMTCBySUdIVFMgckVTRVJWRUQNCg=='));
+        // Fork attribution (C64 inverted case style — capital
+        // letters in the source display as lowercase on a C64
+        // screen, and vice versa). Single line.
+        this._Crt.Write(
+          'mODERNIZED FORK BY tOM sWARTZ - DANGERBAYBBS@HOTMAIL.COM\r\n\r\n'
+        );
       } else {
         this._Crt.Write(atob(this._Options.SplashScreen));
       }
     } else if (this._Options.Emulation === 'RIP') {
       if (this._Options.SplashScreen === '') {
+        // Clear screen + home cursor before rendering the splash.
+        // See the ANSI default branch below for rationale.
+        this._RIP.Parse('\x1b[0m\x1b[2J\x1b[0;0H');
+        // RIPscrip is an ANSI superset, so the same hand-crafted
+        // fTelnet-Modern splash blob works here. Same Option B
+        // attribution stack as the default ANSI branch below:
+        // new splash → R&M line → Tom Swartz fork-credit line.
+        this._RIP.Parse(atob(fTelnetClient.SPLASH_ANSI_DEFAULT));
         this._RIP.Parse(
-          atob('G1swbRtbMkobWzA7MEgbWzE7NDQ7MzRt2sTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTEG1swOzQ0OzMwbb8bWzBtDQobWzE7NDQ7MzRtsyAgG1szN21XZWxjb21lISAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAbWzA7NDQ7MzBtsxtbMG0NChtbMTs0NDszNG3AG1swOzQ0OzMwbcTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTE2RtbMG0NCg0KG1sxbSAbWzBtIBtbMTs0NDszNG3axMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMQbWzA7NDQ7MzBtvxtbMG0NCiAgG1sxOzQ0OzM0bbMbWzA7MzRt29vb2xtbMzBt29vb29vb29vb29vb29vb29vb29vb2xtbMzRt29vb29vbG1s0NDszMG2zG1swbQ0KICAbWzE7NDQ7MzRtsxtbMDszNG3b29vbG1sxOzMwbdvb29vb29vb29vb29vb29vb29vb29sbWzA7MzBt29sbWzM0bdvb29sbWzQ0OzMwbbMbWzBtDQogIBtbMTs0NDszNG2zG1swOzM0bdvb29sbWzE7MzBt29vb2xtbMG3b29vb29vb29vb29sbWzFt29vb2xtbMzBt29sbWzA7MzBt29sbWzM0bdvb29sbWzQ0OzMwbbMbWzBtDQogIBtbMTs0NDszNG2zG1swOzM0bdvb29sbWzE7MzBt29vb2xtbMG3b29vb29vb29vbG1sxbdvb29sbWzBt29sbWzE7MzBt29sbWzA7MzBt29sbWzM0bdvb29sbWzQ0OzMwbbMbWzBtDQogIBtbMTs0NDszNG2zG1swOzM0bdvb29sbWzE7MzBt29vb2xtbMG3b29vb29vb2xtbMW3b29vbG1swbdvbG1sxbdvbG1szMG3b2xtbMDszMG3b2xtbMzRt29vb2xtbNDQ7MzBtsxtbMG0NCiAgG1sxOzQ0OzM0bbMbWzA7MzRt29vb2xtbMTszMG3b29vbG1swbdvb29vb2xtbMW3b29vbG1swbdvbG1sxbdvb29sbWzMwbdvbG1swOzMwbdvbG1szNG3b29vbG1s0NDszMG2zG1swbQ0KICAbWzE7NDQ7MzRtsxtbMDszNG3b29vbG1sxOzMwbdvb29sbWzBt29vb2xtbMW3b29vbG1swbdvbG1sxbdvb29vb2xtbMzBt29sbWzA7MzBt29sbWzM0bdvb29sbWzQ0OzMwbbMbWzQwOzM3bQ0KICAbWzE7NDQ7MzRtsxtbMDszNG3b29vbG1sxOzMwbdvbG1swOzMwbdvbG1sxbdvb29vb29vb29vb29vb29vb2xtbMDszMG3b2xtbMzRt29vb2xtbNDQ7MzBtsxtbNDA7MzdtDQogIBtbMTs0NDszNG2zG1swOzM0bdvb29sbWzE7MzBt29sbWzBt29vb29vb29vb29vb29vb29vb29sbWzMwbdvbG1szNG3b29vbG1s0NDszMG2zG1s0MDszN20NCiAgG1sxOzQ0OzM0bbMbWzA7MzBt29vb29vb29vb29vb29vb29vb29vb29vb29vb29vbG1szNG3b2xtbNDQ7MzBtsxtbNDA7MzdtDQogIBtbMTs0NDszNG2zG1s0MDszMG3b2xtbMG3b29vb29vb29vb29vb29vb29vb29vb29vb29vbG1szMG3b2xtbNDRtsxtbNDA7MzdtIBtbMzRtIBtbMTs0NzszN23axMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMQbWzMwbb8bWzBtDQogIBtbMTs0NDszNG2zG1swOzMwbdvbG1sxbdvb29vb29vb29vb29vb29sbWzA7MzBt29vb29vb29vb2xtbMW3b2xtbMDszMG3b2xtbNDRtsxtbNDA7MzdtIBtbMzRtIBtbMTs0NzszN22zICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAbWzMwbbMbWzBtDQogIBtbMTs0NDszNG2zG1s0MDszMG3b2xtbMG3b29vb29vb29vb29vb29vb29vb29vb29vb29vbG1szMG3b2xtbNDRtsxtbMG0gG1szNG0gG1sxOzQ3OzM3bbMgICAbWzM0bWZUZWxuZXQgLS0gVGVsbmV0IGZvciB0aGUgV2ViICAgICAgG1szMG2zG1swbQ0KG1sxbSAbWzBtIBtbMTs0NDszNG2zG1swOzMwbdvbG1sxbdvb29vb29vb29vb29vb29vb29vb29vb2xtbMDszMG3b29vb29sbWzQ0bbMbWzBtIBtbMzRtIBtbMTs0NzszN22zICAgICAbWzA7NDc7MzRtV2ViIGJhc2VkIEJCUyB0ZXJtaW5hbCBjbGllbnQgICAgG1sxOzMwbbMbWzBtDQogIBtbMTs0NDszNG2zG1swOzM0bdvbG1szMG3b29vb29vb29vb29vb29vb29vb29vb29vb29vbG1szNG3b2xtbNDQ7MzBtsxtbMG0gG1szNG0gG1sxOzQ3OzM3bbMgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIBtbMzBtsxtbMG0NCiAgG1sxOzQ0OzM0bcAbWzA7NDQ7MzBtxMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTZG1swbSAbWzM0bSAbWzE7NDc7MzdtwBtbMzBtxMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTZG1swbQ0KDQobWzExQxtbMTszMm1Db3B5cmlnaHQgKEMpIDIwMDkt')
+          '\r\n\x1b[11C\x1b[1;32mCopyright (C) 2009-'
         );
         this._RIP.Parse(new Date().getFullYear().toString());
         this._RIP.Parse(
-          atob('IFImTSBTb2Z0d2FyZS4gIEFsbCBSaWdodHMgUmVzZXJ2ZWQNChtbMDszNG3ExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTE')
+          ' R&M Software.  All Rights Reserved\x1b[0m\r\n'
+        );
+        this._RIP.Parse(
+          '\x1b[11C\x1b[1;36mModernized fork by Tom Swartz \x1b[0;36m\xc4\x1b[1;36m dangerbaybbs@hotmail.com\x1b[0m\r\n'
         );
       } else {
         this._RIP.Parse(atob(this._Options.SplashScreen));
       }
     } else {
       // Default: ansi-bbs splash.
+      //
+      // Option B integration:
+      //   1. New hand-crafted fTelnet-Modern splash by Tom Swartz
+      //      (defined as SPLASH_ANSI_DEFAULT — has "fTelnet" +
+      //      "Modern" block letters, tagline, github URL).
+      //   2. Below it, Rick's original "Copyright (C) ... R&M
+      //      Software. All Rights Reserved" line is preserved
+      //      as a visual nod to the upstream lineage.
+      //   3. Below that, Tom's fork-credit line: "Modernized fork
+      //      by Tom Swartz — dangerbaybbs@hotmail.com" so the
+      //      maintainer's name and contact are visible on the
+      //      launch screen (the splash artwork itself only shows
+      //      the project repo URL, not the author's name/email).
       if (this._Options.SplashScreen === '') {
+        // Clear screen + home cursor before rendering the splash.
+        // The SPLASH1.ANS artwork assumes it's drawing on a blank
+        // canvas starting at row 0 col 0; without this prelude
+        // any leftover output (terminal init sequences, prior
+        // session residue) would push the artwork down and
+        // misalign the layout.
+        this._Ansi.Write('\x1b[0m\x1b[2J\x1b[0;0H');
+        this._Ansi.Write(atob(fTelnetClient.SPLASH_ANSI_DEFAULT));
+        // Rick's copyright line below the artwork — bright green,
+        // column-11 alignment matching the original splash's
+        // attribution column.
         this._Ansi.Write(
-          atob('G1swbRtbMkobWzA7MEgbWzE7NDQ7MzRt2sTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTEG1swOzQ0OzMwbb8bWzBtDQobWzE7NDQ7MzRtsyAgG1szN21XZWxjb21lISAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAbWzA7NDQ7MzBtsxtbMG0NChtbMTs0NDszNG3AG1swOzQ0OzMwbcTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTE2RtbMG0NCg0KG1sxbSAbWzBtIBtbMTs0NDszNG3axMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMQbWzA7NDQ7MzBtvxtbMG0NCiAgG1sxOzQ0OzM0bbMbWzA7MzRt29vb2xtbMzBt29vb29vb29vb29vb29vb29vb29vb2xtbMzRt29vb29vbG1s0NDszMG2zG1swbQ0KICAbWzE7NDQ7MzRtsxtbMDszNG3b29vbG1sxOzMwbdvb29vb29vb29vb29vb29vb29vb29sbWzA7MzBt29sbWzM0bdvb29sbWzQ0OzMwbbMbWzBtDQogIBtbMTs0NDszNG2zG1swOzM0bdvb29sbWzE7MzBt29vb2xtbMG3b29vb29vb29vb29sbWzFt29vb2xtbMzBt29sbWzA7MzBt29sbWzM0bdvb29sbWzQ0OzMwbbMbWzBtDQogIBtbMTs0NDszNG2zG1swOzM0bdvb29sbWzE7MzBt29vb2xtbMG3b29vb29vb29vbG1sxbdvb29sbWzBt29sbWzE7MzBt29sbWzA7MzBt29sbWzM0bdvb29sbWzQ0OzMwbbMbWzBtDQogIBtbMTs0NDszNG2zG1swOzM0bdvb29sbWzE7MzBt29vb2xtbMG3b29vb29vb2xtbMW3b29vbG1swbdvbG1sxbdvbG1szMG3b2xtbMDszMG3b2xtbMzRt29vb2xtbNDQ7MzBtsxtbMG0NCiAgG1sxOzQ0OzM0bbMbWzA7MzRt29vb2xtbMTszMG3b29vbG1swbdvb29vb2xtbMW3b29vbG1swbdvbG1sxbdvb29sbWzMwbdvbG1swOzMwbdvbG1szNG3b29vbG1s0NDszMG2zG1swbQ0KICAbWzE7NDQ7MzRtsxtbMDszNG3b29vbG1sxOzMwbdvb29sbWzBt29vb2xtbMW3b29vbG1swbdvbG1sxbdvb29vb2xtbMzBt29sbWzA7MzBt29sbWzM0bdvb29sbWzQ0OzMwbbMbWzQwOzM3bQ0KICAbWzE7NDQ7MzRtsxtbMDszNG3b29vbG1sxOzMwbdvbG1swOzMwbdvbG1sxbdvb29vb29vb29vb29vb29vb2xtbMDszMG3b2xtbMzRt29vb2xtbNDQ7MzBtsxtbNDA7MzdtDQogIBtbMTs0NDszNG2zG1swOzM0bdvb29sbWzE7MzBt29sbWzBt29vb29vb29vb29vb29vb29vb29sbWzMwbdvbG1szNG3b29vbG1s0NDszMG2zG1s0MDszN20NCiAgG1sxOzQ0OzM0bbMbWzA7MzBt29vb29vb29vb29vb29vb29vb29vb29vb29vb29vbG1szNG3b2xtbNDQ7MzBtsxtbNDA7MzdtDQogIBtbMTs0NDszNG2zG1s0MDszMG3b2xtbMG3b29vb29vb29vb29vb29vb29vb29vb29vb29vbG1szMG3b2xtbNDRtsxtbNDA7MzdtIBtbMzRtIBtbMTs0NzszN23axMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMQbWzMwbb8bWzBtDQogIBtbMTs0NDszNG2zG1swOzMwbdvbG1sxbdvb29vb29vb29vb29vb29sbWzA7MzBt29vb29vb29vb2xtbMW3b2xtbMDszMG3b2xtbNDRtsxtbNDA7MzdtIBtbMzRtIBtbMTs0NzszN22zICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAbWzMwbbMbWzBtDQogIBtbMTs0NDszNG2zG1s0MDszMG3b2xtbMG3b29vb29vb29vb29vb29vb29vb29vb29vb29vbG1szMG3b2xtbNDRtsxtbMG0gG1szNG0gG1sxOzQ3OzM3bbMgICAbWzM0bWZUZWxuZXQgLS0gVGVsbmV0IGZvciB0aGUgV2ViICAgICAgG1szMG2zG1swbQ0KG1sxbSAbWzBtIBtbMTs0NDszNG2zG1swOzMwbdvbG1sxbdvb29vb29vb29vb29vb29vb29vb29vb2xtbMDszMG3b29vb29sbWzQ0bbMbWzBtIBtbMzRtIBtbMTs0NzszN22zICAgICAbWzA7NDc7MzRtV2ViIGJhc2VkIEJCUyB0ZXJtaW5hbCBjbGllbnQgICAgG1sxOzMwbbMbWzBtDQogIBtbMTs0NDszNG2zG1swOzM0bdvbG1szMG3b29vb29vb29vb29vb29vb29vb29vb29vb29vbG1szNG3b2xtbNDQ7MzBtsxtbMG0gG1szNG0gG1sxOzQ3OzM3bbMgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIBtbMzBtsxtbMG0NCiAgG1sxOzQ0OzM0bcAbWzA7NDQ7MzBtxMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTZG1swbSAbWzM0bSAbWzE7NDc7MzdtwBtbMzBtxMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTZG1swbQ0KDQobWzExQxtbMTszMm0bWzE7MjU1OzE3ODsxMjd0Q29weXJpZ2h0IChDKSAyMDA5LQ==')
+          '\r\n\x1b[11C\x1b[1;32mCopyright (C) 2009-'
         );
         this._Ansi.Write(new Date().getFullYear().toString());
         this._Ansi.Write(
-          atob('IFImTSBTb2Z0d2FyZS4gIEFsbCBSaWdodHMgUmVzZXJ2ZWQNChtbMDszNG3ExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTE')
+          ' R&M Software.  All Rights Reserved\x1b[0m\r\n'
+        );
+        // Tom's fork-credit line — bright cyan name/email,
+        // dim cyan CP437 box-drawing separator (\xc4). Same
+        // column alignment as R&M's line above.
+        this._Ansi.Write(
+          '\x1b[11C\x1b[1;36mModernized fork by Tom Swartz \x1b[0;36m\xc4\x1b[1;36m dangerbaybbs@hotmail.com\x1b[0m\r\n'
         );
       } else {
         this._Ansi.Write(atob(this._Options.SplashScreen));

@@ -83,6 +83,14 @@ export interface SettingsVibrateChangeDetail {
  */
 @customElement('f-settings-panel')
 export class FSettingsPanel extends LitElement {
+  /**
+   * Version string shown in the About section. Bumped manually
+   * to match package.json's version field. Kept as a static so
+   * tests and the panel can read the same value without needing
+   * a build-time injection mechanism.
+   */
+  public static readonly VERSION = '2.0.0-alpha.2';
+
   @property({ type: Boolean })
   open = false;
 
@@ -94,12 +102,12 @@ export class FSettingsPanel extends LitElement {
 
   @property({ type: Array, attribute: false })
   themes: ThemeChoice[] = [
-    { id: 'classic', label: 'classic' },
-    { id: 'dos-classic', label: 'dos-classic' },
-    { id: 'crt-green', label: 'crt-green' },
-    { id: 'cyberpunk', label: 'cyberpunk' },
-    { id: 'gothic', label: 'gothic' },
-    { id: 'cartoon', label: 'cartoon' },
+    { id: 'classic', label: 'Classic' },
+    { id: 'dos-classic', label: 'DOS-Classic' },
+    { id: 'crt-green', label: 'CRT-Green' },
+    { id: 'cyberpunk', label: 'Cyberpunk' },
+    { id: 'gothic', label: 'Gothic' },
+    { id: 'cartoon', label: 'Cartoon' },
   ];
 
   @property({ type: String, attribute: 'current-theme' })
@@ -167,6 +175,58 @@ export class FSettingsPanel extends LitElement {
             />
             ms
           </label>
+        </fieldset>
+
+        <fieldset class="fTelnetSettingsPanelGroup">
+          <legend>About</legend>
+          <div class="fTelnetSettingsPanelAbout">
+            <div class="fTelnetSettingsPanelAboutLine">
+              <strong>fTelnet-Modern</strong> v${FSettingsPanel.VERSION}
+            </div>
+            <div class="fTelnetSettingsPanelAboutLine">
+              Modern fork by
+              <a
+                href="mailto:dangerbaybbs@hotmail.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                >Tom Swartz</a
+              >
+            </div>
+            <div class="fTelnetSettingsPanelAboutLine">
+              <a
+                href="https://github.com/comicslut-png/fTelnet-Modern"
+                target="_blank"
+                rel="noopener noreferrer"
+                >github.com/comicslut-png/fTelnet-Modern</a
+              >
+            </div>
+            <div class="fTelnetSettingsPanelAboutSpacer"></div>
+            <div class="fTelnetSettingsPanelAboutLine">
+              Based on <strong>fTelnet</strong>
+            </div>
+            <div class="fTelnetSettingsPanelAboutLine">
+              Copyright © 2009–2026
+              <a
+                href="https://www.rickparrish.ca"
+                target="_blank"
+                rel="noopener noreferrer"
+                >R&amp;M Software</a
+              >
+            </div>
+            <div class="fTelnetSettingsPanelAboutLine">
+              Original by Rick Parrish
+            </div>
+            <div class="fTelnetSettingsPanelAboutSpacer"></div>
+            <div class="fTelnetSettingsPanelAboutLine">
+              Licensed under
+              <a
+                href="https://www.gnu.org/licenses/agpl-3.0.html"
+                target="_blank"
+                rel="noopener noreferrer"
+                >AGPL-3.0</a
+              >
+            </div>
+          </div>
         </fieldset>
 
         <div class="fTelnetSettingsPanelFooter">

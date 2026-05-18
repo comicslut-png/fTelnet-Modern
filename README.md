@@ -1,10 +1,16 @@
-# fTelnet (modernized)
+# fTelnet-Modern
 
 An HTML5 WebSocket client for connecting to BBSes and other text-mode
 hosts. This repository is a modernization fork of the original fTelnet
 by Rick Parrish (R&M Software), bringing the 2017-era TypeScript
 codebase up to a current toolchain while preserving every feature and
 the BBS-era aesthetic.
+
+> **fTelnet-Modern** — Copyright © 2026 Tom Swartz
+> &lt;dangerbaybbs@hotmail.com&gt;
+> Based on **fTelnet** — Copyright © 2009-2026 R&M Software (Rick Parrish)
+> Licensed under [AGPL-3.0-or-later](https://www.gnu.org/licenses/agpl-3.0.html)
+> · See [`NOTICE`](./NOTICE) and [`LICENSE`](./LICENSE) for details.
 
 ## Status
 
