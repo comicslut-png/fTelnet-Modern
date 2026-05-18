@@ -23,8 +23,8 @@ applicable.
 | 1. Modernize foundation (TS 5, Vite, ESM, strict, Vitest)              | ✅ Complete                   |
 | 2. Refactor UI layer into Lit Web Components                           | ✅ Complete (6 stages)        |
 | 3. Neo-retro chrome facelift (theming system, settings panel, 6 themes) | ✅ Complete (3 main + deltas) |
-| 4. ZMODEM file transfer (replaces YMODEM as default)                   | 🚧 In progress (6/7 stages)   |
-| 5. Polish (PWA, performance, docs, embed wizard refresh)               | ⏳ Planned                    |
+| 4. ZMODEM file transfer + transfer progress panel                      | ✅ Complete (7 stages)        |
+| 5. Polish (PWA, performance, upload UI, docs)                          | ⏳ Planned                    |
 
 ### What works today
 
@@ -32,8 +32,8 @@ applicable.
   dev-server with hot reload.
 - **Lit component architecture**: every UI element (focus warning,
   scrollback bar, status bar, menu popup, virtual keyboard, settings
-  panel) is a `<f-*>` web component using light DOM so existing CSS
-  selectors keep working.
+  panel, transfer progress panel) is a `<f-*>` web component using
+  light DOM so existing CSS selectors keep working.
 - **Theming system**: 6 built-in themes selectable at runtime:
   - **Classic** — the original fTelnet look (blue/white/green panels)
   - **DOS-Classic** — Windows 3.1 gray bevels + CGA accents
@@ -42,70 +42,89 @@ applicable.
   - **Gothic** — blood-red serifs on near-black
   - **Cartoon** — primary colors, thick black outlines, Comic Sans
 - **Settings panel**: runtime theme switching, bell-sound mute,
-  vibrate-duration slider. All preferences persist in localStorage.
+  vibrate-duration slider, and an **About** section showing version,
+  fork author, upstream attribution, and license info. All preferences
+  persist in localStorage.
+- **ZMODEM file transfers** (new in Phase 4): receive downloads from
+  any BBS that speaks ZMODEM. Auto-detects when the BBS initiates a
+  transfer; no user configuration required. Confirmed working across
+  the BBS trifecta: **Synchronet**, **Mystic**, and **PCBoard**.
+  Real-time SyncTERM-style progress panel shows file name, byte
+  counts, transfer rate (CPS), elapsed time, ETA, and error count,
+  updated at 10 Hz. Press **ESC** or **CTRL-X** during a transfer
+  to abort cleanly.
 - **YMODEM file transfers**: send and receive, unchanged from the
-  original (kept as fallback during Phase 4).
+  original (kept as a user-initiated fallback for older BBSes).
+- **Custom splash screen**: hand-crafted fTelnet-Modern ANSI block-art
+  greets users on connect, displayed above R&M Software's preserved
+  copyright line and the fork-credit line.
 - **All original features intact**: ANSI/CTERM parser, RIPscrip
   graphics, telnet negotiation, font collection, virtual keyboard,
   copy/paste, scrollback, focus warning, screen-size selector,
   modern/classic scrollback modes.
 
-### What's coming next (Phase 4)
+### What's coming in Phase 5
 
-ZMODEM file transfers — the major feature missing from the original.
-Synchronet, Mystic, ENiGMA½, and other modern BBSes all use ZMODEM by
-default; YMODEM-G is unreliable over today's TCP-and-WebSocket stack.
+Polish work and remaining UX gaps:
 
-Phase 4 is shipping in 7 stages, currently 6 of 7 complete:
-
-  1. ✅ CRC-32 + protocol constants (foundation)
-  2. ✅ ZMODEM streaming decoder
-  3. ✅ ZMODEM encoder
-  4. ✅ Receive state machine
-  5. ✅ Send state machine
-  6. ✅ Auto-detect + fTelnetClient wiring (ZMODEM goes live)
-  7. 🚧 Transfer-progress UI (faithful SyncTERM-style retro panel)
+  - **Large-file save performance** — current per-byte accumulator
+    pattern causes a multi-second freeze when ZMODEM finishes a
+    multi-MB file. Fix queued for early in Phase 5.
+  - **Upload UI** — the ZMODEM-send state machine already exists;
+    Phase 5 wires it to a drag-and-drop UI for sending files to
+    BBSes that accept uploads.
+  - **In-canvas progress panel** — the current panel is a DOM overlay
+    on top of the canvas. Phase 5 adds an opt-in mode that renders
+    the progress inside the canvas itself (useful for fullscreen
+    embed modes).
+  - **YMODEM auto-detect** — currently user-initiated only.
+  - **Splash screen rotation** — when additional ANSI splashes are
+    designed, the existing single-splash constant becomes an array
+    with a random-pick on connect.
+  - **PWA support, embed wizard refresh, ad-hoc polish.**
 
 See `docs/` for stage-by-stage planning notes:
-  - `phase4-references.md` — ZMODEM implementations we consult informally
-  - `phase4-ui-decision.md` — Stage 7 dialog design
-  - `future-protocols.md` — post-Phase-4 to-do list (HSLink, etc.)
+  - `phase4-references.md` — ZMODEM implementations we consulted informally
+  - `phase4-ui-decision.md` — transfer-progress panel design doc
+  - `future-protocols.md` — possible additional protocols (HSLink, etc.)
 
 ### Test coverage
 
-903 unit tests across 45 files, run on every commit. Phase boundaries:
+980 unit tests across 49 files, run on every commit. Phase boundaries:
 
   - End of Phase 1: 559 tests
   - End of Phase 2: 691 tests
   - End of Phase 3: 722 tests
-  - Phase 4 Stage 1: 756 tests
-  - Phase 4 Stage 2: 785 tests
-  - Phase 4 Stage 3: 821 tests
-  - Phase 4 Stage 4: 849 tests
-  - Phase 4 Stage 5: 874 tests
-  - Phase 4 Stage 6: 903 tests
+  - End of Phase 4: 980 tests
 
 ## Testing against a real BBS
 
-Once a build is loaded in the browser, you can connect to a live
-Synchronet BBS to exercise the full ANSI + ZMODEM stack. Two
-recommended hosts:
+Once a build is loaded in the browser, you can connect to any live
+BBS to exercise the full ANSI + ZMODEM stack.
 
-**Diamond Mine Online** (`sbbs.dmine.net:24`) — long-running
-Synchronet BBS in Fredericksburg, VA, in operation since 1993.
-Large shareware file collection (programs, games, utilities,
-MIDI music) so it's a good ZMODEM target. Sysop maintains the
-*Telnet BBS Guide* and *BBS Corner* sites. Backup hostname
-`dmine.ddns.net:24` if primary is unreachable.
+**Recommended test BBSes:**
 
-**bbs.ftelnet.ca:23** — the upstream fTelnet demo server (Rick
-Parrish, R&M Software). Smaller, primarily a connectivity demo;
-useful for testing the connection flow but does not have
-downloadable files for exercising ZMODEM.
+  - **Diamond Mine Online** (`sbbs.dmine.net:24`) — long-running
+    Synchronet BBS in Fredericksburg, VA, in operation since 1993.
+    Large shareware file collection (programs, games, utilities,
+    MIDI music) so it's a good ZMODEM target. Sysop maintains the
+    *Telnet BBS Guide* and *BBS Corner* sites. Backup hostname
+    `dmine.ddns.net:24` if primary is unreachable.
 
-For ZMODEM smoke-testing, the simplest path is to edit
-`src/main.ts` (the dev-server entry point) to point at Diamond
-Mine via Rick Parrish's public WebSocket proxy:
+  - **8-Bit Boyz** (`bbs.8bitboyz.com:6502`) — Mystic BBS. Smaller
+    file area, good for verifying Mystic/SEXYZ compatibility.
+
+  - **Danger Bay** — PCBoard BBS run by the maintainer of this fork.
+    Active community with door games and a large file library.
+
+  - **bbs.ftelnet.ca:23** — the upstream fTelnet demo server (Rick
+    Parrish, R&M Software). Smaller, primarily a connectivity demo;
+    useful for testing the connection flow but limited downloadable
+    files.
+
+For ZMODEM smoke-testing, the simplest path is to edit `src/main.ts`
+(the dev-server entry point) to point at one of the above via Rick
+Parrish's public WebSocket proxy:
 
 ```typescript
 Options.Hostname = 'sbbs.dmine.net';
@@ -115,34 +134,34 @@ Options.ProxyPort = 80;
 Options.ProxyPortSecure = 443;
 ```
 
-Save the file, then run `npm run dev` and open the page in
-Firefox. The proxy bridges WebSocket → raw telnet for any
-`Hostname:Port` you specify, so you don't need Diamond Mine to
-run their own WebSocket bridge.
+Save the file, then run `npm run dev` and open the page in your
+browser. The proxy bridges WebSocket → raw telnet for any
+`Hostname:Port` you specify, so you don't need the destination BBS
+to run their own WebSocket bridge.
 
-Once connected, log in with your existing Diamond Mine account,
-navigate to a file area (typically `F` from the main menu),
-pick a small file, and type `D` to download. Stage 6's
-auto-detect should fire when Synchronet starts the ZMODEM
-transfer; the browser save dialog should pop up when the
-transfer completes. Visible progress UI lands in Stage 7.
+Once connected, log in, navigate to a file area (typically `F` from
+the main menu), pick a file, and choose ZMODEM as the protocol. The
+auto-detector fires when the BBS starts the transfer; the
+SyncTERM-style progress panel appears, ticks in real time, and the
+browser save dialog opens when the transfer completes. Press ESC or
+CTRL-X mid-transfer to abort.
 
 ## Quick start
 
 ```bash
 npm install              # install dependencies
 npm run dev              # start Vite dev server with hot reload (port 5173)
-npm test                 # run the full Vitest suite
+npm test                 # run the full Vitest suite (980 tests)
 npm run typecheck        # tsc --noEmit
 npm run build:all        # produce all four bundle flavors
 ```
 
 Output bundles land in `dist/`:
 
-- `ftelnet.norip.noxfer.js` — ANSI/BBS only, smallest bundle (~400KB)
-- `ftelnet.norip.xfer.js` — adds file transfer (YMODEM today; YMODEM+ZMODEM after Phase 4)
+- `ftelnet.norip.noxfer.js` — ANSI/BBS only, smallest bundle
+- `ftelnet.norip.xfer.js` — adds YMODEM + ZMODEM file transfer
 - `ftelnet.rip.noxfer.js` — adds RIPscrip graphics emulation
-- `ftelnet.rip.xfer.js` — everything (~483KB / ~102KB gzipped)
+- `ftelnet.rip.xfer.js` — everything (~563 KB / ~123 KB gzipped)
 
 Each comes with a source map and a minified `.min.js` variant.
 
@@ -156,43 +175,50 @@ integrations continue to work unchanged.
 <script src="ftelnet.norip.xfer.min.js" id="fTelnetScript"></script>
 <script>
   const options = new fTelnetOptions();
-  options.Hostname = 'bbs.ftelnet.ca';
-  options.Port = 1123;
+  options.Hostname = 'your-bbs.example.com';
+  options.Port = 23;
 
-  // New in Phase 3 — pick the visual theme for the chrome:
+  // Pick the visual theme for the chrome:
   options.Theme = 'dos-classic';        // or any of the 6 themes
 
-  // New in Phase 3 — runtime defaults the user can override:
-  options.MuteSounds = false;            // bell sounds (paste-bell etc.)
+  // Runtime defaults the user can override:
+  options.MuteSounds = false;
   options.VirtualKeyboardVibrateDuration = 25;  // ms
 
   const client = new fTelnetClient('fTelnetContainer', options);
 </script>
 ```
 
-Users can change theme / mute / vibrate at runtime via the Menu →
-Settings... popup. Their choices override the embed defaults and
-persist in localStorage.
+Users can change theme / mute / vibrate at runtime via the **Menu →
+Settings...** popup. Their choices override the embed defaults and
+persist in localStorage. The Settings panel also includes an **About**
+section showing version, fork author, upstream attribution, and
+license info.
 
 ## Architecture notes
 
 Brief orientation for contributors:
 
-- **`src/common/`** — the protocol-independent foundations: `ByteArray`
+- **`src/common/`** — protocol-independent foundations: `ByteArray`
   (binary buffer with read/write cursor), `CRC` (CRC-16 and CRC-32),
   `StringUtils`, `KeyboardKeys`, telnet codes.
-- **`src/connections/`** — WebSocket connection wrappers (TelnetConnection
-  for raw telnet, RLogin, SSH-over-WebSocket).
+- **`src/connections/`** — WebSocket connection wrappers
+  (TelnetConnection for raw telnet, RLoginConnection for rlogin, raw
+  TCP via WebSocketConnection).
 - **`src/crt/`** — the BBS canvas itself: text rendering, font loading,
   ANSI/CTERM parser, scrollback buffer, Atari/C64/PETSCII modes,
   RIPscrip integration.
-- **`src/components/`** — Lit `<f-*>` web components for all UI chrome.
-- **`src/filetransfer/`** — YMODEM today; ZMODEM in progress (Phase 4).
+- **`src/components/`** — Lit `<f-*>` web components for all UI chrome
+  including `<f-transfer-progress>` (the ZMODEM progress panel).
+- **`src/filetransfer/`** — ZMODEM (receive + send + auto-detector) and
+  YMODEM. `TransferStats` engine powers the live progress numbers.
 - **`src/ftelnetclient/`** — `fTelnetClient` and `fTelnetOptions`, the
   facade the embedded `<script>` integration sees.
 - **`public/ftelnet.css`** — design tokens + theme blocks + component
   styles. Themes are CSS-only: ~30 lines of `[data-theme='...']`
   variable definitions per theme.
+- **`assets/`** — source-of-truth artwork (e.g. `SPLASH1.ANS`) kept in
+  the repo alongside its base64-encoded form in the source code.
 
 Path aliases (configured in `tsconfig.json` and `vite.config.ts`):
 `@common`, `@components`, `@connections`, `@crt`, `@crtcontrols`,
@@ -201,7 +227,8 @@ Path aliases (configured in `tsconfig.json` and `vite.config.ts`):
 ## License
 
 GNU Affero General Public License v3, matching upstream fTelnet.
-See `LICENSE`.
+See [`LICENSE`](./LICENSE) for the full license text and the
+[`NOTICE`](./NOTICE) file for attribution details.
 
 ## Acknowledgements
 
@@ -219,3 +246,8 @@ Phase 4 ZMODEM implementation is cleanroom TypeScript informed by:
 
 We consult these implementations when the spec is ambiguous; we do
 not copy code from them. See `docs/phase4-references.md`.
+
+Special thanks to the sysops of **Diamond Mine Online** (Synchronet),
+**8-Bit Boyz** (Mystic), and the **PCBoard** community for providing
+the live test BBSes that made the Phase 4 trifecta verification
+possible.
