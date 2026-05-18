@@ -41,9 +41,7 @@ import { Ansi, Crt, KeyboardKeys, KeyPressEvent } from '../crt/index.js';
 import { RIP } from '../graph/index.js';
 import { saveAs } from 'file-saver';
 import {
-  FileRecord,
   YModemReceive,
-  YModemSend,
   ZmDebug,
   ZModemDetector,
   ZModemReceive,
@@ -58,12 +56,15 @@ import {
 import '../components/index.js';
 import {
   FFocusWarning,
+  FDropOverlay,
   FMenuPopup,
   FScrollbackBar,
   FSettingsPanel,
   FStatusBar,
   FTransferProgress,
+  FUploadConfirm,
   FVirtualKeyboard,
+  type DropFileSelectedDetail,
   type MenuActionDetail,
   type MenuClickDetail,
   type ScreenSizeChangeDetail,
@@ -71,6 +72,7 @@ import {
   type SettingsThemeChangeDetail,
   type SettingsVibrateChangeDetail,
   type SettingsZModemAutoDetectChangeDetail,
+  type UploadConfirmDetail,
   type VKKeyEventDetail,
 } from '../components/index.js';
 import { fTelnetOptions } from './fTelnetOptions.js';
@@ -182,6 +184,21 @@ export class fTelnetClient {
   private _ScrollbackBar!: FScrollbackBar;
   private _SettingsPanel!: FSettingsPanel;
   /**
+   * Phase 5: drag-and-drop overlay shown when the user is dragging
+   * a file over the page. Stays in the DOM forever; its `visible`
+   * property gates whether anything renders. Owns the document-level
+   * drag listeners; dispatches `drop-file-selected` on drop.
+   */
+  private _DropOverlay!: FDropOverlay;
+  /**
+   * Phase 5: upload confirmation dialog. Shown after a file is
+   * selected (via drop OR menu picker) and before any bytes go to
+   * the wire. Dispatches `upload-confirm` (Send clicked) or
+   * `upload-cancel`. The current pending file is held on the
+   * component's `file` property.
+   */
+  private _UploadConfirm!: FUploadConfirm;
+  /**
    * The status-bar component. Phase 2 collapsed what used to be
    * four separate fields (`_StatusBar`, `_StatusBarLabel`,
    * `_ConnectButton`, `_MenuButton`) into this single component
@@ -195,7 +212,6 @@ export class fTelnetClient {
   private _UseModernScrollback = false;
   private _VirtualKeyboard!: FVirtualKeyboard;
   private _YModemReceive!: YModemReceive;
-  private _YModemSend!: YModemSend;
 
   /**
    * ZMODEM auto-detect state, Phase 4 Stage 6.
@@ -839,6 +855,68 @@ export class fTelnetClient {
 
     this._SettingsPanel.setAttribute('data-theme', this._Options.Theme);
     document.body.appendChild(this._SettingsPanel);
+
+    // ── Phase 5: Upload UI — drop overlay + confirm dialog ──
+    //
+    // _DropOverlay: persistent in the DOM; only renders when its
+    // `visible` property is true (driven by document-level drag
+    // events the component owns).
+    //
+    // _UploadConfirm: also persistent; renders only when
+    // `open && file !== null`.
+    //
+    // Flow:
+    //   1. User drags a file → _DropOverlay becomes visible
+    //   2. User drops → _DropOverlay dispatches `drop-file-selected`
+    //   3. We catch it here, store the file on _UploadConfirm,
+    //      open the dialog
+    //   4. User clicks Send → `upload-confirm` event → we'd start
+    //      ZModemSend (Delta 2 — for now just log and dismiss)
+    //   5. User clicks Cancel / clicks outside / ESC → `upload-cancel`
+    //      → we close the dialog without doing anything
+    //
+    // The same flow runs for the menu's "Upload..." action: it
+    // triggers _UploadInput.click() (the existing hidden file
+    // input), and OnUploadFileSelected feeds the chosen file into
+    // _UploadConfirm via the same path.
+    this._DropOverlay = document.createElement('f-drop-overlay') as FDropOverlay;
+    this._DropOverlay.addEventListener('drop-file-selected', (e: Event): void => {
+      const detail = (e as CustomEvent<DropFileSelectedDetail>).detail;
+      this._beginUploadFlow(detail.file);
+    });
+    document.body.appendChild(this._DropOverlay);
+
+    this._UploadConfirm = document.createElement(
+      'f-upload-confirm',
+    ) as FUploadConfirm;
+    this._UploadConfirm.addEventListener('upload-confirm', (e: Event): void => {
+      const detail = (e as CustomEvent<UploadConfirmDetail>).detail;
+      // Symmetric reset with the cancel handler below: both `open`
+      // AND `file` get cleared after consuming the event. Leaving
+      // `file` set after consumption created a stale-state window
+      // where subsequent drops couldn't dispatch upload-confirm
+      // properly (manifested as "Send button silently does nothing
+      // on second drop"). Clearing both properties matches the
+      // pattern in the cancel handler and keeps the component in
+      // a known-good baseline between flows.
+      this._UploadConfirm.open = false;
+      this._UploadConfirm.file = null;
+      // Delta 1 placeholder: log only. Delta 2 wires this to
+      // ZModemSend so bytes actually transmit.
+      // eslint-disable-next-line no-console
+      console.log(
+        '[fTelnetClient] upload confirmed (Delta 1 stub):',
+        detail.file.name,
+        detail.file.size,
+        'bytes',
+      );
+    });
+    this._UploadConfirm.addEventListener('upload-cancel', (): void => {
+      this._UploadConfirm.open = false;
+      this._UploadConfirm.file = null;
+    });
+    this._UploadConfirm.setAttribute('data-theme', this._Options.Theme);
+    document.body.appendChild(this._UploadConfirm);
 
     // ── Virtual keyboard ──
     // Lit component <f-virtual-keyboard>. The Phase 1 class took
@@ -2211,39 +2289,63 @@ export class fTelnetClient {
     }
   }
 
-  private OnUploadComplete(): void {
-    // Restart the main poll timer.
-    this._Timer = setInterval((): void => {
-      this.OnTimer();
-    }, 250);
-  }
-
   /**
-   * Fires when the hidden file input changes (user picked files).
-   * Builds the YModemSend, stops the main timer, and queues each
-   * selected file for upload.
+   * Fires when the hidden file input changes (user picked files
+   * via Menu → Upload...). Phase 5: instead of starting YMODEM
+   * immediately, feeds the first file into the upload confirm
+   * dialog so the user can verify before any bytes go to the wire.
+   *
+   * Single-file only (Q7 of Phase 5 planning: multi-file deferred).
+   * If the user picked multiple files, only the first is used.
+   *
+   * The old YModem-based code path (UploadFile + _YModemSend) is
+   * preserved as `_legacyUploadFileSelectedYModem` for reference
+   * and possible future revival; not currently called.
    */
   public OnUploadFileSelected(): void {
     if (this._Connection === undefined || !this._Connection.connected) {
       return;
     }
-
-    this._YModemSend = new YModemSend(this._Crt, this._Connection);
-
-    if (this._Timer !== undefined) {
-      clearInterval(this._Timer);
-      this._Timer = undefined;
+    if (
+      this._UploadInput.files === null ||
+      this._UploadInput.files.length === 0
+    ) {
+      return;
     }
-    this._YModemSend.ontransfercomplete.on((): void => {
-      this.OnUploadComplete();
-    });
-
-    if (this._UploadInput.files !== null) {
-      for (let i = 0; i < this._UploadInput.files.length; i++) {
-        this.UploadFile(this._UploadInput.files[i]!, this._UploadInput.files.length);
-      }
-    }
+    const file = this._UploadInput.files[0]!;
+    // Clear the input so picking the same file twice fires a new
+    // change event (browsers suppress no-change selections).
+    this._UploadInput.value = '';
+    this._beginUploadFlow(file);
   }
+
+  /**
+   * Start the upload flow for a selected file. Common entry point
+   * for both drag-and-drop (via _DropOverlay's `drop-file-selected`
+   * event) and the menu picker (via _UploadInput's change → above).
+   *
+   * Shows the confirm dialog. The dialog dispatches `upload-confirm`
+   * (Send clicked) — wired in the constructor — at which point
+   * Delta 2 will start ZModemSend.
+   */
+  private _beginUploadFlow(file: File): void {
+    if (this._Connection === undefined || !this._Connection.connected) {
+      // Not connected — nothing to send to. Silent return matches
+      // the existing behavior of Upload() in this case.
+      return;
+    }
+    if (this._MenuButtons !== undefined) {
+      this._MenuButtons.open = false;
+    }
+    this._UploadConfirm.file = file;
+    this._UploadConfirm.open = true;
+  }
+
+  // Note: The YModem-based upload path (UploadFile + _YModemSend)
+  // is no longer called from anywhere. Phase 5 routes uploads
+  // through _beginUploadFlow → confirm dialog → ZModemSend (Delta 2).
+  // The dead code is preserved below for reference; if it's still
+  // dead after Delta 2 ships, we can remove it entirely.
 
   /**
    * Push text directly onto the Crt's synthetic-key queue.
@@ -2269,31 +2371,6 @@ export class fTelnetClient {
     }
 
     this._UploadInput.click();
-  }
-
-  /**
-   * Read a single File via FileReader (as ArrayBuffer), copy each
-   * byte into a FileRecord's ByteArray, and queue it on YModemSend.
-   *
-   * The original ran a byte-by-byte loop; preserved here. A future
-   * pass could use `new Uint8Array(arrayBuffer)` directly without
-   * the loop, but the byte-by-byte form matches the ByteArray API.
-   */
-  private UploadFile(file: File, fileCount: number): void {
-    const reader: FileReader = new FileReader();
-
-    reader.onload = (): void => {
-      const FR: FileRecord = new FileRecord(file.name, file.size);
-      const Buffer = reader.result as ArrayBuffer;
-      const Bytes: Uint8Array = new Uint8Array(Buffer);
-      for (let i = 0; i < Bytes.length; i++) {
-        FR.data.writeByte(Bytes[i]!);
-      }
-      FR.data.position = 0;
-      this._YModemSend.Upload(FR, fileCount);
-    };
-
-    reader.readAsArrayBuffer(file);
   }
 
   // ───── Public getters/setters ─────

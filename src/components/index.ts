@@ -15,6 +15,7 @@
  *     import '@components/FFocusWarning.js';
  */
 export { FFocusWarning } from './FFocusWarning.js';
+export { FDropOverlay, type DropFileSelectedDetail } from './FDropOverlay.js';
 export {
   FMenuPopup,
   type MenuActionDetail,
@@ -35,4 +36,9 @@ export {
   FTransferProgress,
   type TransferAbortDetail,
 } from './FTransferProgress.js';
+export {
+  FUploadConfirm,
+  type UploadConfirmDetail,
+  type UploadCancelDetail,
+} from './FUploadConfirm.js';
 export { FVirtualKeyboard, type VKKeyEventDetail } from './FVirtualKeyboard.js';

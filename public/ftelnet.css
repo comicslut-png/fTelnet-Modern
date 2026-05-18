@@ -585,6 +585,163 @@
 }
 
 /* ──────────────────────────────────────────────────────────
+   Phase 5: Upload UI — drop overlay + confirm dialog
+
+   Drop overlay: full-viewport translucent dim layer with a
+   centered "Drop file here" message. Appears while the user is
+   dragging a file over the page; disappears on drop or
+   dragleave-out-of-page. z-index: 2000 puts it above menu/
+   settings popups (1500/1600) so it's visible during any state.
+
+   Confirm dialog: viewport-centered modal shown after the user
+   drops or picks a file. Same positioning approach as
+   FSettingsPanel.
+   ────────────────────────────────────────────────────────── */
+
+.fTelnetDropOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  pointer-events: none; /* don't intercept the drop itself */
+}
+
+.fTelnetDropOverlayMessage {
+  text-align: center;
+  color: #ffffff;
+  font-family: var(--ft-ui-font-family, 'Courier New', monospace);
+  border: 3px dashed #55ffff;
+  border-radius: 8px;
+  padding: 48px 64px;
+  background: rgba(0, 0, 170, 0.4);
+}
+
+.fTelnetDropOverlayIcon {
+  font-size: 64px;
+  margin-bottom: 16px;
+}
+
+.fTelnetDropOverlayTitle {
+  font-size: 28px;
+  font-weight: bold;
+  color: #ffff55;
+  margin-bottom: 8px;
+}
+
+.fTelnetDropOverlaySubtitle {
+  font-size: 18px;
+  color: #55ffff;
+}
+
+/* Confirm dialog */
+.fTelnetUploadConfirm {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: var(--ft-popup-bg);
+  border: 1px solid var(--ft-popup-border);
+  color: var(--ft-popup-fg);
+  font: var(--ft-ui-font);
+  min-width: 400px;
+  max-width: 600px;
+  padding: 0;
+  text-shadow: var(--ft-ui-text-shadow);
+  z-index: 1700; /* above settings (1600) and menu (1500) */
+}
+
+[data-theme='dos-classic'] .fTelnetUploadConfirm {
+  border-color: var(--ft-bevel-light) var(--ft-bevel-outer-dark)
+    var(--ft-bevel-outer-dark) var(--ft-bevel-light);
+  border-width: 2px;
+  box-shadow: inset 1px 1px 0 0 var(--ft-bevel-light),
+    inset -1px -1px 0 0 var(--ft-bevel-shadow);
+}
+
+.fTelnetUploadConfirmHeader {
+  font-weight: bold;
+  font-size: 1.1em;
+  padding: 4px 12px;
+  background-color: #000080;
+  color: #ffffff;
+}
+
+.fTelnetUploadConfirmBody {
+  padding: 12px;
+}
+
+.fTelnetUploadConfirmRow {
+  margin-bottom: 6px;
+  display: flex;
+  gap: 8px;
+}
+
+.fTelnetUploadConfirmLabel {
+  font-weight: bold;
+  min-width: 80px;
+}
+
+.fTelnetUploadConfirmValue {
+  flex: 1 1 auto;
+  word-break: break-all;
+}
+
+.fTelnetUploadConfirmWarning {
+  margin-top: 12px;
+  padding: 8px;
+  background: rgba(255, 255, 85, 0.15);
+  border: 1px solid #ffff55;
+  font-size: 0.9em;
+}
+
+.fTelnetUploadConfirmFooter {
+  padding: 8px 12px;
+  text-align: right;
+  border-top: 1px solid var(--ft-ui-border-soft);
+}
+
+.fTelnetUploadConfirmCancel,
+.fTelnetUploadConfirmSend {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 4px 16px;
+  background-color: var(--ft-popup-button-bg);
+  color: var(--ft-popup-button-fg);
+  text-decoration: none;
+  border: 1px solid var(--ft-popup-border);
+}
+
+.fTelnetUploadConfirmSend {
+  font-weight: bold;
+}
+
+[data-theme='dos-classic'] .fTelnetUploadConfirmCancel,
+[data-theme='dos-classic'] .fTelnetUploadConfirmSend {
+  border-color: var(--ft-bevel-light) var(--ft-bevel-outer-dark)
+    var(--ft-bevel-outer-dark) var(--ft-bevel-light);
+  border-width: 2px;
+  border-radius: 0;
+  padding: 2px 14px;
+}
+
+[data-theme='dos-classic'] .fTelnetUploadConfirmCancel:active,
+[data-theme='dos-classic'] .fTelnetUploadConfirmSend:active {
+  border-color: var(--ft-bevel-outer-dark) var(--ft-bevel-light)
+    var(--ft-bevel-light) var(--ft-bevel-outer-dark);
+}
+
+.fTelnetUploadConfirmCancel:hover,
+.fTelnetUploadConfirmSend:hover {
+  background-color: var(--ft-popup-button-bg-hover, var(--ft-popup-button-bg));
+}
+
+/* ──────────────────────────────────────────────────────────
    Theme: crt-green (Phase 3 Stage 3)
 
    Phosphor-green-on-black terminal nostalgia. The look of every
