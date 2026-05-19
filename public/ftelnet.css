@@ -458,6 +458,24 @@
   margin-bottom: 0;
 }
 
+/* Column alignment: the two columns have stretch height (via the
+   parent's flex defaults), but their fieldsets are content-sized
+   so the shorter column has empty space at the bottom. The Theme
+   column has 6 radio options and is tall; the right column has
+   3 short groups (Sound / Touch / Protocol) and finishes earlier,
+   leaving the Protocol box's bottom edge floating ABOVE the Theme
+   box's bottom edge — visually misaligned.
+
+   Make the LAST fieldset in each column stretch to fill remaining
+   space. Now whichever column is shorter has its last group
+   expand to match the height of the taller column, keeping bottom
+   edges aligned. Targeting :last-child means this stays correct
+   regardless of which side has more groups — robust to layout
+   changes. */
+.fTelnetSettingsPanelColumn .fTelnetSettingsPanelGroup:last-child {
+  flex: 1 1 auto;
+}
+
 /* The About fieldset spans full width below the two columns. */
 .fTelnetSettingsPanelGroupFullWidth {
   margin-top: 8px;
@@ -552,8 +570,14 @@
    invisible). */
 .fTelnetSettingsPanelAbout {
   font: var(--ft-ui-font);
-  font-size: 0.92em;
-  line-height: 1.4;
+  /* Was 0.92em — too small to read comfortably. The About box has
+     structured info (copyright, attribution, links) that benefits
+     from a slightly more generous size + line-height than the
+     dense form controls above. 1.1em gives ~15px in classic theme
+     (14px base) and ~12px in dos-classic (11px base) — both
+     comfortably readable. line-height bumped to match. */
+  font-size: 1.1em;
+  line-height: 1.5;
   color: var(--ft-ui-fg);
   opacity: 0.9;
 }
