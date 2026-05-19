@@ -72,6 +72,22 @@ export class FDropOverlay extends LitElement {
    */
   private _dragCounter = 0;
 
+  /**
+   * Watchdog timer: while a drag is in progress, `dragover` fires
+   * continuously (~every few ms). If `dragover` stops firing for
+   * `DRAG_WATCHDOG_MS`, the drag has effectively ended without
+   * any explicit end event — this happens when the user drags the
+   * file out of the browser window entirely on some platforms,
+   * or alt-tabs mid-drag.
+   *
+   * Without this, the overlay would stick around until the user
+   * starts another drag or reloads the page. The watchdog is the
+   * "belt" — `dragleave on window`, `dragend`, and `blur` are
+   * the "suspenders" — together they cover all the cases.
+   */
+  private _watchdogTimer: ReturnType<typeof setTimeout> | null = null;
+  private static readonly DRAG_WATCHDOG_MS = 500;
+
   protected override createRenderRoot(): HTMLElement {
     return this;
   }
@@ -81,6 +97,25 @@ export class FDropOverlay extends LitElement {
    * via connectedCallback. We have to use document-level listeners
    * (not element-level) because the user can drag anywhere on the
    * page; we want to detect it everywhere.
+   *
+   * Multi-layer cancel detection is necessary because there's no
+   * single browser event that reliably fires when a drag ends
+   * without a drop:
+   *
+   *   - `dragleave` on document: fires when leaving any element,
+   *     but the `_hasFiles` check can fail (some browsers blank
+   *     `dataTransfer.types` during dragleave for security).
+   *   - `dragleave` on window with `relatedTarget === null`:
+   *     signals the cursor left the entire window.
+   *   - `dragend`: fires on the source. For OS-originated file
+   *     drags this doesn't fire reliably — but cheap to handle.
+   *   - `mouseout` on documentElement with `relatedTarget === null`:
+   *     backstop for cursor truly leaving viewport.
+   *   - `blur` on window: catches alt-tab mid-drag.
+   *   - `_watchdogTimer`: belt-and-suspenders timeout that fires
+   *     if no `dragover` event arrives for 500ms.
+   *
+   * Any one of these is enough to hide the overlay.
    */
   public override connectedCallback(): void {
     super.connectedCallback();
@@ -88,6 +123,10 @@ export class FDropOverlay extends LitElement {
     document.addEventListener('dragover', this._handleDragOver);
     document.addEventListener('dragleave', this._handleDragLeave);
     document.addEventListener('drop', this._handleDrop);
+    document.addEventListener('dragend', this._handleDragEnd);
+    document.addEventListener('mouseout', this._handleMouseOut);
+    window.addEventListener('dragleave', this._handleWindowDragLeave);
+    window.addEventListener('blur', this._handleWindowBlur);
   }
 
   public override disconnectedCallback(): void {
@@ -95,7 +134,41 @@ export class FDropOverlay extends LitElement {
     document.removeEventListener('dragover', this._handleDragOver);
     document.removeEventListener('dragleave', this._handleDragLeave);
     document.removeEventListener('drop', this._handleDrop);
+    document.removeEventListener('dragend', this._handleDragEnd);
+    document.removeEventListener('mouseout', this._handleMouseOut);
+    window.removeEventListener('dragleave', this._handleWindowDragLeave);
+    window.removeEventListener('blur', this._handleWindowBlur);
+    this._clearWatchdog();
     super.disconnectedCallback();
+  }
+
+  /**
+   * Reset to "no drag in progress" state. Called from every cancel
+   * pathway. Idempotent — safe to call when already hidden.
+   */
+  private _resetDragState = (): void => {
+    this._dragCounter = 0;
+    this.visible = false;
+    this._clearWatchdog();
+  };
+
+  /**
+   * (Re)arm the watchdog. Called on every dragover; if the timer
+   * expires without being re-armed, the drag is considered ended.
+   */
+  private _armWatchdog(): void {
+    this._clearWatchdog();
+    this._watchdogTimer = setTimeout(() => {
+      this._watchdogTimer = null;
+      this._resetDragState();
+    }, FDropOverlay.DRAG_WATCHDOG_MS);
+  }
+
+  private _clearWatchdog(): void {
+    if (this._watchdogTimer !== null) {
+      clearTimeout(this._watchdogTimer);
+      this._watchdogTimer = null;
+    }
   }
 
   /**
@@ -110,12 +183,15 @@ export class FDropOverlay extends LitElement {
     if (this._dragCounter === 1) {
       this.visible = true;
     }
+    this._armWatchdog();
   };
 
   /**
    * dragover: required for the drop event to fire later. Browsers
    * will reject the drop if no element along the path called
-   * preventDefault() on dragover.
+   * preventDefault() on dragover. Also re-arms the watchdog —
+   * dragover fires continuously while a drag is active, so a
+   * gap in dragover events means the drag has ended.
    */
   private _handleDragOver = (e: DragEvent): void => {
     if (!this.enabled) return;
@@ -126,19 +202,74 @@ export class FDropOverlay extends LitElement {
     if (e.dataTransfer !== null) {
       e.dataTransfer.dropEffect = 'copy';
     }
+    this._armWatchdog();
   };
 
   /**
    * dragleave: decrement counter. When it drops to 0 we're truly
    * outside the page; hide the overlay.
+   *
+   * Important: we DON'T filter by `_hasFiles(e)` here. Some
+   * browsers (notably Firefox) blank out `dataTransfer.types`
+   * during `dragleave` for security/privacy reasons, so checking
+   * it would cause the leave to be ignored and the counter to
+   * stay positive forever. We rely on the counter itself + the
+   * other cancel pathways to stay correct.
    */
-  private _handleDragLeave = (e: DragEvent): void => {
+  private _handleDragLeave = (_e: DragEvent): void => {
     if (!this.enabled) return;
-    if (!this._hasFiles(e)) return;
+    if (this._dragCounter === 0) return; // not currently dragging
     this._dragCounter--;
     if (this._dragCounter <= 0) {
-      this._dragCounter = 0;
-      this.visible = false;
+      this._resetDragState();
+    }
+  };
+
+  /**
+   * dragleave on window: when relatedTarget is null, the cursor
+   * has left the window entirely. This is the most reliable
+   * "drag exited the page" signal across browsers.
+   */
+  private _handleWindowDragLeave = (e: DragEvent): void => {
+    if (!this.enabled) return;
+    if (e.relatedTarget === null) {
+      this._resetDragState();
+    }
+  };
+
+  /**
+   * dragend: fires on the source element when a drag operation
+   * ends (drop OR cancel via ESC). For OS-originated drags
+   * (file from desktop), this isn't always reliable, but when it
+   * does fire it's a clean signal.
+   */
+  private _handleDragEnd = (_e: DragEvent): void => {
+    if (!this.enabled) return;
+    this._resetDragState();
+  };
+
+  /**
+   * mouseout on documentElement with null relatedTarget: backstop
+   * for the cursor leaving the viewport without dragleave firing.
+   * Happens on some platforms when the user drags fast.
+   */
+  private _handleMouseOut = (e: MouseEvent): void => {
+    if (!this.enabled) return;
+    if (this._dragCounter === 0) return;
+    if (e.relatedTarget === null && (e as MouseEvent).target === document.documentElement) {
+      this._resetDragState();
+    }
+  };
+
+  /**
+   * blur on window: catches alt-tab or click-on-other-window
+   * during a drag. The drag is effectively canceled from our
+   * perspective — the user is no longer interacting with our page.
+   */
+  private _handleWindowBlur = (): void => {
+    if (!this.enabled) return;
+    if (this._dragCounter > 0) {
+      this._resetDragState();
     }
   };
 
@@ -151,8 +282,7 @@ export class FDropOverlay extends LitElement {
     if (!this.enabled) return;
     if (!this._hasFiles(e)) return;
     e.preventDefault();
-    this._dragCounter = 0;
-    this.visible = false;
+    this._resetDragState();
 
     const files = e.dataTransfer?.files;
     if (files === undefined || files.length === 0) return;

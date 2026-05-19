@@ -61,6 +61,18 @@
   --ft-popup-button-fg: black;
   --ft-popup-button-border: black;
 
+  /* Popup header strip — colored band across the top of dialogs
+     (FUploadConfirm and any future titled-dialog component).
+     Classic = blue chrome, matching the status bar's active state. */
+  --ft-popup-header-bg: blue;
+  --ft-popup-header-fg: white;
+
+  /* Warning callout — soft yellow-on-white "attention" box.
+     Used for content cautions like "uploads via fTelnetProxy". */
+  --ft-warning-bg: rgba(255, 215, 0, 0.18);
+  --ft-warning-border: #d4a400;
+  --ft-warning-fg: #5a4400;
+
   /* Typography */
   --ft-ui-font: 14px Arial, Helvetica, sans-serif;
   --ft-ui-text-shadow: 0 1px 0 rgba(0, 0, 0, 0.1);
@@ -121,6 +133,18 @@
   --ft-popup-button-bg: #c0c0c0;
   --ft-popup-button-fg: #000000;
   --ft-popup-button-border: transparent; /* bevels do the work */
+
+  /* Popup header: CGA dark blue with white — the unmistakable
+     Windows 3.1 / Norton Commander dialog title bar. Preserves
+     the pre-theming hardcoded look exactly. */
+  --ft-popup-header-bg: #000080;
+  --ft-popup-header-fg: #ffffff;
+
+  /* Warning callout: CGA yellow on dim yellow. The "attention"
+     palette that every DOS shareware installer used. */
+  --ft-warning-bg: rgba(255, 255, 85, 0.2);
+  --ft-warning-border: #ffff55;
+  --ft-warning-fg: #000000;
 
   /* Typography: keep system sans-serif (Win 3.1 used MS Sans
      Serif, which on modern systems falls back to whatever the
@@ -668,8 +692,8 @@
   font-weight: bold;
   font-size: 1.1em;
   padding: 4px 12px;
-  background-color: #000080;
-  color: #ffffff;
+  background-color: var(--ft-popup-header-bg);
+  color: var(--ft-popup-header-fg);
 }
 
 .fTelnetUploadConfirmBody {
@@ -695,8 +719,9 @@
 .fTelnetUploadConfirmWarning {
   margin-top: 12px;
   padding: 8px;
-  background: rgba(255, 255, 85, 0.15);
-  border: 1px solid #ffff55;
+  background: var(--ft-warning-bg);
+  border: 1px solid var(--ft-warning-border);
+  color: var(--ft-warning-fg);
   font-size: 0.9em;
 }
 
@@ -742,6 +767,77 @@
 }
 
 /* ──────────────────────────────────────────────────────────
+   FUploadConfirm: per-theme cosmetic touches
+
+   The base rules above pull every color from theme tokens, so
+   the dialog already looks coherent in every theme. These
+   add-ons just match the typographic/border idioms each theme
+   uses elsewhere — uppercase HUD labels in cyberpunk, italic
+   serif headers in gothic, thick black border under the cartoon
+   header strip, the CRT phosphor glow for crt-green.
+   ────────────────────────────────────────────────────────── */
+
+[data-theme='crt-green'] .fTelnetUploadConfirmHeader,
+[data-theme='crt-green'] .fTelnetUploadConfirmBody,
+[data-theme='crt-green'] .fTelnetUploadConfirmFooter,
+[data-theme='crt-green'] .fTelnetUploadConfirmCancel,
+[data-theme='crt-green'] .fTelnetUploadConfirmSend {
+  text-shadow: var(--ft-ui-text-shadow);
+}
+
+[data-theme='cyberpunk'] .fTelnetUploadConfirmHeader {
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+[data-theme='cyberpunk'] .fTelnetUploadConfirmCancel,
+[data-theme='cyberpunk'] .fTelnetUploadConfirmSend {
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: bold;
+}
+
+[data-theme='cyberpunk'] .fTelnetUploadConfirmCancel:hover,
+[data-theme='cyberpunk'] .fTelnetUploadConfirmSend:hover {
+  background-color: #ff00aa;
+  color: #0a0014;
+}
+
+[data-theme='gothic'] .fTelnetUploadConfirmHeader {
+  font-style: italic;
+  font-family: 'Georgia', 'Garamond', serif;
+  border-bottom: 1px solid #8b0000;
+}
+
+[data-theme='gothic'] .fTelnetUploadConfirmCancel:hover,
+[data-theme='gothic'] .fTelnetUploadConfirmSend:hover {
+  background-color: #2a0000;
+  color: #ff6666;
+}
+
+[data-theme='cartoon'] .fTelnetUploadConfirm {
+  border-width: 3px;
+  border-radius: 8px;
+  /* Clip the rounded corners around the header strip too. */
+  overflow: hidden;
+}
+
+[data-theme='cartoon'] .fTelnetUploadConfirmHeader {
+  border-bottom: 3px solid #000000;
+}
+
+[data-theme='cartoon'] .fTelnetUploadConfirmWarning {
+  border-width: 3px;
+  border-radius: 4px;
+}
+
+[data-theme='cartoon'] .fTelnetUploadConfirmCancel,
+[data-theme='cartoon'] .fTelnetUploadConfirmSend {
+  border-radius: 8px;
+  border-width: 3px;
+}
+
+/* ──────────────────────────────────────────────────────────
    Theme: crt-green (Phase 3 Stage 3)
 
    Phosphor-green-on-black terminal nostalgia. The look of every
@@ -784,6 +880,19 @@
   --ft-popup-button-bg: #002a00;
   --ft-popup-button-fg: #00ff00;
   --ft-popup-button-border: #00ff00;
+
+  /* Popup header: brighter green-on-dark-green strip. Inverted
+     contrast versus the body, the same trick a real VT/CRT did
+     when emphasizing a heading. */
+  --ft-popup-header-bg: #003300;
+  --ft-popup-header-fg: #00ff00;
+
+  /* Warning callout: amber. The only color that ever appeared
+     beside phosphor green on a real monochrome terminal —
+     "press any key" prompts, error overlays, etc. */
+  --ft-warning-bg: #1a1400;
+  --ft-warning-border: #ffaa00;
+  --ft-warning-fg: #ffcc00;
 
   /* Monospace UI font matches the BBS canvas — full terminal
      aesthetic top to bottom. */
@@ -863,6 +972,21 @@
   --ft-popup-button-bg: #0a0014;
   --ft-popup-button-fg: #ff00aa;
   --ft-popup-button-border: #00ffff;
+
+  /* Popup header: solid magenta on deep-purple text. Same look
+     as `.fTelnetSettingsPanelHeader` (which has its own
+     hardcoded rule below) — but now exposed as a token so the
+     upload-confirm header inherits it for free. */
+  --ft-popup-header-bg: #ff00aa;
+  --ft-popup-header-fg: #0a0014;
+
+  /* Warning callout: cyan-on-dark. In cyberpunk palettes cyan
+     is "info / alert"; magenta is "action / brand." Yellow
+     (used by other themes for warnings) would clash with the
+     yellow status-error accent. */
+  --ft-warning-bg: #001a1a;
+  --ft-warning-border: #00ffff;
+  --ft-warning-fg: #00ffff;
 
   --ft-ui-font: 11px 'Consolas', 'Courier New', monospace;
   --ft-ui-text-shadow: 0 0 6px currentColor;
@@ -949,6 +1073,20 @@
   --ft-popup-button-fg: #b22222;
   --ft-popup-button-border: #4a0000;
 
+  /* Popup header: deeper maroon than the panel border, off-white
+     text. Same value `.fTelnetSettingsPanelHeader` already uses
+     hardcoded below — now a token so all dialogs inherit it. */
+  --ft-popup-header-bg: #4a0000;
+  --ft-popup-header-fg: #d4c4c4;
+
+  /* Warning callout: firebrick on near-black. Stays inside the
+     theme's maroon family — no jarring yellows — but the
+     border lifts to a brighter red so it still reads as
+     "attention." */
+  --ft-warning-bg: #1a0000;
+  --ft-warning-border: #b22222;
+  --ft-warning-fg: #d4c4c4;
+
   --ft-ui-font: italic 13px 'Georgia', 'Garamond', 'Times New Roman', serif;
   --ft-ui-text-shadow: 0 0 2px rgba(139, 0, 0, 0.4);
 
@@ -1032,6 +1170,18 @@
   --ft-popup-button-bg: #ffdd00;
   --ft-popup-button-fg: #000000;
   --ft-popup-button-border: #000000;
+
+  /* Popup header: bright cartoon blue with white text. Loud
+     primary color, the same energy as the red status bar but
+     in a different hue so they don't look identical. */
+  --ft-popup-header-bg: #44aaff;
+  --ft-popup-header-fg: #ffffff;
+
+  /* Warning callout: pure cartoon yellow with the same thick
+     black border that everything else in this theme has. */
+  --ft-warning-bg: #ffdd00;
+  --ft-warning-border: #000000;
+  --ft-warning-fg: #000000;
 
   --ft-ui-font: bold 13px 'Comic Sans MS', 'Marker Felt', 'Chalkboard SE', sans-serif;
   --ft-ui-text-shadow: none;

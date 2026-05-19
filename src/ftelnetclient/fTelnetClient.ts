@@ -896,6 +896,11 @@ export class fTelnetClient {
       const detail = (e as CustomEvent<DropFileSelectedDetail>).detail;
       this._beginUploadFlow(detail.file);
     });
+    // Lives on document.body, outside the themed container — set
+    // the theme attribute directly so the overlay's CSS reads the
+    // right palette. Matches what we do for FUploadConfirm below
+    // and FMenuButtons / FSettingsPanel above.
+    this._DropOverlay.setAttribute('data-theme', this._Options.Theme);
     document.body.appendChild(this._DropOverlay);
 
     this._UploadConfirm = document.createElement(
@@ -2462,6 +2467,21 @@ export class fTelnetClient {
     this._fTelnetContainer.setAttribute('data-theme', theme);
     this._MenuButtons.setAttribute('data-theme', theme);
     this._SettingsPanel.setAttribute('data-theme', theme);
+    // These three components also live on document.body (outside
+    // the themed container), so they need the attribute set
+    // directly. Without this, switching themes at runtime via the
+    // settings panel would leave the upload-confirm dialog, the
+    // file-drop overlay, and the transfer-progress panel rendering
+    // with the *previous* theme until the next page load.
+    if (this._UploadConfirm !== undefined) {
+      this._UploadConfirm.setAttribute('data-theme', theme);
+    }
+    if (this._DropOverlay !== undefined) {
+      this._DropOverlay.setAttribute('data-theme', theme);
+    }
+    if (this._TransferProgressPanel !== undefined) {
+      this._TransferProgressPanel.setAttribute('data-theme', theme);
+    }
   }
 
   /**
