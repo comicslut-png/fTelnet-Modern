@@ -123,6 +123,15 @@ export class FTransferProgress extends LitElement {
   @property({ type: String, attribute: 'protocol-name' })
   protocolName = 'ZMODEM';
 
+  /**
+   * Direction of the transfer. Controls the verb shown in the
+   * panel title: 'receive' → "Receiving File N of M: ...",
+   * 'send' → "Sending File N of M: ...". Defaults to 'receive'
+   * for backward compatibility (Phase 4 only had receive).
+   */
+  @property({ type: String })
+  direction: 'send' | 'receive' = 'receive';
+
   @property({ type: String, attribute: 'file-name' })
   fileName = '';
 
@@ -352,6 +361,15 @@ ${this.lineBottomBorder()}</pre></div>`;
    * bulletproofs against ancestor `transform`/`filter`/`contain`
    * shenanigans that could re-anchor a fixed-positioned descendant.
    *
+   * Known cosmetic issue: on wide monitors where the BBS canvas is
+   * margin-auto'd in the page, the panel sits at viewport center,
+   * not canvas center. They're usually close. A future iteration
+   * could position the panel relative to the canvas explicitly,
+   * but the canvas-centered approach I tried (appending into
+   * _ClientContainer with position: absolute) caused the panel
+   * to disappear entirely — likely an interaction with the Crt
+   * canvas siblings. Reverted for reliability.
+   *
    * We also set every layout property explicitly so the global
    * stylesheet can't perturb it — `margin: 0` (browsers give
    * `<pre>` a default vertical margin), `line-height: 1.2`,
@@ -410,9 +428,12 @@ ${this.lineBottomBorder()}</pre></div>`;
     return html`<span style="color: #ffff55">└${dashes}┘</span>`;
   }
 
-  /** `│  Receiving File N of M: filename  │` (white text). */
+  /** `│  Receiving File N of M: filename  │` (white text). For
+   *  sends the verb is "Sending" instead.
+   */
   private lineTitle(): TemplateResult {
-    const prefix = `Receiving File ${this.fileNumber} of ${this.filesInBatch}: `;
+    const verb = this.direction === 'send' ? 'Sending' : 'Receiving';
+    const prefix = `${verb} File ${this.fileNumber} of ${this.filesInBatch}: `;
     const maxFileLen = Math.max(8, PANEL_INNER_WIDTH - 2 - prefix.length);
     let name = this.fileName || '???';
     if (name.length > maxFileLen) {

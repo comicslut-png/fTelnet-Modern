@@ -45,7 +45,9 @@ import {
   ZmDebug,
   ZModemDetector,
   ZModemReceive,
+  ZModemSend,
   type ZModemFileInfo,
+  type ZModemFileToSend,
 } from '../filetransfer/index.js';
 // Force component registration as a side effect even if all named
 // imports below get tree-shaken (they would: the named imports are
@@ -259,6 +261,16 @@ export class fTelnetClient {
    */
   private readonly _ZModemFileBuffers = new Map<string, Uint8Array[]>();
   private _ZModemCurrentFile: ZModemFileInfo | undefined;
+
+  /**
+   * Phase 5 — outbound ZMODEM session (uploads). When non-undefined,
+   * a send is in progress: inbound bytes from the wire (which are
+   * the receiver's ACK/NAK/header responses) get routed to
+   * `_ZModemSend.feedBytes()` instead of to the terminal renderer
+   * or the auto-detector. `endZModemSend()` clears this back to
+   * undefined.
+   */
+  private _ZModemSend: ZModemSend | undefined;
 
   /**
    * Phase 4 Stage 7 — file-transfer progress panel.
@@ -901,15 +913,10 @@ export class fTelnetClient {
       // a known-good baseline between flows.
       this._UploadConfirm.open = false;
       this._UploadConfirm.file = null;
-      // Delta 1 placeholder: log only. Delta 2 wires this to
-      // ZModemSend so bytes actually transmit.
-      // eslint-disable-next-line no-console
-      console.log(
-        '[fTelnetClient] upload confirmed (Delta 1 stub):',
-        detail.file.name,
-        detail.file.size,
-        'bytes',
-      );
+      // Phase 5 Delta 2: actually start the upload via ZModemSend.
+      // Reads the file as an ArrayBuffer, then hands off to the
+      // send state machine.
+      this._beginZModemSend(detail.file);
     });
     this._UploadConfirm.addEventListener('upload-cancel', (): void => {
       this._UploadConfirm.open = false;
@@ -949,9 +956,16 @@ export class fTelnetClient {
     this._TransferProgressPanel.addEventListener('transfer-abort', (): void => {
       // Send the protocol abort: ZABORT hex header, 8 CAN burst,
       // 10 BS cleanup (each as a separate WebSocket message). The
-      // sender sees this at its next subpacket boundary and aborts
+      // peer sees this at its next subpacket boundary and aborts
       // on its end.
+      //
+      // Phase 5 Delta 2: same abort flow regardless of direction.
+      // If we're receiving, ZModemReceive.abort() sends the
+      // sequence. If we're sending, ZModemSend.abort() does the
+      // same. Only one of these will be active at any moment, so
+      // calling both is safe (the inactive one is undefined).
       this._ZModemReceive?.abort();
+      this._ZModemSend?.abort();
 
       // ── Drain the inbound buffer ──────────────────────────
       // The architectural insight: post-abort "garbage" you see in
@@ -1803,7 +1817,17 @@ export class fTelnetClient {
               this._PostAbortDropUntil = 0;
             }
             this.ondata.trigger(Data);
-            if (
+            if (this._ZModemSend !== undefined) {
+              // Phase 5 Delta 2: a send is in progress. Inbound
+              // bytes are the receiver's ACK/NAK/header responses;
+              // they belong to the send state machine, not to the
+              // ANSI renderer or the auto-detector. Route exclusive.
+              const buf = new Uint8Array(Data.length);
+              for (let i = 0; i < Data.length; i++) {
+                buf[i] = Data.charCodeAt(i) & 0xff;
+              }
+              this._ZModemSend.feedBytes(buf);
+            } else if (
               this._Options.ZModemAutoDetect &&
               this._ZModemDetector !== undefined
             ) {
@@ -2040,6 +2064,193 @@ export class fTelnetClient {
       this._TransferStatsTimer = undefined;
     }
     this._TransferStats = undefined;
+  }
+
+  /**
+   * Phase 5 Delta 2 — start a ZMODEM upload for `file`.
+   *
+   * Mirror of beginZModemReceive but for outbound: reads the File
+   * into a Uint8Array via FileReader, constructs a ZModemFileToSend,
+   * spins up a ZModemSend state machine wired to the same progress
+   * panel + TransferStats engine the receive path uses.
+   *
+   * Inbound bytes from the wire (the receiver's ACK/NAK/header
+   * responses) are routed to ZModemSend.feedBytes by
+   * OnConnectionData's send-active branch — see the "if
+   * _ZModemSend !== undefined" check there.
+   *
+   * Critical timing: the BBS may have already sent ZRINIT before
+   * the user clicked Send (because the BBS engaged its ZMODEM
+   * receiver as soon as the user selected Zmodem BATCH at the
+   * protocol picker). We have to capture those bytes; if they
+   * arrive while FileReader is async-reading the file they'll be
+   * lost to the ANSI renderer.
+   *
+   * Delta 2.1 fix: spin up the state machine SYNCHRONOUSLY first
+   * (still in IDLE state — doesn't send anything yet), then start
+   * the FileReader. Any bytes arriving during the file read will
+   * route to ZModemSend.feedBytes (the decoder ignores them
+   * gracefully while in IDLE). Then once the file is loaded we
+   * actually call `.start()` to begin the handshake.
+   *
+   * Also drains any bytes sitting in the _InputBuffer at the
+   * moment of click — those are very likely to be the BBS's
+   * already-sent ZRINIT, and we want them to go to the state
+   * machine, not the renderer.
+   */
+  private _beginZModemSend(file: File): void {
+    if (this._Connection === undefined || !this._Connection.connected) {
+      return;
+    }
+
+    // Spin up the progress panel immediately for visible feedback,
+    // even though bytes haven't started flowing yet.
+    this._TransferStats = new TransferStats();
+    this._TransferStats.reset(file.size);
+    this._TransferProgressPanel.reset();
+    this._TransferProgressPanel.direction = 'send';
+    this._TransferProgressPanel.protocolName = 'ZMODEM';
+    this._TransferProgressPanel.fileName = file.name;
+    this._TransferProgressPanel.fileNumber = 1;
+    this._TransferProgressPanel.filesInBatch = 1;
+    this._TransferProgressPanel.snapshot = this._TransferStats.snapshot();
+    this._TransferProgressPanel.statusMessage = 'Reading file...';
+    this._TransferProgressPanel.errorCount = 0;
+    this._TransferProgressPanel.visible = true;
+
+    // Construct the state machine NOW (synchronously). It starts
+    // in IDLE state and won't send anything until we call .start().
+    // But its existence flips the OnConnectionData routing branch,
+    // so any inbound bytes during the file read will go to feedBytes
+    // instead of leaking through to the renderer.
+    //
+    // We construct with an empty files array initially; we'll
+    // replace the state machine entirely once the file is loaded.
+    // (ZModemSend's _files is private and there's no public setter,
+    // but that's fine — the placeholder never gets to .start() so
+    // its empty files array is never consulted.)
+    this._ZModemSend = new ZModemSend([], {
+      onBytesToSend: () => { /* placeholder, not started yet */ },
+    });
+
+    // Drain any bytes already sitting in the input buffer. These
+    // are very likely the BBS's ZRINIT (already sent because we
+    // selected Zmodem at the protocol picker). Feeding them now
+    // primes the decoder; though since this placeholder ZModemSend
+    // is going to be replaced, the actual usefulness here is to
+    // PREVENT them from reaching the renderer between now and
+    // when the real ZModemSend is set up. The decoder will see
+    // them but ignore them (placeholder is in IDLE).
+    if (this._Connection.bytesAvailable > 0) {
+      const drain = this._Connection.readString(this._Connection.bytesAvailable);
+      ZmDebug.log('client', `_beginZModemSend pre-drained ${drain.length} bytes`);
+    }
+
+    const reader = new FileReader();
+    reader.onload = (): void => {
+      const buffer = reader.result as ArrayBuffer;
+      const bytes = new Uint8Array(buffer);
+      this._startZModemSendWithBytes(file, bytes);
+    };
+    reader.onerror = (): void => {
+      // eslint-disable-next-line no-console
+      console.warn('[fTelnetClient] FileReader error reading upload file:', reader.error);
+      this._TransferProgressPanel.statusMessage = 'Failed to read file';
+      this._TransferProgressPanel.markComplete();
+      this._ZModemSend = undefined;
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  /**
+   * Second half of _beginZModemSend, factored out because it has
+   * to wait for FileReader to finish. By the time this runs we
+   * have the full file as a Uint8Array.
+   *
+   * Replaces the placeholder ZModemSend set up in _beginZModemSend
+   * with the real one (now that we have the file bytes to feed it),
+   * then calls .start() to kick off the protocol handshake.
+   */
+  private _startZModemSendWithBytes(file: File, bytes: Uint8Array): void {
+    if (this._Connection === undefined || !this._Connection.connected) {
+      return;
+    }
+
+    this._TransferProgressPanel.statusMessage = '';
+
+    // 10 Hz render clock for the panel's CPS / ETA / elapsed-time
+    // fields. Cleared in _endZModemSend.
+    this._TransferStatsTimer = setInterval((): void => {
+      if (this._TransferStats !== undefined) {
+        this._TransferProgressPanel.snapshot = this._TransferStats.snapshot();
+      }
+    }, 100);
+
+    const fileToSend: ZModemFileToSend = {
+      name: file.name,
+      data: bytes,
+      mtime: new Date(file.lastModified),
+      mode: 0,
+    };
+
+    // Replace the placeholder with the real state machine. Note:
+    // any bytes that arrived during FileReader and were fed to
+    // the placeholder are LOST — but the placeholder was in IDLE
+    // so it wouldn't have parsed them into useful state anyway.
+    // The BBS will retransmit on timeout.
+    this._ZModemSend = new ZModemSend([fileToSend], {
+      onBytesToSend: (out) => {
+        if (this._Connection !== undefined && this._Connection.connected) {
+          for (let i = 0; i < out.length; i++) {
+            this._Connection.writeByte(out[i]!);
+          }
+          this._Connection.flush();
+        }
+      },
+      onFileStart: (f) => {
+        this._TransferProgressPanel.fileName = f.name;
+        this._TransferStats?.reset(f.data.length);
+      },
+      onProgress: (sent, total) => {
+        this._TransferStats?.update(sent, total);
+      },
+      onFileComplete: () => {
+        // Per-file done. For single-file batches (all we support
+        // right now per Q7) this fires immediately before
+        // onSessionComplete; nothing to do here.
+      },
+      onSessionComplete: () => {
+        this._TransferProgressPanel.markComplete();
+        this._endZModemSend();
+      },
+      onError: (msg) => {
+        // eslint-disable-next-line no-console
+        console.warn('ZMODEM send error:', msg);
+        this._TransferProgressPanel.statusMessage = msg;
+        this._TransferProgressPanel.markComplete();
+        this._endZModemSend();
+      },
+    });
+
+    this._ZModemSend.start();
+  }
+
+  /**
+   * Tear down an active ZMODEM send session. Mirror of
+   * endZModemReceive — clears the state machine, the panel render
+   * clock, and the stats.
+   */
+  private _endZModemSend(): void {
+    this._ZModemSend = undefined;
+    if (this._TransferStatsTimer !== undefined) {
+      clearInterval(this._TransferStatsTimer);
+      this._TransferStatsTimer = undefined;
+    }
+    this._TransferStats = undefined;
+    // Reset direction back to receive for the next session — the
+    // panel defaults to 'receive', and beginZModemReceive doesn't
+    // reset it explicitly, so we have to.
+    this._TransferProgressPanel.direction = 'receive';
   }
 
   private OnConnectionLocalEcho(value: boolean): void {

@@ -284,8 +284,41 @@ describe('ZModemSend', () => {
   // ─────────────────── multi-subpacket files ───────────────────
 
   describe('multi-subpacket files', () => {
-    it('chunks a large file into 1024-byte subpackets', () => {
-      // 2500 bytes → 3 subpackets: 1024 + 1024 + 452
+    /**
+     * Helper for the async pump: yields to the macro-task queue
+     * until all queued setTimeout callbacks have run. Iterates
+     * until the last sent subpacket is ZCRCE (end of file).
+     *
+     * Delta 2.8: pure streaming with ZCRCG — no ACK feeding
+     * needed.
+     */
+    async function drainPump(
+      send: ZModemSend,
+      maxIterations = 200,
+    ): Promise<void> {
+      // Suppress unused warning; `send` is part of the signature
+      // for API stability across test variants.
+      void send;
+
+      for (let i = 0; i < maxIterations; i++) {
+        // Yield to macrotask queue and respect the inter-subpacket
+        // pacing delay (25ms in Delta 2.8). Give it ample time.
+        await new Promise((r) => setTimeout(r, 30));
+
+        const { subpackets } = decodeSent();
+        const lastSub = subpackets[subpackets.length - 1];
+
+        // Done when the last subpacket is ZCRCE (final).
+        if (lastSub && lastSub.marker === 0x68 /* ZCRCE */) {
+          return;
+        }
+      }
+      throw new Error('drainPump: maxIterations reached without ZCRCE');
+    }
+
+    it('chunks a large file into subpackets of SUBPACKET_SIZE', async () => {
+      // Delta 2.11: SUBPACKET_SIZE = 1024 (restored).
+      // 2500 bytes → 2 full subpackets (1024 each = 2048) + 1 partial (452 bytes)
       const content = new Uint8Array(2500);
       for (let i = 0; i < 2500; i++) content[i] = i & 0xff;
       const file: ZModemFileToSend = { name: 'big.bin', data: content };
@@ -294,6 +327,10 @@ describe('ZModemSend', () => {
       send.start();
       feedReceiverZRINIT(send);
       feedReceiverZRPOS(send, 0);
+
+      // Delta 2.3: pump is now async — drain it.
+      await drainPump(send);
+
       send.feedBytes(ZModemEncoder.buildZRINIT(CANFDX | CANOVIO | CANFC32));
       feedReceiverZFIN(send);
 
@@ -320,12 +357,13 @@ describe('ZModemSend', () => {
       expect(dataSubs[2]!.data.length).toBe(452);
       // Last chunk should end with ZCRCE
       expect(dataSubs[2]!.marker).toBe(0x68); // ZCRCE
-      // Earlier chunks should be ZCRCG (no ACK needed)
+      // Delta 2.8: back to zmodem.js-style pure streaming with ZCRCG
+      // for non-last subpackets.
       expect(dataSubs[0]!.marker).toBe(0x69); // ZCRCG
       expect(dataSubs[1]!.marker).toBe(0x69); // ZCRCG
     });
 
-    it('progress fires multiple times for a large file', () => {
+    it('progress fires multiple times for a large file', async () => {
       const content = new Uint8Array(2500);
       const file: ZModemFileToSend = { name: 'big.bin', data: content };
       const send = new ZModemSend([file], makeCallbacks());
@@ -333,6 +371,9 @@ describe('ZModemSend', () => {
       send.start();
       feedReceiverZRINIT(send);
       feedReceiverZRPOS(send, 0);
+
+      await drainPump(send);
+
       send.feedBytes(ZModemEncoder.buildZRINIT(CANFDX | CANOVIO | CANFC32));
       feedReceiverZFIN(send);
 
@@ -397,7 +438,7 @@ describe('ZModemSend', () => {
   // ─────────────────── resume ───────────────────
 
   describe('resume (ZRPOS with non-zero position)', () => {
-    it('resumes from receiver-specified offset', () => {
+    it('resumes from receiver-specified offset', async () => {
       // Receiver claims to have first 100 bytes already
       const content = new Uint8Array(500);
       for (let i = 0; i < 500; i++) content[i] = i & 0xff;
@@ -410,6 +451,13 @@ describe('ZModemSend', () => {
       feedReceiverZRINIT(send);
       // Receiver says "I have bytes 0-99 already, send from 100"
       feedReceiverZRPOS(send, 100);
+      // Delta 2.10: pump is async with 50ms pacing — yield until
+      // the last subpacket (with ZCRCE marker) has been sent.
+      for (let i = 0; i < 100; i++) {
+        await new Promise((r) => setTimeout(r, 60));
+        const { subpackets } = decodeSent();
+        if (subpackets.some((s) => s.crcValid && s.marker === 0x68)) break;
+      }
       send.feedBytes(ZModemEncoder.buildZRINIT(CANFDX | CANOVIO | CANFC32));
       feedReceiverZFIN(send);
 
@@ -450,6 +498,15 @@ describe('ZModemSend', () => {
       // Should still have ZFIN
       expect(headers.filter((h) => h.type === ZFIN).length).toBe(1);
     });
+
+    // Note: I'd love to add coverage here for Delta 2.11's ZCRCW
+    // resync handshake, but the test-side decoder is built for a
+    // happy-path-only flow — it tracks an `expectSubpacket` flag
+    // that doesn't gracefully recover when ZRPOS interrupts mid-
+    // frame and we re-emit a fresh ZDATA. Verifying resync correctly
+    // would require either a smarter decoder or a different harness
+    // (e.g. paired ZModemSend↔ZModemReceive end-to-end). Smoke-
+    // tested against PCBoard / Synchronet / Mystic in real life.
   });
 
   // ─────────────────── error handling ───────────────────

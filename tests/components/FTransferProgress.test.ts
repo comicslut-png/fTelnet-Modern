@@ -617,4 +617,53 @@ describe('<f-transfer-progress>', () => {
       }
     });
   });
+
+  describe('direction property (Phase 5 Delta 2)', () => {
+    /**
+     * The direction property controls the verb in the panel title:
+     *   - 'receive' (default) → "Receiving File N of M: filename"
+     *   - 'send'             → "Sending File N of M: filename"
+     *
+     * Receive is the default because Phase 4 only had receive; the
+     * property is purely additive for upload support.
+     */
+    it('defaults to receive', () => {
+      expect(el.direction).toBe('receive');
+    });
+
+    it('renders "Receiving" in the title when direction is receive', async () => {
+      el.visible = true;
+      el.fileName = 'kitten.zip';
+      el.direction = 'receive';
+      await el.updateComplete;
+      const text = el.textContent ?? '';
+      expect(text).toContain('Receiving File');
+      expect(text).toContain('kitten.zip');
+      expect(text).not.toContain('Sending File');
+    });
+
+    it('renders "Sending" in the title when direction is send', async () => {
+      el.visible = true;
+      el.fileName = 'puppy.zip';
+      el.direction = 'send';
+      await el.updateComplete;
+      const text = el.textContent ?? '';
+      expect(text).toContain('Sending File');
+      expect(text).toContain('puppy.zip');
+      expect(text).not.toContain('Receiving File');
+    });
+
+    it('switching direction at runtime re-renders the title', async () => {
+      el.visible = true;
+      el.fileName = 'thing.zip';
+      el.direction = 'receive';
+      await el.updateComplete;
+      expect(el.textContent).toContain('Receiving File');
+
+      el.direction = 'send';
+      await el.updateComplete;
+      expect(el.textContent).toContain('Sending File');
+      expect(el.textContent).not.toContain('Receiving File');
+    });
+  });
 });

@@ -1,19 +1,4 @@
 /*
- * fTelnet-Modern — a modernized fork of fTelnet
- *
- * Copyright (C) 2026 Tom Swartz <dangerbaybbs@hotmail.com>
- * Copyright (C) 2009-2026 R&M Software (Rick Parrish, original fTelnet)
- *
- * SPDX-License-Identifier: AGPL-3.0-or-later
- *
- * This program is free software: you can redistribute it and/or
- * modify it under the terms of the GNU Affero General Public License
- * as published by the Free Software Foundation, either version 3 of
- * the License, or (at your option) any later version. See LICENSE
- * for the full text.
- */
-
-/*
   fTelnet-Modern dev entry.
 
   Constructs a single fTelnetClient pointing at bbs.ftelnet.ca via the
@@ -37,11 +22,16 @@
 import { fTelnetClient, fTelnetOptions } from './ftelnetclient/index.js';
 
 const Options = new fTelnetOptions();
+Options.Theme = 'dos-classic';
 Options.Hostname = 'dangerbaybbs.dyndns.org';
+// Options.Hostname = 'bbs.8bitboyz.com';
+// Options.Hostname = 'sbbs.dmine.net';
+// Options.Hostname = 'ttb.rgbbs.info';
+
 
 // Direct WebSocket connection (commented out — bbs.ftelnet.ca doesn't
 // speak WebSocket natively, so we need the proxy below):
-// Options.Port = 1123;
+// Options.Port = 23;
 
 // Proxied connection via fTelnet's public WebSocket-to-TCP proxy. This
 // matches the release/index.html config in the original repo. The
