@@ -10,9 +10,21 @@
 import { html, LitElement, type TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 
-/** Payload for `drop-file-selected` event. */
+/**
+ * Payload for `drop-file-selected` event.
+ *
+ * `files` carries every dropped file in the order the OS reported
+ * them (which is generally the OS file picker's selection order
+ * or the file manager's display order for drag-select). The
+ * receiver iterates and sends them sequentially via ZMODEM's
+ * batch flow (ZFILE → ZDATA → ZEOF → ZRINIT → next ZFILE...).
+ *
+ * Single-file drops produce a length-1 array. There's no
+ * separate single-file event type — keeping one shape simplifies
+ * the consumer side.
+ */
 export interface DropFileSelectedDetail {
-  file: File;
+  files: File[];
 }
 
 /**
@@ -26,12 +38,9 @@ export interface DropFileSelectedDetail {
  *     anywhere on the page; we want the overlay to appear regardless.
  *   - On `dragenter` with files in the drag: become visible
  *   - On `dragleave` outside the page area: hide
- *   - On `drop`: hide, and dispatch `drop-file-selected` with the
- *     first file (single-file only this delta; multi-file is Q7-(c)
- *     deferred).
- *   - Only single-file drops are honored in this delta. Multiple
- *     files dropped trigger an error event (deferred for now —
- *     just take the first file silently).
+ *   - On `drop`: hide, and dispatch `drop-file-selected` with ALL
+ *     dropped files (multi-file batches supported as of Phase 5
+ *     Delta 3 — ZMODEM's native batch flow handles them sequentially).
  *
  * Design notes:
  *   - The overlay is light DOM so existing fTelnet CSS conventions
@@ -274,9 +283,9 @@ export class FDropOverlay extends LitElement {
   };
 
   /**
-   * drop: take the first file, dispatch the event. Reset state.
-   * Multi-file drops take the first file silently (Q7 of Phase 5
-   * planning — multi-file deferred).
+   * drop: take every dropped file, dispatch the event. Reset state.
+   * Order is preserved as the OS reported it (file picker selection
+   * order, or file manager display order for drag-select).
    */
   private _handleDrop = (e: DragEvent): void => {
     if (!this.enabled) return;
@@ -284,12 +293,21 @@ export class FDropOverlay extends LitElement {
     e.preventDefault();
     this._resetDragState();
 
-    const files = e.dataTransfer?.files;
-    if (files === undefined || files.length === 0) return;
-    const file = files[0]!;
+    const fileList = e.dataTransfer?.files;
+    if (fileList === undefined || fileList.length === 0) return;
+
+    // Copy FileList into a plain Array<File>. FileList is a live
+    // browser collection — converting to a stable array makes the
+    // payload safer for the receiver to iterate or store.
+    const files: File[] = [];
+    for (let i = 0; i < fileList.length; i++) {
+      const f = fileList.item(i);
+      if (f !== null) files.push(f);
+    }
+
     this.dispatchEvent(
       new CustomEvent<DropFileSelectedDetail>('drop-file-selected', {
-        detail: { file },
+        detail: { files },
         bubbles: true,
         composed: true,
       }),

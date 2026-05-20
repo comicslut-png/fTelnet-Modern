@@ -38,9 +38,19 @@ function makeDragEvent(
     bubbles: true,
     cancelable: true,
   }) as DragEvent;
+  const fileArr = options.files ?? [];
+  // FileList-like: needs .length AND .item(i). jsdom doesn't
+  // construct real FileLists; we mimic the interface enough for
+  // the component to iterate.
+  const fileList = {
+    length: fileArr.length,
+    item: (i: number): File | null => fileArr[i] ?? null,
+    // Indexed access (fileList[0]) for legacy reads.
+    ...Object.fromEntries(fileArr.map((f, i) => [i, f])),
+  } as unknown as FileList;
   const dt = {
     types: options.hasFiles ? ['Files'] : [],
-    files: (options.files ?? []) as unknown as FileList,
+    files: fileList,
     dropEffect: 'none',
   };
   Object.defineProperty(event, 'dataTransfer', {
@@ -118,7 +128,7 @@ describe('<f-drop-overlay>', () => {
   });
 
   describe('drop', () => {
-    it('drop dispatches drop-file-selected with the first file', async () => {
+    it('drop dispatches drop-file-selected with a single-file array', async () => {
       const fakeFile = new File(['hello'], 'hello.txt', {
         type: 'text/plain',
       });
@@ -135,13 +145,19 @@ describe('<f-drop-overlay>', () => {
       await el.updateComplete;
 
       expect(captured).toBeDefined();
-      expect(captured?.file.name).toBe('hello.txt');
+      expect(captured?.files.length).toBe(1);
+      expect(captured?.files[0]?.name).toBe('hello.txt');
       expect(el.visible).toBe(false);
     });
 
-    it('drop with multiple files takes only the first', async () => {
+    it('drop with multiple files dispatches ALL files in order', async () => {
+      // Phase 5 Delta 3: multi-file drops are now supported. The
+      // dispatched array preserves the order the OS reported the
+      // files in (typically the file-picker selection order or
+      // file-manager display order for drag-select).
       const f1 = new File(['a'], 'a.txt');
       const f2 = new File(['b'], 'b.txt');
+      const f3 = new File(['c'], 'c.txt');
 
       let captured: DropFileSelectedDetail | undefined;
       el.addEventListener('drop-file-selected', (e): void => {
@@ -150,10 +166,13 @@ describe('<f-drop-overlay>', () => {
 
       document.dispatchEvent(makeDragEvent('dragenter', { hasFiles: true }));
       document.dispatchEvent(
-        makeDragEvent('drop', { hasFiles: true, files: [f1, f2] }),
+        makeDragEvent('drop', { hasFiles: true, files: [f1, f2, f3] }),
       );
 
-      expect(captured?.file.name).toBe('a.txt');
+      expect(captured?.files.length).toBe(3);
+      expect(captured?.files[0]?.name).toBe('a.txt');
+      expect(captured?.files[1]?.name).toBe('b.txt');
+      expect(captured?.files[2]?.name).toBe('c.txt');
     });
 
     it('drop with no files does not dispatch', async () => {

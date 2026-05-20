@@ -509,6 +509,243 @@ describe('ZModemSend', () => {
     // tested against PCBoard / Synchronet / Mystic in real life.
   });
 
+  // ─────────────────── stale-ZRPOS handling ───────────────────
+
+  describe('stale-ZRPOS dedup (Delta 2.15)', () => {
+    /*
+      Bug observed in the wild against PCBoard at offset ~17K of a
+      150KB file: every resync ZACK was IMMEDIATELY followed by an
+      in-flight ZRPOS that PCBoard had queued before our ZCRCW
+      arrived. Old code treated those stale ZRPOSes as fresh error
+      reports and re-resynced over already-acked data, kicking off
+      a duplicate-data/CRC-error/ZRPOS feedback loop that eventually
+      hit PCBoard's patience limit (5+CAN abort).
+
+      The fix: after a successful resync ZACK at position X, ignore
+      any ZRPOS at position ≤ X — those are stale by definition.
+    */
+
+    function assembleHeader(type: number, position: number): Uint8Array {
+      // For the test we want to inject hex headers (the standard
+      // form for ZRPOS / ZACK from receivers). buildZRPOS / buildZACK
+      // already do that.
+      switch (type) {
+        case 0x09:
+          return ZModemEncoder.buildZRPOS(position);
+        case 0x03:
+          return ZModemEncoder.buildZACK(position);
+        default:
+          throw new Error(`unsupported header type ${type}`);
+      }
+    }
+
+    it('after a successful resync ZACK, ignores ZRPOS at the same position', async () => {
+      // 4KB file gives us enough room for multiple subpackets.
+      const content = new Uint8Array(4096);
+      for (let i = 0; i < content.length; i++) content[i] = i & 0xff;
+
+      const send = new ZModemSend(
+        [{ name: 't.bin', data: content }],
+        makeCallbacks(),
+      );
+
+      send.start();
+      feedReceiverZRINIT(send);
+      // Initial trigger to start streaming
+      feedReceiverZRPOS(send, 0);
+
+      // Simulate a mid-stream CRC error report at offset 1024
+      send.feedBytes(assembleHeader(0x09 /* ZRPOS */, 1024));
+      // Our code sends ZCRCW(1024..2047) and goes to state=4.
+      // Now ACK that resync.
+      send.feedBytes(assembleHeader(0x03 /* ZACK */, 2048));
+
+      clearSent();
+
+      // STALE ZRPOS arrives: position equals what we just ACKed.
+      // Old code: treats as fresh resync → sends ZDATA+ZCRCW(2048..3071)
+      //           replaying acked data.
+      // New code: recognizes pos ≤ _lastAckedResyncPos → ignores.
+      send.feedBytes(assembleHeader(0x09 /* ZRPOS */, 2048));
+
+      // Verify: nothing was sent in response to the stale ZRPOS.
+      // (The legitimate post-ZACK pump may have queued subpackets
+      // via setTimeout but those haven't fired yet — we measure
+      // synchronously.)
+      const { headers } = decodeSent();
+      const newResyncZDATAs = headers.filter(
+        (h) => h.type === ZDATA && h.getPosition() === 2048,
+      );
+      // We should NOT see a fresh ZDATA(2048) header issued in
+      // direct response to the stale ZRPOS.
+      expect(newResyncZDATAs.length).toBe(0);
+    });
+
+    it('after a successful resync ZACK, ignores ZRPOS at a lower position', async () => {
+      // Same setup, but the stale ZRPOS is at a position BELOW the
+      // ACKed one. Could happen if PCBoard had buffered multiple
+      // stale messages before our resync took effect.
+      const content = new Uint8Array(8192);
+      for (let i = 0; i < content.length; i++) content[i] = i & 0xff;
+
+      const send = new ZModemSend(
+        [{ name: 't.bin', data: content }],
+        makeCallbacks(),
+      );
+
+      send.start();
+      feedReceiverZRINIT(send);
+      feedReceiverZRPOS(send, 0);
+
+      send.feedBytes(assembleHeader(0x09, 3072));
+      send.feedBytes(assembleHeader(0x03, 4096));
+
+      clearSent();
+
+      // Stale ZRPOS at 1024 — well below 4096.
+      send.feedBytes(assembleHeader(0x09, 1024));
+
+      const { headers } = decodeSent();
+      const newResyncZDATAs = headers.filter(
+        (h) => h.type === ZDATA,
+      );
+      expect(newResyncZDATAs.length).toBe(0);
+    });
+
+    it('after a successful resync ZACK, ACTS on ZRPOS at a HIGHER position', async () => {
+      // Counter-test: a ZRPOS at position > lastAckedResyncPos is
+      // a legitimate new error report. We must NOT dedup it away.
+      const content = new Uint8Array(8192);
+      for (let i = 0; i < content.length; i++) content[i] = i & 0xff;
+
+      const send = new ZModemSend(
+        [{ name: 't.bin', data: content }],
+        makeCallbacks(),
+      );
+
+      send.start();
+      feedReceiverZRINIT(send);
+      feedReceiverZRPOS(send, 0);
+
+      send.feedBytes(assembleHeader(0x09, 1024));
+      send.feedBytes(assembleHeader(0x03, 2048));
+
+      clearSent();
+
+      // FRESH ZRPOS at 4096 — legitimate new error, higher than
+      // anything we've acked. Must be acted on, not deduped.
+      send.feedBytes(assembleHeader(0x09, 4096));
+
+      const { headers } = decodeSent();
+      const newZDATAs = headers.filter(
+        (h) => h.type === ZDATA && h.getPosition() === 4096,
+      );
+      expect(newZDATAs.length).toBe(1);
+    });
+
+    it('_lastAckedResyncPos resets between files in a batch', async () => {
+      // If file 1 had a resync at offset 2048, _lastAckedResyncPos
+      // = 2048 by file 1's end. File 2's initial ZRPOS=0 must NOT
+      // be deduped on grounds of being ≤ 2048.
+      const f1 = new Uint8Array(4096);
+      const f2 = new Uint8Array(2048);
+      for (let i = 0; i < f1.length; i++) f1[i] = i & 0xff;
+      for (let i = 0; i < f2.length; i++) f2[i] = (i + 0x80) & 0xff;
+
+      const send = new ZModemSend(
+        [
+          { name: 'a.bin', data: f1 },
+          { name: 'b.bin', data: f2 },
+        ],
+        makeCallbacks(),
+      );
+
+      send.start();
+      feedReceiverZRINIT(send);
+
+      // File 1 with a resync at 1024 → ACK 2048
+      feedReceiverZRPOS(send, 0);
+      send.feedBytes(assembleHeader(0x09, 1024));
+      send.feedBytes(assembleHeader(0x03, 2048));
+
+      // Let the pump finish (subpackets are async-paced)
+      for (let i = 0; i < 100; i++) {
+        await new Promise((r) => setTimeout(r, 60));
+        const { headers: hh } = decodeSent();
+        if (hh.some((h) => h.type === ZEOF)) break;
+      }
+
+      // ZRINIT for next file
+      send.feedBytes(
+        ZModemEncoder.buildZRINIT(CANFDX | CANOVIO | CANFC32),
+      );
+
+      clearSent();
+
+      // File 2 initial ZRPOS=0 — must NOT be deduped (different file).
+      send.feedBytes(assembleHeader(0x09, 0));
+
+      const { headers } = decodeSent();
+      // We expect a ZDATA at position 0 for file 2.
+      const zdatas = headers.filter(
+        (h) => h.type === ZDATA && h.getPosition() === 0,
+      );
+      expect(zdatas.length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('Delta 2.17: ZRPOS at the same position arriving AFTER the stale window is treated as fresh', async () => {
+      /*
+        Regression for the observed PCBoard "stuck at 20480" case.
+
+        Old v2.15 dedup ignored any ZRPOS at position ≤
+        lastAckedResyncPos unconditionally. This was correct for
+        in-flight stale messages (the ones that crossed our ACK on
+        the wire) but WRONG for ZRPOSes the receiver legitimately
+        sends seconds later because our subsequent data didn't
+        reach it. Without acting on those, the transfer would stream
+        the entire file into the void and then CAN-abort at ZEOF.
+
+        v2.17 fix: the stale-message dedup only applies WITHIN
+        STALE_ZRPOS_WINDOW_MS (500ms) of the matching ACK. After
+        that, the same ZRPOS becomes actionable again.
+
+        Test approach: simulate a resync ACK, wait > 500ms, then
+        send a same-position ZRPOS and verify we DO act on it
+        (issue a fresh ZDATA at that offset).
+      */
+      const content = new Uint8Array(8192);
+      for (let i = 0; i < content.length; i++) content[i] = i & 0xff;
+
+      const send = new ZModemSend(
+        [{ name: 't.bin', data: content }],
+        makeCallbacks(),
+      );
+
+      send.start();
+      feedReceiverZRINIT(send);
+      feedReceiverZRPOS(send, 0);
+
+      send.feedBytes(assembleHeader(0x09, 1024));
+      send.feedBytes(assembleHeader(0x03, 2048));
+
+      // Wait past STALE_ZRPOS_WINDOW_MS (500ms).
+      await new Promise((r) => setTimeout(r, 600));
+
+      clearSent();
+
+      // ZRPOS at the just-acked position — but now well outside
+      // the stale window. Old code (v2.15) would still dedup this.
+      // New code (v2.17) should act on it as fresh.
+      send.feedBytes(assembleHeader(0x09, 2048));
+
+      const { headers } = decodeSent();
+      const zdatas = headers.filter(
+        (h) => h.type === ZDATA && h.getPosition() === 2048,
+      );
+      expect(zdatas.length).toBe(1);
+    });
+  });
+
   // ─────────────────── error handling ───────────────────
 
   describe('error handling', () => {

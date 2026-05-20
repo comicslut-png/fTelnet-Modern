@@ -8,19 +8,21 @@ import type {
 /*
   Tests for <f-upload-confirm>.
 
-  Phase 5 Upload UI sub-project, Delta 1.
+  Phase 5 Upload UI sub-project, originally Delta 1, extended for
+  multi-file support in Delta 3.
 
   Coverage:
-    - Default state (closed, no file)
-    - Opens when open=true && file !== null
-    - Renders file name, size, modified date
-    - Renders ZMODEM protocol label
-    - Renders the warning text
-    - Send button dispatches upload-confirm with the file
+    - Default state (closed, empty files array)
+    - Opens when open=true && files.length > 0
+    - Single-file mode: renders name, size, modified, ZMODEM label
+    - Multi-file mode: renders summary, total size, batch label
+    - Details toggle expands/collapses the file list
+    - Send button dispatches upload-confirm with files[]
     - Cancel button dispatches upload-cancel
     - ESC key cancels
     - Enter key confirms
     - Click outside cancels
+    - Multi-drop regression: consecutive drops work
 */
 
 describe('<f-upload-confirm>', () => {
@@ -37,28 +39,41 @@ describe('<f-upload-confirm>', () => {
   });
 
   describe('default state', () => {
-    it('is closed and has no file', () => {
+    it('is closed and has empty files array', () => {
       expect(el.open).toBe(false);
-      expect(el.file).toBeNull();
+      expect(el.files).toEqual([]);
     });
 
     it('renders nothing when closed', () => {
       expect(el.querySelector('.fTelnetUploadConfirm')).toBeNull();
     });
+
+    it('renders nothing when files is empty even if open', async () => {
+      el.open = true;
+      await el.updateComplete;
+      expect(el.querySelector('.fTelnetUploadConfirm')).toBeNull();
+    });
   });
 
-  describe('when open with a file', () => {
+  describe('single-file mode', () => {
     beforeEach(async () => {
-      el.file = new File(['hello world'], 'greet.txt', {
-        type: 'text/plain',
-        lastModified: new Date('2026-01-15T10:30:00').getTime(),
-      });
+      el.files = [
+        new File(['hello world'], 'greet.txt', {
+          type: 'text/plain',
+          lastModified: new Date('2026-01-15T10:30:00').getTime(),
+        }),
+      ];
       el.open = true;
       await el.updateComplete;
     });
 
     it('renders the dialog', () => {
       expect(el.querySelector('.fTelnetUploadConfirm')).not.toBeNull();
+    });
+
+    it('uses the singular header text', () => {
+      const header = el.querySelector('.fTelnetUploadConfirmHeader');
+      expect(header?.textContent?.trim()).toBe('Confirm Upload');
     });
 
     it('shows the file name', () => {
@@ -68,7 +83,6 @@ describe('<f-upload-confirm>', () => {
 
     it('shows the file size in bytes for small files', () => {
       const text = el.querySelector('.fTelnetUploadConfirm')?.textContent ?? '';
-      // "hello world" = 11 bytes
       expect(text).toContain('11 bytes');
     });
 
@@ -81,14 +95,177 @@ describe('<f-upload-confirm>', () => {
       const text = el.querySelector('.fTelnetUploadConfirm')?.textContent ?? '';
       expect(text).toContain('upload prompt');
     });
+
+    it('shows the singular Send button label', () => {
+      const send = el.querySelector('.fTelnetUploadConfirmSend');
+      expect(send?.textContent?.trim()).toBe('Send');
+    });
+
+    it('does NOT render the details toggle', () => {
+      expect(
+        el.querySelector('.fTelnetUploadConfirmDetailsToggle'),
+      ).toBeNull();
+    });
+  });
+
+  describe('multi-file mode (Phase 5 Delta 3)', () => {
+    beforeEach(async () => {
+      el.files = [
+        new File(['a'.repeat(1024)], 'one.bin'),
+        new File(['b'.repeat(2048)], 'two.bin'),
+        new File(['c'.repeat(4096)], 'three.bin'),
+      ];
+      el.open = true;
+      await el.updateComplete;
+    });
+
+    it('renders the dialog with batch header', () => {
+      const header = el.querySelector('.fTelnetUploadConfirmHeader');
+      expect(header?.textContent?.trim()).toBe('Confirm Upload (Batch)');
+    });
+
+    it('shows the file count', () => {
+      const text = el.querySelector('.fTelnetUploadConfirm')?.textContent ?? '';
+      expect(text).toContain('3 files');
+    });
+
+    it('shows the total size', () => {
+      const text = el.querySelector('.fTelnetUploadConfirm')?.textContent ?? '';
+      // 1024 + 2048 + 4096 = 7168 bytes = 7.0 KB
+      expect(text).toContain('7.0 KB');
+    });
+
+    it('shows the batch protocol label', () => {
+      const text = el.querySelector('.fTelnetUploadConfirm')?.textContent ?? '';
+      expect(text).toContain('ZMODEM (batch)');
+    });
+
+    it('Send button label includes the file count', () => {
+      const send = el.querySelector('.fTelnetUploadConfirmSend');
+      expect(send?.textContent?.trim()).toBe('Send 3 files');
+    });
+
+    it('details list is collapsed by default', () => {
+      expect(el.querySelector('.fTelnetUploadConfirmFileList')).toBeNull();
+      const toggle = el.querySelector(
+        '.fTelnetUploadConfirmDetailsToggle',
+      );
+      expect(toggle?.getAttribute('aria-expanded')).toBe('false');
+      expect(toggle?.textContent?.trim()).toBe('▸ Show details');
+    });
+
+    it('clicking the details toggle expands the file list', async () => {
+      const toggle = el.querySelector<HTMLAnchorElement>(
+        '.fTelnetUploadConfirmDetailsToggle',
+      );
+      toggle!.click();
+      await el.updateComplete;
+
+      const list = el.querySelector('.fTelnetUploadConfirmFileList');
+      expect(list).not.toBeNull();
+
+      const rows = el.querySelectorAll('.fTelnetUploadConfirmFileRow');
+      expect(rows.length).toBe(3);
+
+      // Each row has name + size
+      const text = list?.textContent ?? '';
+      expect(text).toContain('one.bin');
+      expect(text).toContain('two.bin');
+      expect(text).toContain('three.bin');
+
+      // Toggle now says "Hide"
+      expect(toggle?.textContent?.trim()).toBe('▾ Hide details');
+      expect(toggle?.getAttribute('aria-expanded')).toBe('true');
+    });
+
+    it('clicking the toggle a second time collapses again', async () => {
+      const toggle = el.querySelector<HTMLAnchorElement>(
+        '.fTelnetUploadConfirmDetailsToggle',
+      );
+      toggle!.click();
+      await el.updateComplete;
+      toggle!.click();
+      await el.updateComplete;
+
+      expect(el.querySelector('.fTelnetUploadConfirmFileList')).toBeNull();
+    });
+
+    it('file rows preserve the order from the files array', async () => {
+      const toggle = el.querySelector<HTMLAnchorElement>(
+        '.fTelnetUploadConfirmDetailsToggle',
+      );
+      toggle!.click();
+      await el.updateComplete;
+
+      const names = Array.from(
+        el.querySelectorAll('.fTelnetUploadConfirmFileName'),
+      ).map((e) => e.textContent);
+      expect(names).toEqual(['one.bin', 'two.bin', 'three.bin']);
+    });
+
+    it('opening the dialog with a new batch starts collapsed', async () => {
+      // Expand
+      const toggle = el.querySelector<HTMLAnchorElement>(
+        '.fTelnetUploadConfirmDetailsToggle',
+      );
+      toggle!.click();
+      await el.updateComplete;
+      expect(el.querySelector('.fTelnetUploadConfirmFileList')).not.toBeNull();
+
+      // Close + reopen with a new batch — should be collapsed again.
+      el.open = false;
+      await el.updateComplete;
+      el.files = [
+        new File(['x'], 'new1.txt'),
+        new File(['y'], 'new2.txt'),
+      ];
+      el.open = true;
+      await el.updateComplete;
+
+      expect(el.querySelector('.fTelnetUploadConfirmFileList')).toBeNull();
+    });
+  });
+
+  describe('large batch handling', () => {
+    it('renders correctly for 50 files', async () => {
+      const files: File[] = [];
+      for (let i = 0; i < 50; i++) {
+        files.push(new File([`content-${i}`], `file-${i}.txt`));
+      }
+      el.files = files;
+      el.open = true;
+      await el.updateComplete;
+
+      const text = el.querySelector('.fTelnetUploadConfirm')?.textContent ?? '';
+      expect(text).toContain('50 files');
+      // List collapsed by default — even with 50 files the dialog
+      // stays compact until the user opts in.
+      expect(el.querySelector('.fTelnetUploadConfirmFileList')).toBeNull();
+    });
+
+    it('expanded 50-file list renders all rows', async () => {
+      const files: File[] = [];
+      for (let i = 0; i < 50; i++) {
+        files.push(new File([`x`], `file-${i}.txt`));
+      }
+      el.files = files;
+      el.open = true;
+      await el.updateComplete;
+
+      el.querySelector<HTMLAnchorElement>(
+        '.fTelnetUploadConfirmDetailsToggle',
+      )!.click();
+      await el.updateComplete;
+
+      const rows = el.querySelectorAll('.fTelnetUploadConfirmFileRow');
+      expect(rows.length).toBe(50);
+    });
   });
 
   describe('size formatting', () => {
     it('formats KB-range correctly', async () => {
-      // Create a fake File with a custom size (jsdom File honors the
-      // constructor's parts byte length).
-      const parts = new Uint8Array(50 * 1024); // 50 KB
-      el.file = new File([parts], 'mid.bin');
+      const parts = new Uint8Array(50 * 1024);
+      el.files = [new File([parts], 'mid.bin')];
       el.open = true;
       await el.updateComplete;
 
@@ -97,8 +274,8 @@ describe('<f-upload-confirm>', () => {
     });
 
     it('formats MB-range correctly', async () => {
-      const parts = new Uint8Array(2 * 1024 * 1024); // 2 MB
-      el.file = new File([parts], 'big.bin');
+      const parts = new Uint8Array(2 * 1024 * 1024);
+      el.files = [new File([parts], 'big.bin')];
       el.open = true;
       await el.updateComplete;
 
@@ -108,9 +285,9 @@ describe('<f-upload-confirm>', () => {
   });
 
   describe('Send button', () => {
-    it('dispatches upload-confirm with the file', async () => {
+    it('dispatches upload-confirm with the single file in an array', async () => {
       const f = new File(['x'], 'x.txt');
-      el.file = f;
+      el.files = [f];
       el.open = true;
       await el.updateComplete;
 
@@ -125,11 +302,32 @@ describe('<f-upload-confirm>', () => {
       sendBtn!.click();
 
       expect(captured).toBeDefined();
-      expect(captured?.file).toBe(f);
+      expect(captured?.files.length).toBe(1);
+      expect(captured?.files[0]).toBe(f);
+    });
+
+    it('dispatches upload-confirm with all files in a batch', async () => {
+      const f1 = new File(['a'], 'a.txt');
+      const f2 = new File(['b'], 'b.txt');
+      const f3 = new File(['c'], 'c.txt');
+      el.files = [f1, f2, f3];
+      el.open = true;
+      await el.updateComplete;
+
+      let captured: UploadConfirmDetail | undefined;
+      el.addEventListener('upload-confirm', (e): void => {
+        captured = (e as CustomEvent<UploadConfirmDetail>).detail;
+      });
+
+      el.querySelector<HTMLAnchorElement>(
+        '.fTelnetUploadConfirmSend',
+      )!.click();
+
+      expect(captured?.files).toEqual([f1, f2, f3]);
     });
 
     it('calls preventDefault on the click', async () => {
-      el.file = new File(['x'], 'x.txt');
+      el.files = [new File(['x'], 'x.txt')];
       el.open = true;
       await el.updateComplete;
 
@@ -140,11 +338,31 @@ describe('<f-upload-confirm>', () => {
       sendBtn!.dispatchEvent(click);
       expect(click.defaultPrevented).toBe(true);
     });
+
+    it('does not dispatch when files is empty', async () => {
+      el.files = [];
+      el.open = true;
+      await el.updateComplete;
+
+      // Empty files = nothing rendered. There's no Send button to
+      // click. But we can verify directly: if a consumer somehow
+      // forces the dispatch, internal guard should still skip.
+      let fired = 0;
+      el.addEventListener('upload-confirm', () => fired++);
+
+      // The dialog isn't open from the user POV, but we test the
+      // guard by trying anyway — no Send button exists.
+      const sendBtn = el.querySelector<HTMLAnchorElement>(
+        '.fTelnetUploadConfirmSend',
+      );
+      expect(sendBtn).toBeNull();
+      expect(fired).toBe(0);
+    });
   });
 
   describe('Cancel button', () => {
     it('dispatches upload-cancel', async () => {
-      el.file = new File(['x'], 'x.txt');
+      el.files = [new File(['x'], 'x.txt')];
       el.open = true;
       await el.updateComplete;
 
@@ -170,24 +388,19 @@ describe('<f-upload-confirm>', () => {
      * window where the next file assignment + open=true didn't
      * properly re-arm the component.
      *
-     * Fix: confirm handler in fTelnetClient now sets `file = null`
+     * Fix: confirm handler in fTelnetClient now sets `files = []`
      * after consuming, matching the cancel handler.
-     *
-     * This test verifies the component side: after Send is clicked,
-     * the consumer's expected reset (file=null, open=false) leaves
-     * the component in a state where the NEXT file+open sequence
-     * dispatches a fresh upload-confirm correctly.
      */
     it('three consecutive drops + Send dispatch three upload-confirm events', async () => {
       const events: string[] = [];
       el.addEventListener('upload-confirm', (e): void => {
         const detail = (e as CustomEvent<UploadConfirmDetail>).detail;
-        events.push(detail.file.name);
+        // Single-file drops, so detail.files is length 1.
+        events.push(detail.files[0]?.name ?? '');
       });
 
-      // Helper: simulate the consumer's flow.
       const dropAndSend = async (name: string): Promise<void> => {
-        el.file = new File(['x'], name);
+        el.files = [new File(['x'], name)];
         el.open = true;
         await el.updateComplete;
 
@@ -196,10 +409,8 @@ describe('<f-upload-confirm>', () => {
         );
         sendBtn!.click();
 
-        // The consumer (fTelnetClient) resets both properties
-        // after consuming the event. Simulate that here.
         el.open = false;
-        el.file = null;
+        el.files = [];
         await el.updateComplete;
       };
 
@@ -215,34 +426,34 @@ describe('<f-upload-confirm>', () => {
       const cancels: number[] = [];
       el.addEventListener('upload-confirm', (e): void => {
         const detail = (e as CustomEvent<UploadConfirmDetail>).detail;
-        confirms.push(detail.file.name);
+        confirms.push(detail.files[0]?.name ?? '');
       });
       el.addEventListener('upload-cancel', (): void => {
         cancels.push(1);
       });
 
       // Drop, Send
-      el.file = new File(['x'], 'a.txt');
+      el.files = [new File(['x'], 'a.txt')];
       el.open = true;
       await el.updateComplete;
       el.querySelector<HTMLAnchorElement>('.fTelnetUploadConfirmSend')!.click();
       el.open = false;
-      el.file = null;
+      el.files = [];
       await el.updateComplete;
 
       // Drop, Cancel
-      el.file = new File(['x'], 'b.txt');
+      el.files = [new File(['x'], 'b.txt')];
       el.open = true;
       await el.updateComplete;
       el.querySelector<HTMLAnchorElement>(
         '.fTelnetUploadConfirmCancel',
       )!.click();
       el.open = false;
-      el.file = null;
+      el.files = [];
       await el.updateComplete;
 
       // Drop, Send
-      el.file = new File(['x'], 'c.txt');
+      el.files = [new File(['x'], 'c.txt')];
       el.open = true;
       await el.updateComplete;
       el.querySelector<HTMLAnchorElement>('.fTelnetUploadConfirmSend')!.click();
@@ -254,10 +465,10 @@ describe('<f-upload-confirm>', () => {
 
   describe('keyboard handling', () => {
     it('ESC dispatches upload-cancel', async () => {
-      el.file = new File(['x'], 'x.txt');
+      el.files = [new File(['x'], 'x.txt')];
       el.open = true;
       await el.updateComplete;
-      await Promise.resolve(); // microtask defer
+      await new Promise((r) => setTimeout(r, 60));
 
       let fired = 0;
       el.addEventListener('upload-cancel', () => fired++);
@@ -271,10 +482,10 @@ describe('<f-upload-confirm>', () => {
 
     it('Enter dispatches upload-confirm', async () => {
       const f = new File(['x'], 'x.txt');
-      el.file = f;
+      el.files = [f];
       el.open = true;
       await el.updateComplete;
-      await Promise.resolve();
+      await new Promise((r) => setTimeout(r, 60));
 
       let captured: UploadConfirmDetail | undefined;
       el.addEventListener('upload-confirm', (e): void => {
@@ -285,14 +496,34 @@ describe('<f-upload-confirm>', () => {
         new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }),
       );
 
-      expect(captured?.file).toBe(f);
+      expect(captured?.files[0]).toBe(f);
+    });
+
+    it('Enter on a batch dispatches all files', async () => {
+      const f1 = new File(['a'], 'a.txt');
+      const f2 = new File(['b'], 'b.txt');
+      el.files = [f1, f2];
+      el.open = true;
+      await el.updateComplete;
+      await new Promise((r) => setTimeout(r, 60));
+
+      let captured: UploadConfirmDetail | undefined;
+      el.addEventListener('upload-confirm', (e): void => {
+        captured = (e as CustomEvent<UploadConfirmDetail>).detail;
+      });
+
+      document.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }),
+      );
+
+      expect(captured?.files).toEqual([f1, f2]);
     });
 
     it('other keys do nothing', async () => {
-      el.file = new File(['x'], 'x.txt');
+      el.files = [new File(['x'], 'x.txt')];
       el.open = true;
       await el.updateComplete;
-      await Promise.resolve();
+      await new Promise((r) => setTimeout(r, 60));
 
       let confirmFired = 0;
       let cancelFired = 0;
@@ -310,10 +541,10 @@ describe('<f-upload-confirm>', () => {
 
   describe('click-outside-to-cancel', () => {
     it('clicking outside the dialog dispatches upload-cancel', async () => {
-      el.file = new File(['x'], 'x.txt');
+      el.files = [new File(['x'], 'x.txt')];
       el.open = true;
       await el.updateComplete;
-      await Promise.resolve();
+      await new Promise((r) => setTimeout(r, 60));
 
       let fired = 0;
       el.addEventListener('upload-cancel', () => fired++);
@@ -325,10 +556,10 @@ describe('<f-upload-confirm>', () => {
     });
 
     it('clicking inside the dialog does NOT dispatch upload-cancel', async () => {
-      el.file = new File(['x'], 'x.txt');
+      el.files = [new File(['x'], 'x.txt')];
       el.open = true;
       await el.updateComplete;
-      await Promise.resolve();
+      await new Promise((r) => setTimeout(r, 60));
 
       let fired = 0;
       el.addEventListener('upload-cancel', () => fired++);

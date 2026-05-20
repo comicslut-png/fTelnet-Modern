@@ -894,7 +894,7 @@ export class fTelnetClient {
     this._DropOverlay = document.createElement('f-drop-overlay') as FDropOverlay;
     this._DropOverlay.addEventListener('drop-file-selected', (e: Event): void => {
       const detail = (e as CustomEvent<DropFileSelectedDetail>).detail;
-      this._beginUploadFlow(detail.file);
+      this._beginUploadFlow(detail.files);
     });
     // Lives on document.body, outside the themed container — set
     // the theme attribute directly so the overlay's CSS reads the
@@ -909,23 +909,22 @@ export class fTelnetClient {
     this._UploadConfirm.addEventListener('upload-confirm', (e: Event): void => {
       const detail = (e as CustomEvent<UploadConfirmDetail>).detail;
       // Symmetric reset with the cancel handler below: both `open`
-      // AND `file` get cleared after consuming the event. Leaving
-      // `file` set after consumption created a stale-state window
+      // AND `files` get cleared after consuming the event. Leaving
+      // `files` set after consumption created a stale-state window
       // where subsequent drops couldn't dispatch upload-confirm
       // properly (manifested as "Send button silently does nothing
       // on second drop"). Clearing both properties matches the
       // pattern in the cancel handler and keeps the component in
       // a known-good baseline between flows.
       this._UploadConfirm.open = false;
-      this._UploadConfirm.file = null;
+      this._UploadConfirm.files = [];
       // Phase 5 Delta 2: actually start the upload via ZModemSend.
-      // Reads the file as an ArrayBuffer, then hands off to the
-      // send state machine.
-      this._beginZModemSend(detail.file);
+      // Delta 3 extends this to handle multi-file batches.
+      this._beginZModemSend(detail.files);
     });
     this._UploadConfirm.addEventListener('upload-cancel', (): void => {
       this._UploadConfirm.open = false;
-      this._UploadConfirm.file = null;
+      this._UploadConfirm.files = [];
     });
     this._UploadConfirm.setAttribute('data-theme', this._Options.Theme);
     document.body.appendChild(this._UploadConfirm);
@@ -1158,6 +1157,10 @@ export class fTelnetClient {
     this._UploadInput = document.createElement('input') as HTMLInputElement;
     this._UploadInput.type = 'file';
     this._UploadInput.className = 'fTelnetUpload';
+    // Phase 5 Delta 3: allow multi-file selection via ctrl/shift-
+    // click in the OS file picker. The selected files get sent as
+    // a ZMODEM batch (sequential ZFILE → ZDATA → ZEOF cycles).
+    this._UploadInput.multiple = true;
     this._UploadInput.onchange = (): void => {
       this.OnUploadFileSelected();
     };
@@ -2074,10 +2077,15 @@ export class fTelnetClient {
   /**
    * Phase 5 Delta 2 — start a ZMODEM upload for `file`.
    *
-   * Mirror of beginZModemReceive but for outbound: reads the File
-   * into a Uint8Array via FileReader, constructs a ZModemFileToSend,
-   * spins up a ZModemSend state machine wired to the same progress
-   * panel + TransferStats engine the receive path uses.
+   * Mirror of beginZModemReceive but for outbound: reads each File
+   * into a Uint8Array via FileReader, constructs a ZModemFileToSend
+   * per file, spins up a single ZModemSend state machine wired to
+   * the same progress panel + TransferStats engine the receive path
+   * uses.
+   *
+   * Multi-file batches (Phase 5 Delta 3) are sent sequentially in a
+   * single ZMODEM session — ZMODEM's native batch flow handles them
+   * via ZFILE → ZDATA → ZEOF → ZRINIT → next ZFILE → ... cycles.
    *
    * Inbound bytes from the wire (the receiver's ACK/NAK/header
    * responses) are routed to ZModemSend.feedBytes by
@@ -2088,14 +2096,14 @@ export class fTelnetClient {
    * the user clicked Send (because the BBS engaged its ZMODEM
    * receiver as soon as the user selected Zmodem BATCH at the
    * protocol picker). We have to capture those bytes; if they
-   * arrive while FileReader is async-reading the file they'll be
+   * arrive while FileReader is async-reading the files they'll be
    * lost to the ANSI renderer.
    *
    * Delta 2.1 fix: spin up the state machine SYNCHRONOUSLY first
    * (still in IDLE state — doesn't send anything yet), then start
-   * the FileReader. Any bytes arriving during the file read will
-   * route to ZModemSend.feedBytes (the decoder ignores them
-   * gracefully while in IDLE). Then once the file is loaded we
+   * the FileReader(s). Any bytes arriving during the file read
+   * will route to ZModemSend.feedBytes (the decoder ignores them
+   * gracefully while in IDLE). Then once ALL files are loaded we
    * actually call `.start()` to begin the handshake.
    *
    * Also drains any bytes sitting in the _InputBuffer at the
@@ -2103,23 +2111,28 @@ export class fTelnetClient {
    * already-sent ZRINIT, and we want them to go to the state
    * machine, not the renderer.
    */
-  private _beginZModemSend(file: File): void {
+  private _beginZModemSend(files: File[]): void {
     if (this._Connection === undefined || !this._Connection.connected) {
       return;
     }
+    if (files.length === 0) return;
 
     // Spin up the progress panel immediately for visible feedback,
-    // even though bytes haven't started flowing yet.
+    // even though bytes haven't started flowing yet. Initialize
+    // with the FIRST file's stats — the panel will update per-file
+    // via onFileStart as the batch progresses.
+    const firstFile = files[0]!;
     this._TransferStats = new TransferStats();
-    this._TransferStats.reset(file.size);
+    this._TransferStats.reset(firstFile.size);
     this._TransferProgressPanel.reset();
     this._TransferProgressPanel.direction = 'send';
     this._TransferProgressPanel.protocolName = 'ZMODEM';
-    this._TransferProgressPanel.fileName = file.name;
+    this._TransferProgressPanel.fileName = firstFile.name;
     this._TransferProgressPanel.fileNumber = 1;
-    this._TransferProgressPanel.filesInBatch = 1;
+    this._TransferProgressPanel.filesInBatch = files.length;
     this._TransferProgressPanel.snapshot = this._TransferStats.snapshot();
-    this._TransferProgressPanel.statusMessage = 'Reading file...';
+    this._TransferProgressPanel.statusMessage =
+      files.length === 1 ? 'Reading file...' : `Reading ${files.length} files...`;
     this._TransferProgressPanel.errorCount = 0;
     this._TransferProgressPanel.visible = true;
 
@@ -2130,7 +2143,7 @@ export class fTelnetClient {
     // instead of leaking through to the renderer.
     //
     // We construct with an empty files array initially; we'll
-    // replace the state machine entirely once the file is loaded.
+    // replace the state machine entirely once the files are loaded.
     // (ZModemSend's _files is private and there's no public setter,
     // but that's fine — the placeholder never gets to .start() so
     // its empty files array is never consulted.)
@@ -2151,32 +2164,50 @@ export class fTelnetClient {
       ZmDebug.log('client', `_beginZModemSend pre-drained ${drain.length} bytes`);
     }
 
-    const reader = new FileReader();
-    reader.onload = (): void => {
-      const buffer = reader.result as ArrayBuffer;
-      const bytes = new Uint8Array(buffer);
-      this._startZModemSendWithBytes(file, bytes);
-    };
-    reader.onerror = (): void => {
-      // eslint-disable-next-line no-console
-      console.warn('[fTelnetClient] FileReader error reading upload file:', reader.error);
-      this._TransferProgressPanel.statusMessage = 'Failed to read file';
-      this._TransferProgressPanel.markComplete();
-      this._ZModemSend = undefined;
-    };
-    reader.readAsArrayBuffer(file);
+    // Read every file in parallel into a Uint8Array. Promise.all
+    // resolves when all reads complete; any failure aborts the
+    // whole batch (the user re-drops to try again).
+    const readPromises: Promise<Uint8Array>[] = files.map(
+      (file) =>
+        new Promise<Uint8Array>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (): void => {
+            resolve(new Uint8Array(reader.result as ArrayBuffer));
+          };
+          reader.onerror = (): void => {
+            reject(reader.error ?? new Error(`Failed to read ${file.name}`));
+          };
+          reader.readAsArrayBuffer(file);
+        }),
+    );
+
+    Promise.all(readPromises).then(
+      (byteArrays) => {
+        this._startZModemSendWithBytes(files, byteArrays);
+      },
+      (err) => {
+        // eslint-disable-next-line no-console
+        console.warn('[fTelnetClient] FileReader error reading upload file(s):', err);
+        this._TransferProgressPanel.statusMessage = 'Failed to read file';
+        this._TransferProgressPanel.markComplete();
+        this._ZModemSend = undefined;
+      },
+    );
   }
 
   /**
    * Second half of _beginZModemSend, factored out because it has
    * to wait for FileReader to finish. By the time this runs we
-   * have the full file as a Uint8Array.
+   * have every file's full contents as Uint8Arrays.
    *
    * Replaces the placeholder ZModemSend set up in _beginZModemSend
    * with the real one (now that we have the file bytes to feed it),
    * then calls .start() to kick off the protocol handshake.
    */
-  private _startZModemSendWithBytes(file: File, bytes: Uint8Array): void {
+  private _startZModemSendWithBytes(
+    files: File[],
+    byteArrays: Uint8Array[],
+  ): void {
     if (this._Connection === undefined || !this._Connection.connected) {
       return;
     }
@@ -2191,19 +2222,27 @@ export class fTelnetClient {
       }
     }, 100);
 
-    const fileToSend: ZModemFileToSend = {
+    // Build the per-file payload list. The ZModemSend constructor
+    // takes one array; ZMODEM's batch flow handles iteration via
+    // its internal _fileIndex.
+    const filesToSend: ZModemFileToSend[] = files.map((file, i) => ({
       name: file.name,
-      data: bytes,
+      data: byteArrays[i]!,
       mtime: new Date(file.lastModified),
       mode: 0,
-    };
+    }));
+
+    // Track which file we're on (1-indexed for display). The
+    // onFileStart callback fires once per file as the protocol
+    // advances past each ZFILE header.
+    let currentFileNumber = 0;
 
     // Replace the placeholder with the real state machine. Note:
     // any bytes that arrived during FileReader and were fed to
     // the placeholder are LOST — but the placeholder was in IDLE
     // so it wouldn't have parsed them into useful state anyway.
     // The BBS will retransmit on timeout.
-    this._ZModemSend = new ZModemSend([fileToSend], {
+    this._ZModemSend = new ZModemSend(filesToSend, {
       onBytesToSend: (out) => {
         if (this._Connection !== undefined && this._Connection.connected) {
           for (let i = 0; i < out.length; i++) {
@@ -2213,16 +2252,20 @@ export class fTelnetClient {
         }
       },
       onFileStart: (f) => {
+        currentFileNumber++;
         this._TransferProgressPanel.fileName = f.name;
+        this._TransferProgressPanel.fileNumber = currentFileNumber;
+        this._TransferProgressPanel.filesInBatch = filesToSend.length;
         this._TransferStats?.reset(f.data.length);
       },
       onProgress: (sent, total) => {
         this._TransferStats?.update(sent, total);
       },
       onFileComplete: () => {
-        // Per-file done. For single-file batches (all we support
-        // right now per Q7) this fires immediately before
-        // onSessionComplete; nothing to do here.
+        // Per-file done. For multi-file batches this fires
+        // between files; for single-file it fires once right
+        // before onSessionComplete. Nothing extra to do here —
+        // the next onFileStart will update the panel.
       },
       onSessionComplete: () => {
         this._TransferProgressPanel.markComplete();
@@ -2543,32 +2586,42 @@ export class fTelnetClient {
     ) {
       return;
     }
-    const file = this._UploadInput.files[0]!;
+    // The menu-driven file picker uses a hidden <input type=file
+    // multiple>, so the user can ctrl-click or shift-click to pick
+    // multiple files in one shot. Collect them all into an array.
+    const picked: File[] = [];
+    for (let i = 0; i < this._UploadInput.files.length; i++) {
+      const f = this._UploadInput.files.item(i);
+      if (f !== null) picked.push(f);
+    }
     // Clear the input so picking the same file twice fires a new
     // change event (browsers suppress no-change selections).
     this._UploadInput.value = '';
-    this._beginUploadFlow(file);
+    this._beginUploadFlow(picked);
   }
 
   /**
-   * Start the upload flow for a selected file. Common entry point
-   * for both drag-and-drop (via _DropOverlay's `drop-file-selected`
-   * event) and the menu picker (via _UploadInput's change → above).
+   * Start the upload flow for one or more selected files. Common
+   * entry point for both drag-and-drop (via _DropOverlay's
+   * `drop-file-selected` event) and the menu picker (via
+   * _UploadInput's change → above).
    *
    * Shows the confirm dialog. The dialog dispatches `upload-confirm`
-   * (Send clicked) — wired in the constructor — at which point
-   * Delta 2 will start ZModemSend.
+   * (Send clicked) with the full file list, at which point
+   * _beginZModemSend reads all files and starts a single batched
+   * ZModemSend session.
    */
-  private _beginUploadFlow(file: File): void {
+  private _beginUploadFlow(files: File[]): void {
     if (this._Connection === undefined || !this._Connection.connected) {
       // Not connected — nothing to send to. Silent return matches
       // the existing behavior of Upload() in this case.
       return;
     }
+    if (files.length === 0) return;
     if (this._MenuButtons !== undefined) {
       this._MenuButtons.open = false;
     }
-    this._UploadConfirm.file = file;
+    this._UploadConfirm.files = files;
     this._UploadConfirm.open = true;
   }
 

@@ -250,6 +250,37 @@ describe('ZModemEncoder', () => {
       }
     });
 
+    it('appends XON (0x11) trailer to ZCRCW subpackets, not other markers', () => {
+      // Per Forsberg's reference zmodem.cpp:
+      //   if ( frameend == ZCRCW )
+      //       SendChar( XON );
+      // ZCRCW means "sender pauses here waiting for ACK"; the
+      // trailing XON tells the receiver "the byte stream from me
+      // ends here." Without it, vintage receivers may keep
+      // scanning for our next byte and miss subsequent headers.
+      //
+      // ZCRCG / ZCRCE / ZCRCQ do NOT get XON trailers — only ZCRCW.
+      for (const marker of [ZCRCE, ZCRCG, ZCRCQ]) {
+        const bytes = ZModemEncoder.buildSubpacketCrc16(
+          new Uint8Array([0x55, 0xaa]),
+          marker,
+        );
+        expect(bytes[bytes.length - 1]).not.toBe(0x11);
+      }
+      const zcrcw = ZModemEncoder.buildSubpacketCrc16(
+        new Uint8Array([0x55, 0xaa]),
+        ZCRCW,
+      );
+      expect(zcrcw[zcrcw.length - 1]).toBe(0x11);
+
+      // Same for CRC-32
+      const zcrcw32 = ZModemEncoder.buildSubpacketCrc32(
+        new Uint8Array([0x55, 0xaa]),
+        ZCRCW,
+      );
+      expect(zcrcw32[zcrcw32.length - 1]).toBe(0x11);
+    });
+
     it('handles empty data subpackets', () => {
       // ZMODEM allows zero-length subpackets ending in ZCRCE
       const bytes = ZModemEncoder.buildSubpacketCrc16(new Uint8Array(0), ZCRCE);

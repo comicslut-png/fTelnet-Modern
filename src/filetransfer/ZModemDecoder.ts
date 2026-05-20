@@ -369,6 +369,14 @@ export class ZModemDecoder {
       this._state = DecoderState.AFTER_ZPAD;
       return;
     }
+    // XON (0x11) / XOFF (0x13) appearing between frames are flow-
+    // control characters — Forsberg's reference sender appends XON
+    // after every ZCRCW subpacket; many receivers also send XON
+    // after ZACK headers. They are not part of any frame and should
+    // be silently absorbed, not flagged as garbage.
+    if (b === 0x11 || b === 0x13) {
+      return;
+    }
     this._events.onGarbage?.(b);
   }
 

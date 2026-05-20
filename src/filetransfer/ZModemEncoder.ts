@@ -211,6 +211,19 @@ export class ZModemEncoder {
     result.push(ZDLE, marker);
     ZModemEncoder.writeEscapedByte(result, crcHi, escctl);
     ZModemEncoder.writeEscapedByte(result, crcLo, escctl);
+    // Per Forsberg's reference zmodem.cpp:
+    //   if ( frameend == ZCRCW )
+    //       SendChar( XON );
+    // ZCRCW means "wait for ACK before more data"; the trailing
+    // XON tells the receiver "I'm pausing, the data stream you
+    // see ends here." Without it, vintage receivers may keep
+    // scanning for more bytes from us — confusing the
+    // sender/receiver direction reversal and dropping our next
+    // header (e.g. the ZFILE for the next file in a batch).
+    // ZCRCG, ZCRCE, ZCRCQ do NOT get XON appended.
+    if (marker === 0x6b /* ZCRCW */) {
+      result.push(0x11); // XON
+    }
     return new Uint8Array(result);
   }
 
@@ -239,6 +252,12 @@ export class ZModemEncoder {
     ZModemEncoder.writeEscapedByte(result, (crc >>> 8) & 0xff, escctl);
     ZModemEncoder.writeEscapedByte(result, (crc >>> 16) & 0xff, escctl);
     ZModemEncoder.writeEscapedByte(result, (crc >>> 24) & 0xff, escctl);
+    // See buildSubpacketCrc16 for rationale. Per Forsberg's
+    // reference zmodem.cpp, ZCRCW subpackets get a trailing XON
+    // to signal "I'm pausing here."
+    if (marker === 0x6b /* ZCRCW */) {
+      result.push(0x11); // XON
+    }
     return new Uint8Array(result);
   }
 

@@ -26,6 +26,7 @@ import {
 import { ZModemDecoder, type ZModemDecoderEvents } from './ZModemDecoder.js';
 import { ZModemEncoder } from './ZModemEncoder.js';
 import { ZModemHeader } from './ZModemHeader.js';
+import { ZmDebug } from './ZmDebug.js';
 
 /**
  * A file the caller wants to send. The state machine doesn't read
@@ -232,7 +233,49 @@ export class ZModemSend {
    */
   private _resyncRetryCount = 0;
 
-  private static readonly RESYNC_ZACK_TIMEOUT_MS = 2000;
+  /**
+   * Delta 2.15/2.17: position confirmed by the most recent successful
+   * resync ZACK, plus the time it was acked. Once a ZCRCW resync has
+   * been ACKed at offset X, any subsequent ZRPOS at position ≤ X
+   * arriving WITHIN a short window (STALE_ZRPOS_WINDOW_MS) is treated
+   * as a stale in-flight retransmission and ignored.
+   *
+   * After the window expires, the same ZRPOS becomes a LEGITIMATE
+   * fresh error report — the receiver actually does want us to resync
+   * at that position again, probably because subsequent data we sent
+   * got lost or corrupted.
+   *
+   * Delta 2.15 dropped these ZRPOSes unconditionally, which fixed the
+   * stale-message feedback loop but introduced a new bug: when the
+   * receiver legitimately stopped advancing and kept requesting the
+   * same position, we'd ignore those requests forever and silently
+   * waste the rest of the transfer streaming bytes to a receiver
+   * that wasn't accepting them. The end-of-file ZEOF then triggered
+   * a CAN abort because the receiver's view of progress was stuck
+   * way before EOF.
+   *
+   * `-1` means we haven't completed any resync yet.
+   */
+  private _lastAckedResyncPos = -1;
+  private _lastAckedResyncAt = 0; // performance.now() timestamp
+
+  /**
+   * Delta 2.17: how long after a successful resync ZACK we keep
+   * deduping ZRPOSes at ≤ that position as stale-in-flight.
+   *
+   * Within this window, repeated ZRPOSes at the just-acked position
+   * are almost certainly retransmissions that crossed our ACK in
+   * flight. Beyond this window, they're more likely a sign that the
+   * receiver got stuck (our subsequent data didn't reach it, or it
+   * couldn't keep up and dropped bytes) and is genuinely asking us
+   * to resend.
+   *
+   * 500ms is a generous round-trip allowance — even a slow proxied
+   * connection should drain in-flight retries by then.
+   */
+  private static readonly STALE_ZRPOS_WINDOW_MS = 500;
+
+  private static readonly RESYNC_ZACK_TIMEOUT_MS = 1000;
   private static readonly RESYNC_MAX_RETRIES = 5;
 
   /**
@@ -302,6 +345,10 @@ export class ZModemSend {
       if (b === 0x18) {
         this._consecutiveCans++;
         if (this._consecutiveCans >= 5) {
+          ZmDebug.log(
+            'send',
+            `RECEIVED 5+CAN abort at state=${this._state} fileIndex=${this._fileIndex}/${this._files.length} position=${this._position}`,
+          );
           this.fail('receiver aborted (out-of-band CAN sequence)');
           return;
         }
@@ -339,6 +386,21 @@ export class ZModemSend {
   // ─────────────────────── header dispatch ───────────────────────
 
   private handleHeader(h: ZModemHeader): void {
+    if (ZmDebug.enabled) {
+      const typeName =
+        h.type === ZRINIT ? 'ZRINIT'
+        : h.type === ZRPOS ? 'ZRPOS'
+        : h.type === ZACK ? 'ZACK'
+        : h.type === ZSKIP ? 'ZSKIP'
+        : h.type === ZABORT ? 'ZABORT'
+        : h.type === ZFIN ? 'ZFIN'
+        : h.type === ZNAK ? 'ZNAK'
+        : `?type=0x${h.type.toString(16)}`;
+      ZmDebug.log(
+        'send',
+        `recv ${typeName} pos=${h.getPosition()} state=${this._state} fileIndex=${this._fileIndex}/${this._files.length}`,
+      );
+    }
     switch (h.type) {
       case ZRINIT:
         this.handleZRINIT(h);
@@ -370,6 +432,29 @@ export class ZModemSend {
           h.getPosition() === this._lastActedZRPOS
         ) {
           // Stale repeat — ignore.
+          ZmDebug.log(
+            'send',
+            `dedup: ZRPOS pos=${h.getPosition()} matches _lastActedZRPOS while WAITING_FOR_RESYNC_ZACK`,
+          );
+          break;
+        }
+        // Delta 2.15/2.17: a ZRPOS at or below a position we
+        // recently ACKed is a stale in-flight retransmission — but
+        // only WITHIN STALE_ZRPOS_WINDOW_MS. After that window
+        // expires, treating it as stale is wrong: the receiver may
+        // genuinely be stuck at that position (our subsequent data
+        // didn't reach it) and is asking us to resend. See
+        // _lastAckedResyncPos docs.
+        if (
+          this._lastAckedResyncPos >= 0 &&
+          h.getPosition() <= this._lastAckedResyncPos &&
+          performance.now() - this._lastAckedResyncAt <
+            ZModemSend.STALE_ZRPOS_WINDOW_MS
+        ) {
+          ZmDebug.log(
+            'send',
+            `dedup: ZRPOS pos=${h.getPosition()} is stale (≤ lastAckedResyncPos=${this._lastAckedResyncPos}, within ${ZModemSend.STALE_ZRPOS_WINDOW_MS}ms window)`,
+          );
           break;
         }
         this.handleZRPOS(h);
@@ -401,6 +486,14 @@ export class ZModemSend {
             // receiver (PCBoard) saw what looked like garbage bytes
             // after the closed ZCRCW frame and either silently
             // discarded them or got stuck waiting for a new header.
+            //
+            // Delta 2.15/2.17: remember the acked position AND the
+            // time so the ZRPOS dispatcher's stale-message dedup
+            // can compute "is this ZRPOS arriving within the
+            // stale-message window?" without ignoring later
+            // legitimate retries forever.
+            this._lastAckedResyncPos = h.getPosition();
+            this._lastAckedResyncAt = performance.now();
             this._resyncEndOffset = -1;
             this._resyncRetryCount = 0;
             if (this._resyncTimer !== null) {
@@ -527,9 +620,11 @@ export class ZModemSend {
     const isInitial = this._state === SendState.WAITING_FOR_ZRPOS;
     this._state = SendState.SENDING_DATA;
     if (isInitial) {
+      ZmDebug.log('send', `handleZRPOS pos=${position} INITIAL: starting data pump`);
       // Initial trigger — start normal streaming.
       this.sendZDATAAndPump();
     } else {
+      ZmDebug.log('send', `handleZRPOS pos=${position} RESYNC: sending ZDATA+ZCRCW`);
       // Mid-stream resync — ZDATA + single ZCRCW + wait for matching
       // ZACK.
       this._sendResyncFrame();
@@ -540,10 +635,44 @@ export class ZModemSend {
    * Delta 2.11: send a ZDATA header + a single ZCRCW subpacket to
    * resync after a mid-stream ZRPOS. After this completes, we wait
    * for a ZACK at the matching offset before resuming streaming.
+   *
+   * Delta 2.16: prepend ZNULLS NUL bytes to the ZDATA header. The
+   * lrzsz lsz manpage documents this technique for vintage receivers
+   * that drop characters when reversing direction: "The environment
+   * variable ZNULLS may be used to specify the number of nulls to
+   * send before a ZDATA frame. Values of 101 for a 4.77 mHz PC and
+   * 124 for an AT are typical."
+   *
+   * Without it: the receiver's input buffer is still full of stale
+   * subpackets we shipped before processing its ZRPOS. By the time
+   * those drain, our resync ZDATA+ZCRCW has been queued behind
+   * them, then processed too late — receiver sends another ZRPOS,
+   * eventually gives up with 5+CAN.
+   *
+   * With ZNULLS: the NUL bytes give the receiver time to drain its
+   * input buffer and prepare for the new ZDATA. NULs are ignored by
+   * the ZMODEM decoder (they're not ZPAD/ZDLE), so they're safe
+   * filler.
+   *
+   * Observed against PCBoard with FTMADS2.ZIP: without ZNULLS,
+   * every resync needed a 2-second retry to succeed, and some
+   * eventually timed out PCBoard's patience before our retry fired.
    */
+  private static readonly ZNULLS_BEFORE_RESYNC = 32;
+
   private _sendResyncFrame(): void {
     const file = this._files[this._fileIndex];
     if (file === undefined) return;
+
+    // Prepend NUL bytes per lrzsz's ZNULLS technique (see field
+    // doc above). 32 is a conservative middle ground — vintage
+    // 4.77 MHz PCs used 101, modern AT-class machines used 124,
+    // we're talking to PCBoard running in modern hardware (a VM
+    // or a real DOS box on real iron) — 32 is plenty to give the
+    // receiver time to drain its input pipe.
+    const nulls = new Uint8Array(ZModemSend.ZNULLS_BEFORE_RESYNC);
+    // (Uint8Array is zero-initialized; explicit fill not needed.)
+    this.sendBytes(nulls);
 
     // ZDATA header at current position.
     const zdataData: [number, number, number, number] = [
@@ -624,9 +753,19 @@ export class ZModemSend {
       this._resyncTimer = null;
       // Only act if we're still actually waiting for the resync ACK.
       // (A ZACK or ZRPOS at a new position could have raced us.)
-      if (this._state !== SendState.WAITING_FOR_RESYNC_ZACK) return;
+      if (this._state !== SendState.WAITING_FOR_RESYNC_ZACK) {
+        ZmDebug.log(
+          'send',
+          `resync retry skipped: state=${this._state} (no longer waiting)`,
+        );
+        return;
+      }
 
       this._resyncRetryCount++;
+      ZmDebug.log(
+        'send',
+        `resync retry ${this._resyncRetryCount}/${ZModemSend.RESYNC_MAX_RETRIES} at position ${this._lastActedZRPOS}`,
+      );
       if (this._resyncRetryCount > ZModemSend.RESYNC_MAX_RETRIES) {
         this.fail(
           `resync stalled at position ${this._lastActedZRPOS} ` +
@@ -685,15 +824,20 @@ export class ZModemSend {
   private startCurrentFile(): void {
     const file = this._files[this._fileIndex];
     if (file === undefined) {
-      // Shouldn't happen — caller should have already transitioned
-      // to ZFIN. Defensive bail.
       this._state = SendState.ENDED;
       return;
     }
 
+    ZmDebug.log(
+      'send',
+      `startCurrentFile fileIndex=${this._fileIndex}/${this._files.length} name=${file.name} size=${file.data.length}`,
+    );
+
     this._position = 0;
     this._resyncEndOffset = -1;
     this._lastActedZRPOS = -1;
+    this._lastAckedResyncPos = -1;
+    this._lastAckedResyncAt = 0;
     this._resyncRetryCount = 0;
     if (this._resyncTimer !== null) {
       clearTimeout(this._resyncTimer);
@@ -785,20 +929,22 @@ export class ZModemSend {
    * responses that knotted the protocol.
    */
   /**
-   * Delta 2.12: pacing delay between consecutive ZCRCG subpackets.
-   * Previously 25ms; PCBoard's segmented-mode ZMODEM driver (1993
-   * vintage) was timing out during our 25ms gaps and sending
-   * spurious ZRPOSes that we'd interpret as errors, triggering
-   * resync cascades.
+   * Delta 2.12/2.18/2.19: pacing delay between consecutive ZCRCG
+   * subpackets.
    *
-   * Setting to 0 means each subpacket still goes through setTimeout
-   * (yielding to the event loop for ws/io progress and abort
-   * responsiveness) but with no artificial delay. Effective rate
-   * is event-loop-overhead-limited — typically 1-5ms between
-   * subpackets — which should stay under PCBoard's timeout.
-   *
-   * If 0 still triggers spurious ZRPOSes, the next escalation
-   * would be queueMicrotask or fully synchronous bursting.
+   * History:
+   *   - Delta 2.10: 25ms. PCBoard's segmented-mode ZMODEM driver
+   *     (1993 vintage) treated the 25ms gaps as transfer timeouts
+   *     and sent spurious ZRPOSes.
+   *   - Delta 2.12: dropped to 0ms because of the above.
+   *   - Delta 2.18: tried 5ms expecting buffer-overflow relief.
+   *     Counter-intuitively, traces showed transfers aborted 9x
+   *     EARLIER with 5ms (position 5120 vs 46080 at 0ms). Theory:
+   *     PCBoard's input-pipeline tolerates a fast burst it can
+   *     buffer-and-process, but ~5ms gaps make it look like the
+   *     sender stalled, prompting spurious ZRPOSes.
+   *   - Delta 2.19: reverted to 0ms. Forward progress matters more
+   *     than smooth pacing for this receiver.
    */
   private static readonly INTER_SUBPACKET_DELAY_MS = 0;
 
@@ -898,6 +1044,10 @@ export class ZModemSend {
   }
 
   private _sendZEOF(file: ZModemFileToSend): void {
+    ZmDebug.log(
+      'send',
+      `send ZEOF fileIndex=${this._fileIndex}/${this._files.length} name=${file.name} size=${file.data.length}`,
+    );
     const sizeBytes: [number, number, number, number] = [
       file.data.length & 0xff,
       (file.data.length >>> 8) & 0xff,
@@ -916,6 +1066,9 @@ export class ZModemSend {
   // ─────────────────────── housekeeping ───────────────────────
 
   private sendBytes(bytes: Uint8Array): void {
+    if (ZmDebug.enabled) {
+      ZmDebug.bytes('send-wire', `sending to wire (state=${this._state})`, bytes);
+    }
     this._callbacks.onBytesToSend?.(bytes);
   }
 

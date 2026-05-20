@@ -740,6 +740,71 @@
   word-break: break-all;
 }
 
+/* Phase 5 Delta 3: multi-file batch UI.
+
+   The details toggle is an inline link that flips between
+   "▸ Show details" and "▾ Hide details" to expand/collapse the
+   per-file list. Styled like the existing about-section links
+   (inherited fg color, underline) so it looks native to any
+   theme without per-theme overrides.
+
+   The file list itself is a vertical stack of compact rows
+   (index + name + size) with a fixed max-height + scrollbar so
+   batches of 50+ files don't blow out the dialog. */
+.fTelnetUploadConfirmDetailsToggle {
+  color: inherit;
+  text-decoration: underline;
+  font-size: 0.9em;
+  cursor: pointer;
+}
+
+.fTelnetUploadConfirmDetailsToggle:hover {
+  text-decoration: none;
+}
+
+.fTelnetUploadConfirmFileList {
+  margin-top: 4px;
+  max-height: 12em;
+  overflow-y: auto;
+  border: 1px solid var(--ft-ui-border-soft);
+  padding: 4px;
+  font-size: 0.9em;
+}
+
+.fTelnetUploadConfirmFileRow {
+  display: flex;
+  gap: 8px;
+  padding: 2px 4px;
+  align-items: baseline;
+}
+
+.fTelnetUploadConfirmFileRow:nth-child(even) {
+  background: var(--ft-warning-bg);
+  /* Reuse warning-bg as a zebra-stripe accent. It's a soft tinted
+     fill in every theme, so it provides just enough row separation
+     without introducing yet another token. */
+  opacity: 0.7;
+}
+
+.fTelnetUploadConfirmFileIndex {
+  flex: 0 0 auto;
+  min-width: 2em;
+  text-align: right;
+  opacity: 0.6;
+}
+
+.fTelnetUploadConfirmFileName {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fTelnetUploadConfirmFileSize {
+  flex: 0 0 auto;
+  opacity: 0.7;
+}
+
 .fTelnetUploadConfirmWarning {
   margin-top: 12px;
   padding: 8px;

@@ -23,10 +23,8 @@ import { fTelnetClient, fTelnetOptions } from './ftelnetclient/index.js';
 
 const Options = new fTelnetOptions();
 Options.Theme = 'dos-classic';
-Options.Hostname = 'dangerbaybbs.dyndns.org';
-// Options.Hostname = 'bbs.8bitboyz.com';
-// Options.Hostname = 'sbbs.dmine.net';
-// Options.Hostname = 'ttb.rgbbs.info';
+Options.Hostname = 'bbs.ftelnet.ca';
+
 
 
 // Direct WebSocket connection (commented out — bbs.ftelnet.ca doesn't
@@ -36,7 +34,7 @@ Options.Hostname = 'dangerbaybbs.dyndns.org';
 // Proxied connection via fTelnet's public WebSocket-to-TCP proxy. This
 // matches the release/index.html config in the original repo. The
 // proxy translates WebSocket frames to/from raw TCP telnet bytes.
-Options.Port = 1337;
+Options.Port = 23;
 Options.ProxyHostname = 'p-us-east.ftelnet.ca';
 Options.ProxyPort = 80;
 Options.ProxyPortSecure = 443;

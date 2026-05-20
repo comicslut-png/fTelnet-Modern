@@ -28,7 +28,7 @@ applicable.
 | 2. Refactor UI layer into Lit Web Components                           | ✅ Complete (6 stages)        |
 | 3. Neo-retro chrome facelift (theming system, settings panel, 6 themes) | ✅ Complete (3 main + deltas) |
 | 4. ZMODEM file transfer + transfer progress panel                      | ✅ Complete (7 stages)        |
-| 5. Polish (PWA, performance, upload UI, docs)                          | ⏳ Planned                    |
+| 5. Polish (PWA, performance, upload UI, docs)                          | 🚧 In progress                |
 
 ### What works today
 
@@ -71,12 +71,21 @@ applicable.
 
 Polish work and remaining UX gaps:
 
+  - **Upload UI** ✅ — multi-file drag-and-drop send with a
+    drag-anywhere drop overlay, theme-aware upload confirmation
+    panel, and the SyncTERM-style progress panel updating
+    per-file. Use the BBS's batch upload area for multi-file
+    sends; the single-file upload command processes one file per
+    ZMODEM session by design.
+  - **ZMODEM sender hardening** ✅ — added during Phase 5 after
+    real-world testing surfaced a missing XON byte after ZCRCW
+    subpackets (per Forsberg's reference). Plus resync retry
+    timer, stale-ZRPOS dedup, and ZNULLS-before-resync as
+    defensive scaffolding. See `docs/phase5-zmodem-saga.md` for
+    the full diagnostic arc.
   - **Large-file save performance** — current per-byte accumulator
     pattern causes a multi-second freeze when ZMODEM finishes a
     multi-MB file. Fix queued for early in Phase 5.
-  - **Upload UI** — the ZMODEM-send state machine already exists;
-    Phase 5 wires it to a drag-and-drop UI for sending files to
-    BBSes that accept uploads.
   - **In-canvas progress panel** — the current panel is a DOM overlay
     on top of the canvas. Phase 5 adds an opt-in mode that renders
     the progress inside the canvas itself (useful for fullscreen
@@ -90,16 +99,18 @@ Polish work and remaining UX gaps:
 See `docs/` for stage-by-stage planning notes:
   - `phase4-references.md` — ZMODEM implementations we consulted informally
   - `phase4-ui-decision.md` — transfer-progress panel design doc
+  - `phase5-zmodem-saga.md` — the multi-delta ZMODEM diagnostic arc
   - `future-protocols.md` — possible additional protocols (HSLink, etc.)
 
 ### Test coverage
 
-980 unit tests across 49 files, run on every commit. Phase boundaries:
+1064 unit tests across 52 files, run on every commit. Phase boundaries:
 
   - End of Phase 1: 559 tests
   - End of Phase 2: 691 tests
   - End of Phase 3: 722 tests
   - End of Phase 4: 980 tests
+  - Phase 5 (in progress): 1064 tests
 
 ## Testing against a real BBS
 
@@ -153,12 +164,26 @@ SyncTERM-style progress panel appears, ticks in real time, and the
 browser save dialog opens when the transfer completes. Press ESC or
 CTRL-X mid-transfer to abort.
 
+To exercise the upload path, navigate to the upload area and
+drag-and-drop one or more files into the browser window. The drop
+overlay appears, then the upload confirmation panel, then the
+progress panel during the transfer. **For multi-file uploads, use
+the BBS's batch upload area if available.** Most BBSes offer two
+upload modes: a single-file upload command (which processes the
+file immediately on receipt and ends the ZMODEM session) and a
+batch upload area (which keeps the ZMODEM session alive across
+multiple files, then runs PFED / integrity testing on all files
+together). Drag-and-dropping multiple files in the single-file area
+will succeed for the first file then be aborted by the BBS shell
+when it starts processing — that's the BBS doing the right thing
+for that command, not a bug in the client.
+
 ## Quick start
 
 ```bash
 npm install              # install dependencies
 npm run dev              # start Vite dev server with hot reload (port 5173)
-npm test                 # run the full Vitest suite (980 tests)
+npm test                 # run the full Vitest suite (1064 tests)
 npm run typecheck        # tsc --noEmit
 npm run build:all        # produce all four bundle flavors
 ```
@@ -168,7 +193,7 @@ Output bundles land in `dist/`:
 - `ftelnet.norip.noxfer.js` — ANSI/BBS only, smallest bundle
 - `ftelnet.norip.xfer.js` — adds YMODEM + ZMODEM file transfer
 - `ftelnet.rip.noxfer.js` — adds RIPscrip graphics emulation
-- `ftelnet.rip.xfer.js` — everything (~563 KB / ~123 KB gzipped)
+- `ftelnet.rip.xfer.js` — everything (~595 KB / ~130 KB gzipped)
 
 Each comes with a source map and a minified `.min.js` variant.
 
