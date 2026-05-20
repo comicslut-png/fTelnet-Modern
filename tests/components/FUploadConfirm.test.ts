@@ -571,4 +571,69 @@ describe('<f-upload-confirm>', () => {
       expect(fired).toBe(0);
     });
   });
+
+  describe('transferProtocol reactivity (Phase 5)', () => {
+    /**
+     * Bug seen during 2.0.0-beta.1 smoke testing: switching the
+     * Default Transfer Protocol setting to YMODEM correctly
+     * relabeled the menu buttons, but the upload confirm dialog
+     * still displayed "ZMODEM" in the Protocol row regardless of
+     * the active protocol. The routing was correct (bytes flowed
+     * through YModemSend) but the UI string lied about it.
+     *
+     * Fix: a reactive transferProtocol property mirrors the
+     * fTelnetOptions setting; fTelnetClient pushes the current
+     * value on construction and on every settings change.
+     */
+    it('defaults to displaying ZMODEM when transferProtocol is unset', async () => {
+      el.files = [new File(['hello world'], 'test.txt')];
+      el.open = true;
+      await el.updateComplete;
+      const text =
+        el.querySelector('.fTelnetUploadConfirm')?.textContent ?? '';
+      expect(text).toContain('ZMODEM');
+      expect(text).not.toContain('YMODEM');
+    });
+
+    it('displays YMODEM in single-file mode when transferProtocol="ymodem"', async () => {
+      el.transferProtocol = 'ymodem';
+      el.files = [new File(['hello world'], 'test.txt')];
+      el.open = true;
+      await el.updateComplete;
+      const text =
+        el.querySelector('.fTelnetUploadConfirm')?.textContent ?? '';
+      expect(text).toContain('YMODEM');
+      expect(text).not.toContain('ZMODEM');
+    });
+
+    it('displays "YMODEM (batch)" in multi-file mode when transferProtocol="ymodem"', async () => {
+      el.transferProtocol = 'ymodem';
+      el.files = [
+        new File(['a'.repeat(100)], 'a.txt'),
+        new File(['b'.repeat(200)], 'b.txt'),
+        new File(['c'.repeat(300)], 'c.txt'),
+      ];
+      el.open = true;
+      await el.updateComplete;
+      const text =
+        el.querySelector('.fTelnetUploadConfirm')?.textContent ?? '';
+      expect(text).toContain('YMODEM (batch)');
+      expect(text).not.toContain('ZMODEM (batch)');
+    });
+
+    it('re-renders live when transferProtocol is changed after open', async () => {
+      el.files = [new File(['hello world'], 'test.txt')];
+      el.open = true;
+      await el.updateComplete;
+      let text =
+        el.querySelector('.fTelnetUploadConfirm')?.textContent ?? '';
+      expect(text).toContain('ZMODEM');
+
+      el.transferProtocol = 'ymodem';
+      await el.updateComplete;
+      text = el.querySelector('.fTelnetUploadConfirm')?.textContent ?? '';
+      expect(text).toContain('YMODEM');
+      expect(text).not.toContain('ZMODEM');
+    });
+  });
 });

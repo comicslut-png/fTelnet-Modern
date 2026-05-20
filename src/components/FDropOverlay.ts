@@ -74,6 +74,14 @@ export class FDropOverlay extends LitElement {
   enabled = true;
 
   /**
+   * Active transfer protocol — controls the subtitle text
+   * ("to upload via ZMODEM" / "to upload via YMODEM"). Mirrors
+   * `fTelnetOptions.DefaultTransferProtocol`. Phase 5.
+   */
+  @property({ type: String, attribute: 'transfer-protocol' })
+  transferProtocol: 'zmodem' | 'ymodem' = 'zmodem';
+
+  /**
    * Counter for dragenter/dragleave pair tracking. dragenter fires
    * for every child element you drag over, dragleave fires when
    * you leave each one. Tracking depth avoids "overlay flickers
@@ -342,7 +350,7 @@ export class FDropOverlay extends LitElement {
             Drop file here
           </div>
           <div class="fTelnetDropOverlaySubtitle">
-            to upload via ZMODEM
+            to upload via ${this.transferProtocol === 'ymodem' ? 'YMODEM' : 'ZMODEM'}
           </div>
         </div>
       </div>

@@ -884,12 +884,19 @@ export class fTelnetClient {
       (e: Event): void => {
         const detail = (e as CustomEvent<SettingsDefaultProtocolChangeDetail>)
           .detail;
-        // Update the runtime field and propagate to the menu so its
-        // Upload/Download labels reflect the new protocol immediately
-        // — no reconnect needed.
+        // Update the runtime field and propagate to every component
+        // that displays the protocol name to the user — menu button
+        // labels, drop overlay subtitle, upload confirm dialog body.
+        // No reconnect needed; Lit re-renders on property change.
         this._Options.DefaultTransferProtocol = detail.protocol;
         if (this._MenuButtons !== undefined) {
           this._MenuButtons.transferProtocol = detail.protocol;
+        }
+        if (this._DropOverlay !== undefined) {
+          this._DropOverlay.transferProtocol = detail.protocol;
+        }
+        if (this._UploadConfirm !== undefined) {
+          this._UploadConfirm.transferProtocol = detail.protocol;
         }
         try {
           window.localStorage.setItem(
@@ -932,6 +939,7 @@ export class fTelnetClient {
     // input), and OnUploadFileSelected feeds the chosen file into
     // _UploadConfirm via the same path.
     this._DropOverlay = document.createElement('f-drop-overlay') as FDropOverlay;
+    this._DropOverlay.transferProtocol = this._Options.DefaultTransferProtocol;
     this._DropOverlay.addEventListener('drop-file-selected', (e: Event): void => {
       const detail = (e as CustomEvent<DropFileSelectedDetail>).detail;
       this._beginUploadFlow(detail.files);
@@ -946,6 +954,7 @@ export class fTelnetClient {
     this._UploadConfirm = document.createElement(
       'f-upload-confirm',
     ) as FUploadConfirm;
+    this._UploadConfirm.transferProtocol = this._Options.DefaultTransferProtocol;
     this._UploadConfirm.addEventListener('upload-confirm', (e: Event): void => {
       const detail = (e as CustomEvent<UploadConfirmDetail>).detail;
       // Symmetric reset with the cancel handler below: both `open`

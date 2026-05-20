@@ -396,4 +396,47 @@ describe('<f-drop-overlay>', () => {
       }
     });
   });
+
+  describe('transferProtocol reactivity (Phase 5)', () => {
+    /**
+     * Bug seen during 2.0.0-beta.1 smoke testing: the drag-to-drop
+     * subtitle hardcoded "to upload via ZMODEM" regardless of the
+     * active protocol. With YMODEM selected as default, the
+     * routing correctly used YModemSend but the overlay's subtitle
+     * still said ZMODEM — visibly contradicting the menu labels.
+     *
+     * Fix: a reactive transferProtocol property mirrors the
+     * fTelnetOptions setting; fTelnetClient pushes it on
+     * construction and on every settings change.
+     */
+    async function getSubtitle(): Promise<string> {
+      el.visible = true;
+      await el.updateComplete;
+      return (
+        el.querySelector('.fTelnetDropOverlaySubtitle')?.textContent?.trim() ??
+        ''
+      );
+    }
+
+    it('defaults to "to upload via ZMODEM"', async () => {
+      await el.updateComplete;
+      expect(await getSubtitle()).toBe('to upload via ZMODEM');
+    });
+
+    it('shows "to upload via YMODEM" when transferProtocol="ymodem"', async () => {
+      el.transferProtocol = 'ymodem';
+      await el.updateComplete;
+      expect(await getSubtitle()).toBe('to upload via YMODEM');
+    });
+
+    it('re-renders live when transferProtocol changes', async () => {
+      el.transferProtocol = 'ymodem';
+      await el.updateComplete;
+      expect(await getSubtitle()).toBe('to upload via YMODEM');
+
+      el.transferProtocol = 'zmodem';
+      await el.updateComplete;
+      expect(await getSubtitle()).toBe('to upload via ZMODEM');
+    });
+  });
 });

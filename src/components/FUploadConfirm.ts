@@ -73,6 +73,14 @@ export class FUploadConfirm extends LitElement {
   files: File[] = [];
 
   /**
+   * Active transfer protocol — controls the "Protocol:" line in
+   * the dialog body. Mirrors `fTelnetOptions.DefaultTransferProtocol`.
+   * Phase 5.
+   */
+  @property({ type: String, attribute: 'transfer-protocol' })
+  transferProtocol: 'zmodem' | 'ymodem' = 'zmodem';
+
+  /**
    * Whether the multi-file details list is expanded. Only used
    * when `files.length > 1`. Reset to false every time the dialog
    * opens, so each new batch starts collapsed.
@@ -266,7 +274,9 @@ export class FUploadConfirm extends LitElement {
       </div>
       <div class="fTelnetUploadConfirmRow">
         <span class="fTelnetUploadConfirmLabel">Protocol:</span>
-        <span class="fTelnetUploadConfirmValue">ZMODEM</span>
+        <span class="fTelnetUploadConfirmValue"
+          >${this.transferProtocol === 'ymodem' ? 'YMODEM' : 'ZMODEM'}</span
+        >
       </div>
     `;
   }
@@ -298,7 +308,11 @@ export class FUploadConfirm extends LitElement {
       </div>
       <div class="fTelnetUploadConfirmRow">
         <span class="fTelnetUploadConfirmLabel">Protocol:</span>
-        <span class="fTelnetUploadConfirmValue">ZMODEM (batch)</span>
+        <span class="fTelnetUploadConfirmValue"
+          >${this.transferProtocol === 'ymodem'
+            ? 'YMODEM (batch)'
+            : 'ZMODEM (batch)'}</span
+        >
       </div>
       <div class="fTelnetUploadConfirmRow">
         <a
