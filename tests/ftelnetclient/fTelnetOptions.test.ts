@@ -32,6 +32,16 @@ describe('fTelnetOptions', () => {
     expect(opts.Theme).toBe('classic');
     expect(opts.VirtualKeyboardVibrateDuration).toBe(25);
     expect(opts.WebSocketUrlPath).toBe('');
+    expect(opts.DefaultTransferProtocol).toBe('zmodem');
+  });
+
+  it('DefaultTransferProtocol accepts both zmodem and ymodem', () => {
+    const opts = new fTelnetOptions();
+    expect(opts.DefaultTransferProtocol).toBe('zmodem');
+    opts.DefaultTransferProtocol = 'ymodem';
+    expect(opts.DefaultTransferProtocol).toBe('ymodem');
+    opts.DefaultTransferProtocol = 'zmodem';
+    expect(opts.DefaultTransferProtocol).toBe('zmodem');
   });
 
   it('VirtualKeyboardVisible defaults based on DetectMobileBrowser', () => {

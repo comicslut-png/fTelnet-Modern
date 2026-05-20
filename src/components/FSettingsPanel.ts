@@ -47,6 +47,11 @@ export interface SettingsZModemAutoDetectChangeDetail {
   enabled: boolean;
 }
 
+/** Payload for the `settings-default-protocol-change` event. */
+export interface SettingsDefaultProtocolChangeDetail {
+  protocol: 'zmodem' | 'ymodem';
+}
+
 /**
  * `<f-settings-panel>` — runtime user preferences UI. Opened from
  * the menu popup via the new "Settings..." action; floats over the
@@ -73,6 +78,8 @@ export interface SettingsZModemAutoDetectChangeDetail {
  *   - `settings-theme-change` (CustomEvent<SettingsThemeChangeDetail>)
  *   - `settings-mute-change` (CustomEvent<SettingsMuteChangeDetail>)
  *   - `settings-vibrate-change` (CustomEvent<SettingsVibrateChangeDetail>)
+ *   - `settings-zmodem-auto-detect-change` (...AutoDetectChangeDetail>)
+ *   - `settings-default-protocol-change` (...DefaultProtocolChangeDetail>)
  *   - `settings-close` — the close button was clicked
  *
  * Live updates: each change dispatches immediately so the user
@@ -136,6 +143,13 @@ export class FSettingsPanel extends LitElement {
   @property({ type: Boolean, attribute: 'zmodem-auto-detect' })
   zmodemAutoDetect = true;
 
+  /**
+   * Which protocol the menu's Upload and Download buttons act on.
+   * Mirrors `fTelnetOptions.DefaultTransferProtocol`. Phase 5.
+   */
+  @property({ type: String, attribute: 'default-protocol' })
+  defaultProtocol: 'zmodem' | 'ymodem' = 'zmodem';
+
   protected override createRenderRoot(): HTMLElement {
     return this;
   }
@@ -170,6 +184,54 @@ export class FSettingsPanel extends LitElement {
 
           <div class="fTelnetSettingsPanelColumn">
             <fieldset class="fTelnetSettingsPanelGroup">
+              <legend>Protocol</legend>
+              <div class="fTelnetSettingsPanelSubheader">Default</div>
+              <label class="fTelnetSettingsPanelOption">
+                <input
+                  type="radio"
+                  name="default-protocol"
+                  value="ymodem"
+                  ?checked=${this.defaultProtocol === 'ymodem'}
+                  @change=${this.handleDefaultProtocolChange}
+                />
+                📼 YModem
+              </label>
+              <label class="fTelnetSettingsPanelOption">
+                <input
+                  type="radio"
+                  name="default-protocol"
+                  value="zmodem"
+                  ?checked=${this.defaultProtocol === 'zmodem'}
+                  @change=${this.handleDefaultProtocolChange}
+                />
+                📡 ZModem
+              </label>
+              <label
+                class="fTelnetSettingsPanelOption fTelnetSettingsPanelOptionDisabled"
+                title="Reserved for a future protocol"
+              >
+                <input
+                  type="radio"
+                  name="default-protocol-reserved"
+                  value="reserved"
+                  disabled
+                />
+                <span class="fTelnetSettingsPanelPlaceholder"></span>
+              </label>
+              <div class="fTelnetSettingsPanelDivider"></div>
+              <label class="fTelnetSettingsPanelOption">
+                <input
+                  type="checkbox"
+                  ?checked=${this.zmodemAutoDetect}
+                  @change=${this.handleZModemAutoDetectChange}
+                />
+                🔍 Auto Detect
+              </label>
+            </fieldset>
+          </div>
+
+          <div class="fTelnetSettingsPanelColumn">
+            <fieldset class="fTelnetSettingsPanelGroup">
               <legend>Sound</legend>
               <label class="fTelnetSettingsPanelOption">
                 <input
@@ -197,18 +259,12 @@ export class FSettingsPanel extends LitElement {
                 ms
               </label>
             </fieldset>
+          </div>
 
-            <fieldset class="fTelnetSettingsPanelGroup">
-              <legend>Protocol</legend>
-              <label class="fTelnetSettingsPanelOption">
-                <input
-                  type="checkbox"
-                  ?checked=${this.zmodemAutoDetect}
-                  @change=${this.handleZModemAutoDetectChange}
-                />
-                🔍 Auto Detect
-              </label>
-            </fieldset>
+          <div class="fTelnetSettingsPanelColumn">
+            <fieldset
+              class="fTelnetSettingsPanelGroup fTelnetSettingsPanelGroupReserved"
+            ></fieldset>
           </div>
         </div>
 
@@ -396,6 +452,23 @@ export class FSettingsPanel extends LitElement {
         'settings-zmodem-auto-detect-change',
         {
           detail: { enabled: checked },
+          bubbles: true,
+          composed: true,
+        },
+      ),
+    );
+  };
+
+  private handleDefaultProtocolChange = (e: Event): void => {
+    const value = (e.target as HTMLInputElement).value;
+    if (value !== 'zmodem' && value !== 'ymodem') {
+      return;
+    }
+    this.dispatchEvent(
+      new CustomEvent<SettingsDefaultProtocolChangeDetail>(
+        'settings-default-protocol-change',
+        {
+          detail: { protocol: value },
           bubbles: true,
           composed: true,
         },

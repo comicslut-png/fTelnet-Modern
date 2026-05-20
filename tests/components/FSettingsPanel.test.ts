@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import '@components/FSettingsPanel.js';
 import type {
   FSettingsPanel,
+  SettingsDefaultProtocolChangeDetail,
   SettingsMuteChangeDetail,
   SettingsThemeChangeDetail,
   SettingsVibrateChangeDetail,
@@ -80,7 +81,12 @@ describe('<f-settings-panel>', () => {
     });
 
     it('renders the mute checkbox unchecked', () => {
-      const checkbox = el.querySelector<HTMLInputElement>('input[type="checkbox"]');
+      const soundFieldset = Array.from(
+        el.querySelectorAll<HTMLFieldSetElement>('fieldset'),
+      ).find((f) => f.querySelector('legend')?.textContent === 'Sound');
+      const checkbox = soundFieldset!.querySelector<HTMLInputElement>(
+        'input[type="checkbox"]',
+      );
       expect(checkbox?.checked).toBe(false);
     });
 
@@ -206,39 +212,48 @@ describe('<f-settings-panel>', () => {
   });
 
   describe('mute reactivity', () => {
+    function getMuteCheckbox(): HTMLInputElement {
+      const soundFieldset = Array.from(
+        el.querySelectorAll<HTMLFieldSetElement>('fieldset'),
+      ).find((f) => f.querySelector('legend')?.textContent === 'Sound');
+      return soundFieldset!.querySelector<HTMLInputElement>(
+        'input[type="checkbox"]',
+      )!;
+    }
+
     it('changing muted updates the checkbox', async () => {
       el.muted = true;
       await el.updateComplete;
-      const checkbox = el.querySelector<HTMLInputElement>('input[type="checkbox"]');
+      const checkbox = getMuteCheckbox();
       expect(checkbox?.checked).toBe(true);
     });
 
     it('toggling the checkbox dispatches settings-mute-change', () => {
-      const checkbox = el.querySelector<HTMLInputElement>('input[type="checkbox"]');
+      const checkbox = getMuteCheckbox();
 
       let captured: SettingsMuteChangeDetail | undefined;
       el.addEventListener('settings-mute-change', (e): void => {
         captured = (e as CustomEvent<SettingsMuteChangeDetail>).detail;
       });
 
-      checkbox!.checked = true;
-      checkbox!.dispatchEvent(new Event('change', { bubbles: true }));
+      checkbox.checked = true;
+      checkbox.dispatchEvent(new Event('change', { bubbles: true }));
 
       expect(captured?.muted).toBe(true);
     });
 
     it('un-muting also fires the event with muted=false', () => {
-      const checkbox = el.querySelector<HTMLInputElement>('input[type="checkbox"]');
+      const checkbox = getMuteCheckbox();
 
       const events: SettingsMuteChangeDetail[] = [];
       el.addEventListener('settings-mute-change', (e): void => {
         events.push((e as CustomEvent<SettingsMuteChangeDetail>).detail);
       });
 
-      checkbox!.checked = true;
-      checkbox!.dispatchEvent(new Event('change', { bubbles: true }));
-      checkbox!.checked = false;
-      checkbox!.dispatchEvent(new Event('change', { bubbles: true }));
+      checkbox.checked = true;
+      checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+      checkbox.checked = false;
+      checkbox.dispatchEvent(new Event('change', { bubbles: true }));
 
       expect(events).toEqual([{ muted: true }, { muted: false }]);
     });
@@ -393,6 +408,153 @@ describe('<f-settings-panel>', () => {
       expect(captured).toEqual({ enabled: true });
     });
   });
+
+  describe('default protocol reactivity', () => {
+    /**
+     * The Protocol fieldset has two radios (ZMODEM / YMODEM) that
+     * pick what the menu's Upload/Download buttons act on, and what
+     * protocol's progress UI gets used. The change event propagates
+     * the new value as a SettingsDefaultProtocolChangeDetail.
+     */
+    function getProtocolRadios(): {
+      zmodem: HTMLInputElement;
+      ymodem: HTMLInputElement;
+    } {
+      const radios = Array.from(
+        el.querySelectorAll<HTMLInputElement>(
+          'input[type="radio"][name="default-protocol"]',
+        ),
+      );
+      const zmodem = radios.find((r) => r.value === 'zmodem')!;
+      const ymodem = radios.find((r) => r.value === 'ymodem')!;
+      return { zmodem, ymodem };
+    }
+
+    it('defaults to zmodem checked', () => {
+      const { zmodem, ymodem } = getProtocolRadios();
+      expect(zmodem.checked).toBe(true);
+      expect(ymodem.checked).toBe(false);
+    });
+
+    it('reflects the defaultProtocol property in the radios', async () => {
+      el.defaultProtocol = 'ymodem';
+      await el.updateComplete;
+      const { zmodem, ymodem } = getProtocolRadios();
+      expect(zmodem.checked).toBe(false);
+      expect(ymodem.checked).toBe(true);
+    });
+
+    it('selecting ymodem dispatches settings-default-protocol-change with protocol=ymodem', () => {
+      const { ymodem } = getProtocolRadios();
+
+      let captured: SettingsDefaultProtocolChangeDetail | undefined;
+      el.addEventListener('settings-default-protocol-change', (e): void => {
+        captured = (
+          e as CustomEvent<SettingsDefaultProtocolChangeDetail>
+        ).detail;
+      });
+
+      ymodem.checked = true;
+      ymodem.dispatchEvent(new Event('change', { bubbles: true }));
+
+      expect(captured).toEqual({ protocol: 'ymodem' });
+    });
+
+    it('selecting zmodem dispatches settings-default-protocol-change with protocol=zmodem', async () => {
+      el.defaultProtocol = 'ymodem';
+      await el.updateComplete;
+      const { zmodem } = getProtocolRadios();
+
+      let captured: SettingsDefaultProtocolChangeDetail | undefined;
+      el.addEventListener('settings-default-protocol-change', (e): void => {
+        captured = (
+          e as CustomEvent<SettingsDefaultProtocolChangeDetail>
+        ).detail;
+      });
+
+      zmodem.checked = true;
+      zmodem.dispatchEvent(new Event('change', { bubbles: true }));
+
+      expect(captured).toEqual({ protocol: 'zmodem' });
+    });
+  });
+
+  describe('four-column layout', () => {
+    /**
+     * Phase 5: panel uses a 4-column flex layout
+     * (Theme | Protocol | Sound+Touch | Reserved). Tests below
+     * verify each column has its expected fieldsets and content,
+     * and that the reserved 4th column exists as an empty
+     * placeholder.
+     */
+    it('renders four columns in the .fTelnetSettingsPanelColumns container', () => {
+      const cols = el.querySelectorAll('.fTelnetSettingsPanelColumn');
+      expect(cols.length).toBe(4);
+    });
+
+    it('column order is Theme | Protocol | Sound+Touch | Reserved', () => {
+      const cols = Array.from(
+        el.querySelectorAll<HTMLDivElement>('.fTelnetSettingsPanelColumn'),
+      );
+
+      const themeLegend = cols[0]!.querySelector('legend')?.textContent;
+      const protocolLegend = cols[1]!.querySelector('legend')?.textContent;
+      // Column 3 has TWO fieldsets (Sound, Touch); check both legends.
+      const col3Legends = Array.from(
+        cols[2]!.querySelectorAll('legend'),
+      ).map((l) => l.textContent);
+      // Column 4 is the reserved empty fieldset — no legend.
+      const col4 = cols[3]!.querySelector('fieldset');
+
+      expect(themeLegend).toBe('Theme');
+      expect(protocolLegend).toBe('Protocol');
+      expect(col3Legends).toEqual(['Sound', 'Touch']);
+      expect(col4?.querySelector('legend')).toBeNull();
+      expect(col4?.classList.contains('fTelnetSettingsPanelGroupReserved')).toBe(true);
+    });
+
+    it('Protocol column has a "Default" sub-header above the radios', () => {
+      const protocolFieldset = Array.from(
+        el.querySelectorAll<HTMLFieldSetElement>('fieldset'),
+      ).find((f) => f.querySelector('legend')?.textContent === 'Protocol');
+      const subheader = protocolFieldset!.querySelector(
+        '.fTelnetSettingsPanelSubheader',
+      );
+      expect(subheader?.textContent?.trim()).toBe('Default');
+    });
+
+    it('Protocol column has a placeholder radio (disabled, separate group)', () => {
+      const protocolFieldset = Array.from(
+        el.querySelectorAll<HTMLFieldSetElement>('fieldset'),
+      ).find((f) => f.querySelector('legend')?.textContent === 'Protocol');
+
+      const allRadios = Array.from(
+        protocolFieldset!.querySelectorAll<HTMLInputElement>(
+          'input[type="radio"]',
+        ),
+      );
+      // 3 radios total: ymodem, zmodem, placeholder
+      expect(allRadios.length).toBe(3);
+
+      const placeholder = allRadios.find((r) => r.disabled);
+      expect(placeholder).toBeDefined();
+      // Placeholder must NOT share the default-protocol radio group
+      // — otherwise clicking it (even disabled) could deselect the
+      // active protocol on browsers that allow keyboard focus.
+      expect(placeholder!.name).not.toBe('default-protocol');
+    });
+
+    it('Protocol column has a divider before Auto Detect', () => {
+      const protocolFieldset = Array.from(
+        el.querySelectorAll<HTMLFieldSetElement>('fieldset'),
+      ).find((f) => f.querySelector('legend')?.textContent === 'Protocol');
+      const divider = protocolFieldset!.querySelector(
+        '.fTelnetSettingsPanelDivider',
+      );
+      expect(divider).not.toBeNull();
+    });
+  });
+
 
   describe('close button', () => {
     it('clicking close dispatches settings-close event', () => {

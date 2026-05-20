@@ -423,12 +423,12 @@
   border: 1px solid var(--ft-popup-border);
   color: var(--ft-popup-fg);
   font: var(--ft-ui-font);
-  /* Phase 5 polish: panel reshaped into a two-column layout
-     (Theme on the left, Sound/Touch/Protocol stacked on the
-     right, About spanning full width below). The min-width
-     bump gives the columns room to breathe. */
-  min-width: 560px;
-  max-width: 720px;
+  /* Phase 5: panel reshaped into a four-column layout
+     (Theme | Protocol | Sound/Touch | Reserved), with About
+     spanning full width below. The min-width bump accommodates
+     four narrow columns side-by-side without crowding. */
+  min-width: 720px;
+  max-width: 900px;
   padding: 12px;
   position: absolute;
   text-shadow: var(--ft-ui-text-shadow);
@@ -437,7 +437,8 @@
   z-index: 1600;
 }
 
-/* Two-column layout container for Theme | Sound/Touch/Protocol. */
+/* Four-column layout container for Theme | Protocol | Sound+Touch
+   | Reserved. */
 .fTelnetSettingsPanelColumns {
   display: flex;
   gap: 12px;
@@ -479,6 +480,59 @@
 /* The About fieldset spans full width below the two columns. */
 .fTelnetSettingsPanelGroupFullWidth {
   margin-top: 8px;
+}
+
+/* Phase 5: The Protocol column has a bold sub-header above the
+   default-protocol radios ("Default") and a horizontal divider
+   separating those from the Auto Detect checkbox below. The
+   sub-header is a plain text node — NOT a nested fieldset legend
+   — to keep the visual weight light (a double border around the
+   radios would look heavier than the rest of the panel). */
+.fTelnetSettingsPanelSubheader {
+  font-weight: bold;
+  margin: 2px 0 4px;
+}
+
+.fTelnetSettingsPanelDivider {
+  border-top: 1px solid var(--ft-ui-border-soft);
+  margin: 6px 0;
+}
+
+[data-theme='dos-classic'] .fTelnetSettingsPanelDivider {
+  /* Sunken-bevel mini line, matching the fieldset's TUI bevel. */
+  border-top-color: var(--ft-bevel-shadow);
+  box-shadow: 0 1px 0 var(--ft-bevel-light);
+}
+
+/* Disabled placeholder radio in the Protocol column — reserved
+   slot for a future protocol option. Visible but greyed; pointer
+   is the not-allowed cursor so users get the hint. The label text
+   is rendered as an empty placeholder span so the row keeps
+   vertical rhythm with the other two radios. */
+.fTelnetSettingsPanelOptionDisabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.fTelnetSettingsPanelOptionDisabled input[type='radio'] {
+  cursor: not-allowed;
+}
+
+.fTelnetSettingsPanelPlaceholder {
+  /* Reserve the same vertical space a label would, so the
+     placeholder row aligns with the other radios above. About one
+     line-height of empty inline content. */
+  display: inline-block;
+  min-height: 1em;
+  min-width: 0;
+}
+
+/* The empty fourth column (reserved for future settings). Render
+   it as a bordered fieldset with no legend — preserves the grid
+   slot so layout doesn't shift when we add content later. */
+.fTelnetSettingsPanelGroupReserved {
+  /* Match the size of other fieldsets in the column. */
+  min-height: 80px;
 }
 
 /* About section sub-columns for left/right info split. */

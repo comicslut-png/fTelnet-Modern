@@ -62,8 +62,6 @@ describe('<f-menu-popup>', () => {
     it.each([
       ['Connect', 'connect'],
       ['Disconnect', 'disconnect'],
-      ['Upload', 'upload'],
-      ['Download', 'download'],
       ['Keyboard', 'keyboard-toggle'],
     ])('renders the "%s" button and dispatches %s', (linkLabel, action) => {
       const links = Array.from(el.querySelectorAll('a'));
@@ -76,6 +74,52 @@ describe('<f-menu-popup>', () => {
       });
       link!.click();
       expect(captured?.action).toBe(action);
+    });
+
+    it('renders the Upload button with active protocol in label (default ZMODEM)', () => {
+      const links = Array.from(el.querySelectorAll('a'));
+      const link = links.find((a) =>
+        (a.textContent ?? '').trim().startsWith('Upload'),
+      );
+      expect(link).toBeDefined();
+      expect(link!.textContent?.trim()).toBe('Upload (ZMODEM)');
+
+      let captured: MenuActionDetail | undefined;
+      el.addEventListener('menu-action', (e): void => {
+        captured = (e as CustomEvent<MenuActionDetail>).detail;
+      });
+      link!.click();
+      expect(captured?.action).toBe('upload');
+    });
+
+    it('renders the Download button with active protocol in label (default ZMODEM)', () => {
+      const links = Array.from(el.querySelectorAll('a'));
+      const link = links.find((a) =>
+        (a.textContent ?? '').trim().startsWith('Download'),
+      );
+      expect(link).toBeDefined();
+      expect(link!.textContent?.trim()).toBe('Download (ZMODEM)');
+
+      let captured: MenuActionDetail | undefined;
+      el.addEventListener('menu-action', (e): void => {
+        captured = (e as CustomEvent<MenuActionDetail>).detail;
+      });
+      link!.click();
+      expect(captured?.action).toBe('download');
+    });
+
+    it('renders Upload (YMODEM) / Download (YMODEM) when transferProtocol is ymodem', async () => {
+      el.transferProtocol = 'ymodem';
+      await el.updateComplete;
+      const links = Array.from(el.querySelectorAll('a'));
+      const upload = links.find((a) =>
+        (a.textContent ?? '').trim().startsWith('Upload'),
+      );
+      const download = links.find((a) =>
+        (a.textContent ?? '').trim().startsWith('Download'),
+      );
+      expect(upload?.textContent?.trim()).toBe('Upload (YMODEM)');
+      expect(download?.textContent?.trim()).toBe('Download (YMODEM)');
     });
 
     it('renders the Full Screen button (uses &nbsp; in label)', () => {

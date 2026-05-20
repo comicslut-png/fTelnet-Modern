@@ -57,8 +57,11 @@ applicable.
   counts, transfer rate (CPS), elapsed time, ETA, and error count,
   updated at 10 Hz. Press **ESC** or **CTRL-X** during a transfer
   to abort cleanly.
-- **YMODEM file transfers**: send and receive, unchanged from the
-  original (kept as a user-initiated fallback for older BBSes).
+- **YMODEM file transfers**: send and receive, available as a
+  legacy fallback for older BBSes that don't speak ZMODEM. Switch
+  to YMODEM via **Settings → Protocol → YMODEM**; the menu's
+  Upload/Download buttons then act on YMODEM with the original
+  in-canvas progress dialog. ZMODEM remains the default.
 - **Custom splash screen**: hand-crafted fTelnet-Modern ANSI block-art
   greets users on connect, displayed above R&M Software's preserved
   copyright line and the fork-credit line.
@@ -83,6 +86,15 @@ Polish work and remaining UX gaps:
     timer, stale-ZRPOS dedup, and ZNULLS-before-resync as
     defensive scaffolding. See `docs/phase5-zmodem-saga.md` for
     the full diagnostic arc.
+  - **Default Transfer Protocol setting** ✅ — Settings panel now
+    has a Protocol picker (ZMODEM / YMODEM). The menu's Upload and
+    Download button labels reflect the active protocol
+    ("Upload (ZMODEM)" etc.), and clicking them routes to the
+    matching state machine. With ZMODEM selected, the Download
+    button shows a hint dialog explaining that ZMODEM downloads
+    auto-detect on receipt of the BBS's ZRQINIT trigger. YMODEM
+    upload was previously unreachable from the UI — now wired
+    through the same drag-drop confirm flow.
   - **Large-file save performance** — current per-byte accumulator
     pattern causes a multi-second freeze when ZMODEM finishes a
     multi-MB file. Fix queued for early in Phase 5.
@@ -90,7 +102,13 @@ Polish work and remaining UX gaps:
     on top of the canvas. Phase 5 adds an opt-in mode that renders
     the progress inside the canvas itself (useful for fullscreen
     embed modes).
-  - **YMODEM auto-detect** — currently user-initiated only.
+  - **YMODEM auto-detect** — deferred. ZMODEM has a distinctive
+    six-byte trigger sequence (`** <ZDLE> B 0 0`) that's
+    essentially impossible to occur in normal text; YMODEM's start
+    pattern (SOH + block 0 + block-number bytes) collides with
+    common ANSI bytes and would risk false positives that hijack
+    the terminal display. YMODEM stays user-initiated via the
+    Download button (with YMODEM picked as the default protocol).
   - **Splash screen rotation** — when additional ANSI splashes are
     designed, the existing single-splash constant becomes an array
     with a random-pick on connect.
@@ -104,13 +122,13 @@ See `docs/` for stage-by-stage planning notes:
 
 ### Test coverage
 
-1064 unit tests across 52 files, run on every commit. Phase boundaries:
+1070 unit tests across 52 files, run on every commit. Phase boundaries:
 
   - End of Phase 1: 559 tests
   - End of Phase 2: 691 tests
   - End of Phase 3: 722 tests
   - End of Phase 4: 980 tests
-  - Phase 5 (in progress): 1064 tests
+  - Phase 5 (in progress): 1070 tests
 
 ## Testing against a real BBS
 
@@ -183,7 +201,7 @@ for that command, not a bug in the client.
 ```bash
 npm install              # install dependencies
 npm run dev              # start Vite dev server with hot reload (port 5173)
-npm test                 # run the full Vitest suite (1064 tests)
+npm test                 # run the full Vitest suite (1070 tests)
 npm run typecheck        # tsc --noEmit
 npm run build:all        # produce all four bundle flavors
 ```
@@ -193,7 +211,7 @@ Output bundles land in `dist/`:
 - `ftelnet.norip.noxfer.js` — ANSI/BBS only, smallest bundle
 - `ftelnet.norip.xfer.js` — adds YMODEM + ZMODEM file transfer
 - `ftelnet.rip.noxfer.js` — adds RIPscrip graphics emulation
-- `ftelnet.rip.xfer.js` — everything (~595 KB / ~130 KB gzipped)
+- `ftelnet.rip.xfer.js` — everything (~617 KB / ~133 KB gzipped)
 
 Each comes with a source map and a minified `.min.js` variant.
 

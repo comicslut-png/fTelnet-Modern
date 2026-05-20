@@ -41,7 +41,9 @@ import { Ansi, Crt, KeyboardKeys, KeyPressEvent } from '../crt/index.js';
 import { RIP } from '../graph/index.js';
 import { saveAs } from 'file-saver';
 import {
+  FileRecord,
   YModemReceive,
+  YModemSend,
   ZmDebug,
   ZModemDetector,
   ZModemReceive,
@@ -74,6 +76,7 @@ import {
   type SettingsThemeChangeDetail,
   type SettingsVibrateChangeDetail,
   type SettingsZModemAutoDetectChangeDetail,
+  type SettingsDefaultProtocolChangeDetail,
   type UploadConfirmDetail,
   type VKKeyEventDetail,
 } from '../components/index.js';
@@ -417,6 +420,19 @@ export class fTelnetClient {
       if (storedZModemAutoDetect !== null) {
         this._Options.ZModemAutoDetect = storedZModemAutoDetect === 'true';
       }
+
+      // Phase 5: which protocol the menu's Upload and Download
+      // buttons act on. Stored as the literal string 'zmodem' or
+      // 'ymodem'. Unknown values are ignored (default stays).
+      const storedDefaultProtocol = window.localStorage.getItem(
+        'fTelnet.defaultTransferProtocol',
+      );
+      if (
+        storedDefaultProtocol === 'zmodem' ||
+        storedDefaultProtocol === 'ymodem'
+      ) {
+        this._Options.DefaultTransferProtocol = storedDefaultProtocol;
+      }
     } catch {
       // Ignore — same as above.
     }
@@ -737,6 +753,7 @@ export class fTelnetClient {
     this._MenuButtons.showScrollback = !this._UseModernScrollback;
     this._MenuButtons.currentScreenSize = CurrentScreenSize;
     this._MenuButtons.supportedScreenSizes = SupportedScreenSizes;
+    this._MenuButtons.transferProtocol = this._Options.DefaultTransferProtocol;
 
     this._MenuButtons.addEventListener('menu-action', (e: Event): void => {
       const detail = (e as CustomEvent<MenuActionDetail>).detail;
@@ -812,6 +829,7 @@ export class fTelnetClient {
     this._SettingsPanel.muted = this._Options.MuteSounds;
     this._SettingsPanel.vibrateDuration = this._Options.VirtualKeyboardVibrateDuration;
     this._SettingsPanel.zmodemAutoDetect = this._Options.ZModemAutoDetect;
+    this._SettingsPanel.defaultProtocol = this._Options.DefaultTransferProtocol;
 
     this._SettingsPanel.addEventListener('settings-theme-change', (e: Event): void => {
       const detail = (e as CustomEvent<SettingsThemeChangeDetail>).detail;
@@ -855,6 +873,28 @@ export class fTelnetClient {
           window.localStorage.setItem(
             'fTelnet.zmodemAutoDetect',
             String(detail.enabled),
+          );
+        } catch {
+          // Ignore.
+        }
+      },
+    );
+    this._SettingsPanel.addEventListener(
+      'settings-default-protocol-change',
+      (e: Event): void => {
+        const detail = (e as CustomEvent<SettingsDefaultProtocolChangeDetail>)
+          .detail;
+        // Update the runtime field and propagate to the menu so its
+        // Upload/Download labels reflect the new protocol immediately
+        // — no reconnect needed.
+        this._Options.DefaultTransferProtocol = detail.protocol;
+        if (this._MenuButtons !== undefined) {
+          this._MenuButtons.transferProtocol = detail.protocol;
+        }
+        try {
+          window.localStorage.setItem(
+            'fTelnet.defaultTransferProtocol',
+            detail.protocol,
           );
         } catch {
           // Ignore.
@@ -918,9 +958,15 @@ export class fTelnetClient {
       // a known-good baseline between flows.
       this._UploadConfirm.open = false;
       this._UploadConfirm.files = [];
-      // Phase 5 Delta 2: actually start the upload via ZModemSend.
-      // Delta 3 extends this to handle multi-file batches.
-      this._beginZModemSend(detail.files);
+      // Phase 5: route to the protocol the user picked in Settings.
+      // ZMODEM uses the new transfer-progress panel + multi-file
+      // batch flow; YMODEM uses its own legacy in-canvas progress
+      // dialog and the YModemSend state machine.
+      if (this._Options.DefaultTransferProtocol === 'ymodem') {
+        this._beginYModemSend(detail.files);
+      } else {
+        this._beginZModemSend(detail.files);
+      }
     });
     this._UploadConfirm.addEventListener('upload-cancel', (): void => {
       this._UploadConfirm.open = false;
@@ -1392,9 +1438,24 @@ export class fTelnetClient {
   }
 
   /**
-   * Start a YMODEM-G download. Stops the main poll timer (YModem
-   * runs its own) and arms a one-shot completion handler that
-   * restarts the timer when the download finishes.
+   * Start a download via the user's configured default transfer
+   * protocol.
+   *
+   * For YMODEM (legacy fallback): stops the main poll timer
+   * (YModem runs its own), arms a one-shot completion handler that
+   * restarts the timer when the download finishes, and starts the
+   * YMODEM-G receive handshake.
+   *
+   * For ZMODEM (default): shows a hint dialog explaining that
+   * downloads auto-detect when the BBS initiates them — no
+   * client-side button needed. ZMODEM auto-detect runs from the
+   * inbound-byte stream watcher (governed separately by the
+   * `ZModemAutoDetect` option, which is on by default), so the
+   * actual transfer fires the moment the BBS sends the ZRQINIT
+   * trigger sequence.
+   *
+   * The behavior is controlled by `Options.DefaultTransferProtocol`,
+   * exposed in Settings.
    */
   public Download(): void {
     if (this._MenuButtons !== undefined) {
@@ -1405,6 +1466,24 @@ export class fTelnetClient {
       return;
     }
 
+    if (this._Options.DefaultTransferProtocol === 'zmodem') {
+      // ZMODEM downloads auto-detect: the BBS initiates with the
+      // ZRQINIT trigger sequence, our inbound-data watcher catches
+      // it, and ZModemReceive takes over automatically. Tell the
+      // user how that works rather than starting something here.
+      // eslint-disable-next-line no-alert
+      alert(
+        'Use the BBS\'s download command — ZMODEM auto-detects.\n\n' +
+          'When the BBS starts the transfer the progress panel ' +
+          'appears automatically, and your browser will save the ' +
+          'file when it completes.\n\n' +
+          'To use the menu button to start downloads, switch the ' +
+          'default protocol to YMODEM in Settings.',
+      );
+      return;
+    }
+
+    // YMODEM-G receive (legacy user-initiated path).
     this._YModemReceive = new YModemReceive(this._Crt, this._Connection);
 
     if (this._Timer !== undefined) {
@@ -2301,6 +2380,88 @@ export class fTelnetClient {
     this._TransferProgressPanel.direction = 'receive';
   }
 
+  /**
+   * YMODEM-G upload adapter (Phase 5). Reads each picked File into
+   * a FileRecord, then queues them through YModemSend.
+   *
+   * Unlike the ZMODEM path, YModemSend uses its OWN in-canvas
+   * CrtPanel progress dialog (the original 2017-era progress UI),
+   * runs its own polling timer, and routes its outbound bytes
+   * through the WebSocketConnection directly. So we don't touch
+   * `_TransferProgressPanel` or `_TransferStats` here — those are
+   * the new Lit-based panel used by the ZMODEM path.
+   *
+   * Multi-file batch: YModemSend's public `Upload(file, fileCount)`
+   * expects the caller to queue every file in the batch with the
+   * same fileCount; on the call where `_Files.length === fileCount`
+   * the state machine kicks off. So we queue all files in a tight
+   * loop after the FileReader resolves.
+   *
+   * Phase 5.
+   */
+  private _beginYModemSend(files: File[]): void {
+    if (this._Connection === undefined || !this._Connection.connected) {
+      return;
+    }
+    if (files.length === 0) return;
+
+    // Read every file in parallel into a Uint8Array. Mirrors the
+    // ZMODEM path's reader logic. Failure aborts the whole batch.
+    const readPromises: Promise<Uint8Array>[] = files.map(
+      (file) =>
+        new Promise<Uint8Array>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (): void => {
+            resolve(new Uint8Array(reader.result as ArrayBuffer));
+          };
+          reader.onerror = (): void => {
+            reject(reader.error ?? new Error(`Failed to read ${file.name}`));
+          };
+          reader.readAsArrayBuffer(file);
+        }),
+    );
+
+    Promise.all(readPromises).then(
+      (byteArrays) => {
+        if (this._Connection === undefined || !this._Connection.connected) {
+          return;
+        }
+        // Build the YModemSend instance and queue every file. The
+        // state machine kicks off when the last file is queued
+        // (see YModemSend.Upload: `if (_Files.length === fileCount)`).
+        const ymodemSend = new YModemSend(this._Crt, this._Connection);
+        // The main poll timer needs to be paused while YModemSend
+        // runs its own — mirror of what Download() does for receive.
+        if (this._Timer !== undefined) {
+          clearInterval(this._Timer);
+          this._Timer = undefined;
+        }
+        ymodemSend.ontransfercomplete.on((): void => {
+          this.OnDownloadComplete();
+        });
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i]!;
+          const bytes = byteArrays[i]!;
+          const record = new FileRecord(file.name, bytes.length);
+          for (let j = 0; j < bytes.length; j++) {
+            record.data.writeByte(bytes[j]!);
+          }
+          // Reset the read cursor so YModemSend's reader starts
+          // at offset 0.
+          record.data.position = 0;
+          ymodemSend.Upload(record, files.length);
+        }
+      },
+      (err) => {
+        // eslint-disable-next-line no-console
+        console.warn(
+          '[fTelnetClient] FileReader error reading YMODEM upload file(s):',
+          err,
+        );
+      },
+    );
+  }
+
   private OnConnectionLocalEcho(value: boolean): void {
     if (this._Options.NegotiateLocalEcho) {
       this._Options.LocalEcho = value;
@@ -2493,6 +2654,7 @@ export class fTelnetClient {
     this._SettingsPanel.muted = this._Options.MuteSounds;
     this._SettingsPanel.vibrateDuration = this._Options.VirtualKeyboardVibrateDuration;
     this._SettingsPanel.zmodemAutoDetect = this._Options.ZModemAutoDetect;
+    this._SettingsPanel.defaultProtocol = this._Options.DefaultTransferProtocol;
     this._SettingsPanel.open = true;
   }
 

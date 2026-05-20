@@ -39,6 +39,38 @@ export class fTelnetOptions {
   public BareLFtoCRLF = false;
   public BitsPerSecond = 57600;
   public ConnectionType = 'telnet';
+  /**
+   * Which protocol the menu's Upload and Download buttons use, and
+   * which protocol's auto-detect sequence the inbound byte-stream
+   * watches for.
+   *
+   * Values:
+   *   - 'zmodem' (default) — modern protocol. Download is auto-
+   *     initiated by the BBS; the menu's Download button shows a
+   *     hint dialog explaining that no manual trigger is needed.
+   *     Upload routes through the multi-file drag-drop confirm
+   *     dialog and ZModemSend.
+   *   - 'ymodem' — legacy YMODEM-G fallback for older BBSes that
+   *     don't speak ZMODEM. Download is user-initiated via the
+   *     menu Download button (the standard YMODEM-G handshake).
+   *     Upload routes through YModemSend with the legacy in-canvas
+   *     progress dialog.
+   *
+   * In-band ZMODEM auto-detect is governed separately by
+   * `ZModemAutoDetect`; setting `DefaultTransferProtocol` to
+   * 'ymodem' does NOT silence ZMODEM auto-detect — a BBS that
+   * starts blasting ZMODEM bytes will still be caught. To fully
+   * lock the client to YMODEM, also set `ZModemAutoDetect` to
+   * false.
+   *
+   * The settings panel exposes a runtime picker and the chosen
+   * value persists across reloads via localStorage. This field
+   * is the embed-time default when localStorage has no saved
+   * preference.
+   *
+   * Phase 5.
+   */
+  public DefaultTransferProtocol: 'zmodem' | 'ymodem' = 'zmodem';
   public Emulation = 'ansi-bbs';
   public Enter = '\r';
   public Font = 'CP437';

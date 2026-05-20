@@ -149,6 +149,15 @@ export class FMenuPopup extends LitElement {
   @property({ type: String, attribute: 'current-screen-size' })
   currentScreenSize = '80x25';
 
+  /**
+   * Active default transfer protocol — used to render the Upload
+   * and Download button labels as "Upload (ZMODEM)" /
+   * "Download (YMODEM)" etc. Mirrors
+   * `fTelnetOptions.DefaultTransferProtocol`. Phase 5.
+   */
+  @property({ type: String, attribute: 'transfer-protocol' })
+  transferProtocol: 'zmodem' | 'ymodem' = 'zmodem';
+
   // Default supportedScreenSizes if the parent never sets it.
   // Parent typically computes this (with the "current size if not
   // standard" prepended) at construction time and assigns once.
@@ -212,12 +221,12 @@ export class FMenuPopup extends LitElement {
           <tr>
             <td>
               <a href="#" @click=${(e: MouseEvent): void => this.handleAction(e, 'upload')}
-                >Upload</a
+                >Upload (${this.transferProtocol === 'zmodem' ? 'ZMODEM' : 'YMODEM'})</a
               >
             </td>
             <td>
               <a href="#" @click=${(e: MouseEvent): void => this.handleAction(e, 'download')}
-                >Download</a
+                >Download (${this.transferProtocol === 'zmodem' ? 'ZMODEM' : 'YMODEM'})</a
               >
             </td>
           </tr>
