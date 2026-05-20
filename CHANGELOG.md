@@ -1,0 +1,118 @@
+# Changelog
+
+All notable changes to fTelnet-Modern are documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/),
+and this project adheres to [Semantic Versioning](https://semver.org/).
+
+## [2.0.0-beta.1] — 2026-05-20
+
+First public beta of the fTelnet-Modern fork. Architecturally
+settled, feature-complete for everyday BBS use, and tested
+against Synchronet, Mystic, and PCBoard hosts.
+
+### Added
+
+  - **Modern toolchain**: TypeScript 5.9 strict, Vite 5, ESM, Vitest 2.
+    Full dev-server with hot reload; four build flavors
+    (norip/rip × noxfer/xfer).
+  - **Lit web component UI**: every chrome element — focus warning,
+    scrollback bar, status bar, menu popup, virtual keyboard,
+    settings panel, transfer progress, upload confirm dialog, drop
+    overlay — is now a `<f-*>` web component using light DOM so
+    existing CSS selectors continue to apply.
+  - **Theming system**: 6 built-in themes (Classic, DOS-Classic,
+    CRT-Green, Cyberpunk, Gothic, Cartoon) selectable at runtime.
+    Theme persists across reloads via localStorage.
+  - **Settings panel**: runtime preferences UI floating over the
+    canvas. Four-column layout (Theme | Protocol | Sound+Touch |
+    Reserved-for-future). Includes an About section with version,
+    fork attribution, upstream attribution, and license info.
+  - **ZMODEM file transfer**: cleanroom TypeScript implementation
+    of the ZMODEM protocol, replacing YMODEM as the default. Full
+    bidirectional send/receive, multi-file batch upload via
+    drag-and-drop, auto-detect on inbound transfers, SyncTERM-style
+    progress panel updating at 10 Hz.
+  - **Default Transfer Protocol setting**: user-facing picker
+    (ZMODEM/YMODEM) in Settings. Menu's Upload/Download buttons
+    show the active protocol in their labels and route to the
+    matching state machine.
+  - **YMODEM upload wiring**: the `YModemSend` class existed in
+    the original codebase with unit tests but no UI path called
+    it. Now wired through the same drag-drop confirm flow as the
+    ZMODEM upload, using YMODEM's legacy in-canvas progress
+    dialog.
+  - **Custom splash screen**: hand-crafted fTelnet-Modern ANSI
+    block-art greets users on connect.
+  - **Diagnostic logger module** (`ZmDebug`): categorized
+    in-context logging for ZMODEM state-machine investigation.
+
+### Fixed
+
+  - **ZMODEM sender XON byte after ZCRCW subpackets** — Phase 5
+    Delta 2.20. Every ZCRCW subpacket must end with XON (0x11) per
+    Forsberg's reference zmodem.cpp. Our encoder omitted it. This
+    single missing byte explained both multi-file batch aborts on
+    Synchronet AND "every-other-block CRC error" patterns on
+    PCBoard. The companion decoder fix silently absorbs XON/XOFF
+    in IDLE state. See `docs/phase5-zmodem-saga.md` for the full
+    diagnostic arc.
+  - **ZMODEM sender hardening (defensive)** — resync retry timer
+    (Delta 2.13), stale-ZRPOS deduplication (Delta 2.15), ZNULLS
+    prefix before resync ZDATA (Delta 2.16), time-windowed dedup
+    (Delta 2.17). Kept as scaffolding for now; candidates for
+    cleanup after more field experience confirms the XON fix is
+    sufficient alone.
+
+### Preserved from the original fTelnet
+
+  - All original features: ANSI/CTERM parser, RIPscrip graphics,
+    telnet negotiation, font collection, virtual keyboard,
+    copy/paste, scrollback, focus warning, screen-size selector,
+    Atari/C64/PETSCII emulation modes.
+  - Public API surface for embedded integrations
+    (`fTelnetClient`, `fTelnetOptions`) — existing sysop embeds
+    continue to work unchanged.
+  - AGPL-3.0 license and Rick Parrish / R&M Software attribution.
+
+### Known limitations
+
+  - **Large-file save lag**: per-byte accumulator pattern in the
+    download path causes a multi-second freeze when ZMODEM
+    finishes a multi-MB file. Fix queued for early 2.0.0-beta.2.
+  - **YMODEM throttle interaction**: the original codebase pauses
+    a throttle mechanism during YMODEM transfers to allow full
+    speed. Whether ZMODEM transfers correctly pause the same
+    throttle is still under investigation — may affect PCBoard
+    transfer speeds. Slated for beta.2.
+  - **YMODEM auto-detect**: deferred. ZMODEM has a distinctive
+    six-byte trigger sequence; YMODEM's start pattern collides
+    with common ANSI bytes and risks false positives that would
+    hijack the terminal display. YMODEM stays user-initiated via
+    the menu Download button with YMODEM picked as the default
+    protocol.
+  - **PWA install manifest** and **in-canvas progress panel**:
+    Phase 5 polish items still in flight.
+
+### Tests
+
+1075 unit tests across 52 files. Phase boundaries:
+
+  - End of Phase 1 (modernize foundation): 559 tests
+  - End of Phase 2 (Lit components): 691 tests
+  - End of Phase 3 (theming): 722 tests
+  - End of Phase 4 (ZMODEM): 980 tests
+  - 2.0.0-beta.1 (Phase 5 in progress): 1075 tests
+
+### Bundle
+
+  - `ftelnet.rip.xfer.min.js`: ~618 KB / ~133 KB gzipped
+  - `ftelnet.norip.xfer.min.js`: ZMODEM without RIPscrip
+  - `ftelnet.rip.noxfer.min.js`: RIPscrip without file transfer
+  - `ftelnet.norip.noxfer.min.js`: ANSI/BBS only, smallest bundle
+
+## Pre-history
+
+The 2.0.0 line is a major modernization of the original fTelnet
+by Rick Parrish (R&M Software). The original is documented at
+<https://www.ftelnet.ca>. Pre-2.0 releases predate this fork.
