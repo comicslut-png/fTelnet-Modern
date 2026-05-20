@@ -5,6 +5,39 @@ All notable changes to fTelnet-Modern are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.0.0-beta.2] — 2026-05-20
+
+Patch release fixing a user-facing label inconsistency reported
+during beta.1 smoke testing.
+
+### Fixed
+
+  - **Upload confirm dialog and drop overlay now reflect the
+    active transfer protocol.** With YMODEM selected as the
+    default, the menu buttons correctly relabeled to "Upload
+    (YMODEM)" / "Download (YMODEM)" — but the upload confirm
+    dialog still showed "Protocol: ZMODEM" and the drag-and-drop
+    overlay still said "to upload via ZMODEM", regardless of the
+    setting. The routing was correct (YModemSend received the
+    bytes) but the UI labels lied about which protocol was in
+    use, undermining the whole point of the protocol picker.
+    Fix follows the same reactive-property pattern FMenuPopup
+    already uses: fTelnetClient pushes the active protocol value
+    to both components at construction and on every settings
+    change.
+
+### Tests
+
+1075 → 1082. Seven new regression tests covering the upload
+confirm dialog's single-file and multi-file body renderers, and
+the drop overlay's subtitle, including live re-render on
+setting change.
+
+### Bundle
+
+618 → 619 KB raw / 133.51 → 133.64 KB gzipped — barely changed
+(about 1 KB for the new properties and conditional templates).
+
 ## [2.0.0-beta.1] — 2026-05-20
 
 First public beta of the fTelnet-Modern fork. Architecturally
