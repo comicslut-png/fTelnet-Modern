@@ -42,4 +42,5 @@ export {
   type UploadConfirmDetail,
   type UploadCancelDetail,
 } from './FUploadConfirm.js';
+export { FUserManual, type ManualCloseDetail } from './FUserManual.js';
 export { FVirtualKeyboard, type VKKeyEventDetail } from './FVirtualKeyboard.js';

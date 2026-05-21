@@ -49,6 +49,12 @@ applicable.
   vibrate-duration slider, and an **About** section showing version,
   fork author, upstream attribution, and license info. All preferences
   persist in localStorage.
+- **In-app user manual** (new in beta.3): a friendly Manual button
+  on the main menu opens a floating, draggable, resizable popup
+  with the complete user guide. Covers every menu button, how file
+  transfers work, BBS display styles (ANSI / PETSCII / ATASCII /
+  Topaz), and troubleshooting tips. Written for all experience
+  levels — from users who've never seen a BBS to seasoned sysops.
 - **ZMODEM file transfers** (new in Phase 4): receive downloads from
   any BBS that speaks ZMODEM. Auto-detects when the BBS initiates a
   transfer; no user configuration required. Confirmed working across
@@ -122,13 +128,13 @@ See `docs/` for stage-by-stage planning notes:
 
 ### Test coverage
 
-1070 unit tests across 52 files, run on every commit. Phase boundaries:
+1099 unit tests across 53 files, run on every commit. Phase boundaries:
 
   - End of Phase 1: 559 tests
   - End of Phase 2: 691 tests
   - End of Phase 3: 722 tests
   - End of Phase 4: 980 tests
-  - Phase 5 (in progress): 1070 tests
+  - Phase 5 (in progress): 1099 tests
 
 ## Testing against a real BBS
 
@@ -201,7 +207,7 @@ for that command, not a bug in the client.
 ```bash
 npm install              # install dependencies
 npm run dev              # start Vite dev server with hot reload (port 5173)
-npm test                 # run the full Vitest suite (1070 tests)
+npm test                 # run the full Vitest suite (1099 tests)
 npm run typecheck        # tsc --noEmit
 npm run build:all        # produce all four bundle flavors
 ```
@@ -211,7 +217,7 @@ Output bundles land in `dist/`:
 - `ftelnet.norip.noxfer.js` — ANSI/BBS only, smallest bundle
 - `ftelnet.norip.xfer.js` — adds YMODEM + ZMODEM file transfer
 - `ftelnet.rip.noxfer.js` — adds RIPscrip graphics emulation
-- `ftelnet.rip.xfer.js` — everything (~617 KB / ~133 KB gzipped)
+- `ftelnet.rip.xfer.js` — everything (~640 KB / ~140 KB gzipped)
 
 Each comes with a source map and a minified `.min.js` variant.
 

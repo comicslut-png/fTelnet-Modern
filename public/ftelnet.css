@@ -741,6 +741,264 @@
   color: #55ffff;
 }
 
+/* ───── User Manual popup (Phase 5 beta.3) ───── */
+
+/*
+ * Floating, draggable, resizable popup that displays the user
+ * manual. Independent of the menu popup and the settings panel;
+ * stays open across menu/settings interactions; closes only when
+ * the user dismisses it or the session disconnects.
+ *
+ * Geometry (left/top/width/height) is applied inline by the
+ * component; this stylesheet only defines appearance, font sizes,
+ * and the resizer affordance.
+ */
+.fTelnetUserManual {
+  position: fixed;
+  background-color: var(--ft-popup-bg);
+  border: 1px solid var(--ft-popup-border);
+  color: var(--ft-popup-fg);
+  font: var(--ft-ui-font);
+  text-shadow: var(--ft-ui-text-shadow);
+  /* User can grab the bottom-right corner to resize. min-width /
+     min-height keep the popup readable; max keep it from spilling
+     way past the viewport on small screens. */
+  resize: both;
+  overflow: hidden;
+  min-width: 400px;
+  min-height: 300px;
+  max-width: 95vw;
+  max-height: 95vh;
+  /* Above the menu popup and the settings panel — the manual is
+     a separate top-level surface and shouldn't be obscured. */
+  z-index: 1700;
+  /* Subtle shadow to lift it off the BBS screen. Themes can
+     override or disable. */
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  /* Flex column so the body grows to fill below the title bar. */
+  display: flex;
+  flex-direction: column;
+}
+
+/*
+ * Title bar — drag handle, contains the title and close button.
+ * cursor:move signals to the user that it's draggable. The close
+ * button gets cursor:pointer overriding that.
+ */
+.fTelnetUserManualHeader {
+  background-color: var(--ft-popup-header-bg, #000080);
+  color: var(--ft-popup-header-fg, #ffffff);
+  padding: 6px 12px;
+  font-weight: bold;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: move;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.fTelnetUserManualTitle {
+  /* Empty rule reserved for theme overrides. */
+}
+
+/*
+ * Close button — '✕' in the title bar. Styled as a plain link to
+ * match the look of close buttons elsewhere in the chrome, but
+ * with its own click handler that dispatches `manual-close`.
+ */
+.fTelnetUserManualClose {
+  cursor: pointer;
+  color: inherit;
+  text-decoration: none;
+  font-weight: bold;
+  padding: 0 4px;
+  /* Slightly larger hit area for touch users. */
+  min-width: 20px;
+  text-align: center;
+}
+
+.fTelnetUserManualClose:hover {
+  color: var(--ft-popup-header-fg-hover, #ffff00);
+}
+
+/*
+ * Scrollable body. Larger font size than the rest of the UI
+ * chrome because this is reading material — users explicitly
+ * told us they don't want small print. 14px is roughly 1.2x the
+ * usual UI font.
+ */
+.fTelnetUserManualBody {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 12px 18px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.fTelnetUserManualBody h1 {
+  font-size: 20px;
+  margin: 8px 0 12px;
+}
+
+.fTelnetUserManualBody h2 {
+  font-size: 18px;
+  margin: 20px 0 8px;
+  /* Slight border-top to visually separate sections. Themes can
+     override the color. */
+  padding-top: 12px;
+  border-top: 1px solid var(--ft-ui-border-soft, rgba(255, 255, 255, 0.2));
+}
+
+.fTelnetUserManualBody h2:first-of-type {
+  /* First H2 (the "Contents" header) sits right under the intro,
+     no extra separator needed. */
+  border-top: none;
+  padding-top: 0;
+}
+
+.fTelnetUserManualBody p {
+  margin: 8px 0;
+}
+
+.fTelnetUserManualBody ul {
+  margin: 8px 0;
+  padding-left: 24px;
+}
+
+.fTelnetUserManualBody li {
+  margin: 4px 0;
+}
+
+.fTelnetUserManualBody code {
+  background-color: var(--ft-ui-border-soft, rgba(255, 255, 255, 0.15));
+  padding: 1px 4px;
+  border-radius: 2px;
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+}
+
+/*
+ * Table of contents — anchor links that scroll within the popup's
+ * own body to the matching section. Styled like a list of links
+ * with a tighter line-height to fit comfortably without dominating
+ * the first screen of content.
+ */
+.fTelnetUserManualToc {
+  margin: 8px 0 24px;
+  padding-left: 24px;
+}
+
+.fTelnetUserManualToc li {
+  margin: 2px 0;
+}
+
+.fTelnetUserManualToc a {
+  /* Red instead of the theme's --ft-link-fg (cyan in most themes)
+     — cyan-on-gray failed accessibility for a lot of users. This
+     bright red reads cleanly against every theme's popup
+     background and stays visually distinct from the bold-text
+     emphasis in section headings. Gothic gets a brighter override
+     below since its near-black-with-red-tint bg would mute a
+     mid-red. */
+  color: #dd2222;
+  text-decoration: none;
+}
+
+.fTelnetUserManualToc a:hover {
+  text-decoration: underline;
+}
+
+[data-theme='gothic'] .fTelnetUserManualToc a {
+  /* Gothic's --ft-popup-bg is #0a0000 (near-black, faintly red).
+     A mid-red would blend; pump to near-pure brightness. */
+  color: #ff5555;
+}
+
+[data-theme='crt-green'] .fTelnetUserManualToc a {
+  /* CRT-Green's --ft-popup-bg is #001a00 (very dark green).
+     Red gets muddied against the green; white is the natural
+     CRT-on-phosphor link affordance and pairs with the
+     theme's text-shadow glow elsewhere. */
+  color: #ffffff;
+}
+
+/* ─────  Per-theme manual variants  ─────
+ *
+ * The manual's base CSS already pulls theme tokens (popup-bg,
+ * popup-fg, popup-border, ui-font, text-shadow) so every theme
+ * gets the right palette and font automatically. These overrides
+ * add the signature touches each theme is known for: the TUI
+ * sunken-bevel for dos-classic, phosphor glow for crt-green,
+ * uppercase HUD for cyberpunk, etc.
+ */
+
+/* dos-classic — Win 3.1 TUI bevels */
+[data-theme='dos-classic'] .fTelnetUserManual {
+  border: 2px outset var(--ft-bevel-light, #ffffff);
+  box-shadow: 2px 2px 0 var(--ft-bevel-shadow, #000000);
+}
+
+[data-theme='dos-classic'] .fTelnetUserManualBody h2 {
+  border-top-color: var(--ft-bevel-shadow);
+}
+
+/* crt-green — phosphor glow on body text, brighter heading
+   shadow to feel like a CRT scanning across them */
+[data-theme='crt-green'] .fTelnetUserManualBody,
+[data-theme='crt-green'] .fTelnetUserManualHeader,
+[data-theme='crt-green'] .fTelnetUserManualClose {
+  text-shadow: var(--ft-ui-text-shadow);
+}
+
+[data-theme='crt-green'] .fTelnetUserManualBody h1,
+[data-theme='crt-green'] .fTelnetUserManualBody h2 {
+  /* Beefier glow on the green headings — they're the
+     "look-at-me" elements in a CRT aesthetic. */
+  text-shadow:
+    0 0 4px currentColor,
+    0 0 8px currentColor;
+}
+
+/* cyberpunk — uppercase title and TOC, neon letter-spacing */
+[data-theme='cyberpunk'] .fTelnetUserManualHeader {
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+[data-theme='cyberpunk'] .fTelnetUserManualBody h1,
+[data-theme='cyberpunk'] .fTelnetUserManualBody h2 {
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* gothic — let the deeper red blood-red title bar speak for
+   itself; just emphasize headings with the theme's accent. The
+   TOC override above already handles the link contrast. */
+[data-theme='gothic'] .fTelnetUserManualBody h1,
+[data-theme='gothic'] .fTelnetUserManualBody h2 {
+  color: var(--ft-popup-header-bg);
+}
+
+/* cartoon — thick borders, rounded corners, Comic Sans (already
+   inherited via popup font token) */
+[data-theme='cartoon'] .fTelnetUserManual {
+  border-width: 3px;
+  border-radius: 12px;
+}
+
+[data-theme='cartoon'] .fTelnetUserManualHeader {
+  border-radius: 9px 9px 0 0;
+}
+
+[data-theme='cartoon'] .fTelnetUserManualBody h1,
+[data-theme='cartoon'] .fTelnetUserManualBody h2 {
+  /* Beefier text outline feel — cartoon themes love thick
+     bordered text. */
+  -webkit-text-stroke: 0.5px currentColor;
+}
+
 /* Confirm dialog */
 .fTelnetUploadConfirm {
   position: fixed;

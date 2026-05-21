@@ -67,6 +67,7 @@ import {
   FStatusBar,
   FTransferProgress,
   FUploadConfirm,
+  FUserManual,
   FVirtualKeyboard,
   type DropFileSelectedDetail,
   type MenuActionDetail,
@@ -203,6 +204,13 @@ export class fTelnetClient {
    * component's `file` property.
    */
   private _UploadConfirm!: FUploadConfirm;
+  /**
+   * Phase 5 (beta.3): user manual popup. Created lazily on first
+   * open. Stays in the DOM after that; its `open` property gates
+   * visibility. Resets position state on disconnect so the next
+   * open re-centers (in case the user dragged it off-screen).
+   */
+  private _UserManual?: FUserManual;
   /**
    * The status-bar component. Phase 2 collapsed what used to be
    * four separate fields (`_StatusBar`, `_StatusBarLabel`,
@@ -789,6 +797,9 @@ export class fTelnetClient {
           break;
         case 'settings':
           this.OpenSettings();
+          break;
+        case 'user-manual':
+          this.OpenUserManual();
           break;
       }
     });
@@ -1802,6 +1813,16 @@ export class fTelnetClient {
     if (this._ZModemReceive !== undefined) {
       this.endZModemReceive();
     }
+
+    // Close the user manual if open. Per the agreed UX, the manual
+    // is per-session: dismissed on disconnect, the user re-opens it
+    // explicitly next session. We also reset the position state so
+    // the next open re-centers fresh (in case the user had dragged
+    // it off-screen).
+    if (this._UserManual !== undefined) {
+      this._UserManual.open = false;
+      this._UserManual.resetPosition();
+    }
   }
 
   private OnConnectionConnect(): void {
@@ -2668,6 +2689,40 @@ export class fTelnetClient {
   }
 
   /**
+   * Open the user manual popup. Lazily creates the component on
+   * first call; subsequent calls just toggle `open=true` again.
+   * Lives on document.body (like FDropOverlay) so the popup can
+   * float freely over the entire page, not constrained to the
+   * fTelnet container.
+   *
+   * Closes the main menu before opening, since the manual is its
+   * own independent surface — once open, it stays open until the
+   * user dismisses it or the session disconnects.
+   *
+   * Triggered by the 'user-manual' menu-action, which fires when
+   * the user clicks "Manual" in the menu popup.
+   */
+  private OpenUserManual(): void {
+    this._MenuButtons.open = false;
+    if (this._UserManual === undefined) {
+      this._UserManual = document.createElement(
+        'f-user-manual',
+      ) as FUserManual;
+      // Theme attribute set directly since the manual lives on
+      // document.body outside the themed container — matches the
+      // pattern for FDropOverlay above.
+      this._UserManual.setAttribute('data-theme', this._Options.Theme);
+      this._UserManual.addEventListener('manual-close', (): void => {
+        if (this._UserManual !== undefined) {
+          this._UserManual.open = false;
+        }
+      });
+      document.body.appendChild(this._UserManual);
+    }
+    this._UserManual.open = true;
+  }
+
+  /**
    * Switch the active theme at runtime. Updates the `data-theme`
    * attribute on the container, the menu popup, and the settings
    * panel — all the places we set it at construction time.
@@ -2695,6 +2750,9 @@ export class fTelnetClient {
     }
     if (this._TransferProgressPanel !== undefined) {
       this._TransferProgressPanel.setAttribute('data-theme', theme);
+    }
+    if (this._UserManual !== undefined) {
+      this._UserManual.setAttribute('data-theme', theme);
     }
   }
 

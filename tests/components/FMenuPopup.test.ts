@@ -63,6 +63,8 @@ describe('<f-menu-popup>', () => {
       ['Connect', 'connect'],
       ['Disconnect', 'disconnect'],
       ['Keyboard', 'keyboard-toggle'],
+      ['Settings', 'settings'],
+      ['Manual', 'user-manual'],
     ])('renders the "%s" button and dispatches %s', (linkLabel, action) => {
       const links = Array.from(el.querySelectorAll('a'));
       const link = links.find((a) => a.textContent?.trim() === linkLabel);

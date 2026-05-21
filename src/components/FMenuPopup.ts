@@ -51,7 +51,8 @@ export type MenuActionName =
   | 'keyboard-toggle'
   | 'fullscreen'
   | 'enter-scrollback'
-  | 'settings';
+  | 'settings'
+  | 'user-manual';
 
 /** Payload for the `menu-action` event. */
 export interface MenuActionDetail {
@@ -261,11 +262,19 @@ export class FMenuPopup extends LitElement {
               `
             : ''}
           <tr>
-            <td colspan="2">
+            <td>
               <a
                 href="#"
                 @click=${(e: MouseEvent): void => this.handleAction(e, 'settings')}
-                >Settings...</a
+                >Settings</a
+              >
+            </td>
+            <td>
+              <a
+                href="#"
+                @click=${(e: MouseEvent): void =>
+                  this.handleAction(e, 'user-manual')}
+                >Manual</a
               >
             </td>
           </tr>

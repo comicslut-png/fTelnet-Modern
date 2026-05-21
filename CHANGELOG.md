@@ -5,6 +5,53 @@ All notable changes to fTelnet-Modern are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.0.0-beta.3] — 2026-05-20
+
+User-facing feature addition: an in-app user manual.
+
+### Added
+
+  - **User Manual popup.** A new "Manual" button on the main menu
+    opens a floating, draggable, resizable popup with the complete
+    user manual. Written for users of all experience levels — from
+    teenagers who've never seen a BBS to seasoned sysops. Includes
+    a table of contents with jump-to-section anchors, friendly
+    explanations of every menu button, a section on how file
+    transfers work, and a troubleshooting tips section covering
+    common situations including BBS display styles (ANSI, PETSCII,
+    ATASCII, Topaz/Amiga). Larger font size (14px body / 18px
+    headings) for readability.
+
+  - **Menu layout: Settings split into Settings + Manual.** The
+    previous full-width "Settings..." cell is now two adjacent
+    half-width cells: "Settings" on the left and "Manual" on the
+    right. Both are always visible — the Manual is one click away
+    for first-time users.
+
+### Behavior
+
+  - **Per-session manual visibility.** The manual stays open
+    across menu/settings interactions during a session, but
+    closes automatically on disconnect and re-opens centered on
+    next demand (any drag-positioning the user did is forgotten).
+  - **Theme-aware.** The manual popup follows the active theme;
+    switching themes mid-session updates the manual's appearance
+    live.
+
+### Tests
+
+1082 → 1099. Seventeen new tests in `FUserManual.test.ts` cover
+default state, visibility toggling, first-open centering,
+position-reset behavior, close button + event dispatch, TOC
+anchor handling, and multi-instance independence. Two entries
+added to the menu action-button test for Settings and Manual.
+
+### Bundle
+
+619 → 640 KB raw / 133.64 → 139.68 KB gzipped. About 21 KB added
+for the manual content (hardcoded TypeScript constant) and
+component code.
+
 ## [2.0.0-beta.2] — 2026-05-20
 
 Patch release fixing a user-facing label inconsistency reported
