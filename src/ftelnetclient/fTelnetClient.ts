@@ -431,22 +431,30 @@ export class fTelnetClient {
       // Ignore — browser doesn't support localStorage.
     }
 
-    // Phase 3 Stage 2: restore the Settings panel's user choices
-    // (theme, mute, vibrate). Each one overrides the embed-time
-    // Options default if the user previously made a choice. Same
-    // try/catch dance for the same reason.
+    // Restore the Settings panel's user choices (theme, mute,
+    // vibrate, auto-detect, default protocol) for THIS browser-tab
+    // session. As with screen size, we use sessionStorage rather
+    // than localStorage: a user's choices survive reloads and
+    // disconnect/reconnect within the session, but a fresh visitor
+    // in a new tab gets the embed-time defaults rather than
+    // inheriting whatever the previous person picked. This matters
+    // for shared/public BBS pages where one visitor's preferences
+    // shouldn't stick the next visitor. Each value overrides the
+    // embed-time Options default only if the user made a choice
+    // this session. Same try/catch (some browsers disable web
+    // storage).
     try {
-      const storedTheme = window.localStorage.getItem('fTelnet.theme');
+      const storedTheme = window.sessionStorage.getItem('fTelnet.theme');
       if (storedTheme !== null && storedTheme.length > 0) {
         this._Options.Theme = storedTheme;
       }
 
-      const storedMute = window.localStorage.getItem('fTelnet.mute');
+      const storedMute = window.sessionStorage.getItem('fTelnet.mute');
       if (storedMute !== null) {
         this._Options.MuteSounds = storedMute === 'true';
       }
 
-      const storedVibrate = window.localStorage.getItem('fTelnet.vibrate');
+      const storedVibrate = window.sessionStorage.getItem('fTelnet.vibrate');
       if (storedVibrate !== null) {
         const n = parseInt(storedVibrate, 10);
         if (!Number.isNaN(n) && n >= 0 && n <= 100) {
@@ -454,21 +462,19 @@ export class fTelnetClient {
         }
       }
 
-      // Phase 5: the Auto-Detect checkbox under Settings →
-      // Protocol. When the user has explicitly disabled
-      // auto-detect, we honor that across sessions. Stored
-      // value is the literal string 'true' or 'false'.
-      const storedZModemAutoDetect = window.localStorage.getItem(
+      // The Auto-Detect checkbox under Settings → Protocol.
+      // Stored value is the literal string 'true' or 'false'.
+      const storedZModemAutoDetect = window.sessionStorage.getItem(
         'fTelnet.zmodemAutoDetect',
       );
       if (storedZModemAutoDetect !== null) {
         this._Options.ZModemAutoDetect = storedZModemAutoDetect === 'true';
       }
 
-      // Phase 5: which protocol the menu's Upload and Download
-      // buttons act on. Stored as the literal string 'zmodem' or
-      // 'ymodem'. Unknown values are ignored (default stays).
-      const storedDefaultProtocol = window.localStorage.getItem(
+      // Which protocol the menu's Upload and Download buttons act
+      // on. Stored as the literal string 'zmodem' or 'ymodem'.
+      // Unknown values are ignored (default stays).
+      const storedDefaultProtocol = window.sessionStorage.getItem(
         'fTelnet.defaultTransferProtocol',
       );
       if (
@@ -479,6 +485,21 @@ export class fTelnetClient {
       }
     } catch {
       // Ignore — same as above.
+    }
+
+    // One-time migration: earlier versions stored these settings in
+    // localStorage (persisted forever). We've moved to
+    // sessionStorage (per-tab-session). Remove any stale
+    // localStorage entries so we don't leave orphan keys that no
+    // longer do anything.
+    try {
+      window.localStorage.removeItem('fTelnet.theme');
+      window.localStorage.removeItem('fTelnet.mute');
+      window.localStorage.removeItem('fTelnet.vibrate');
+      window.localStorage.removeItem('fTelnet.zmodemAutoDetect');
+      window.localStorage.removeItem('fTelnet.defaultTransferProtocol');
+    } catch {
+      // Ignore — browser doesn't support localStorage.
     }
 
     // Emulation-specific defaults that have to be applied before
@@ -886,9 +907,9 @@ export class fTelnetClient {
       const detail = (e as CustomEvent<SettingsThemeChangeDetail>).detail;
       this.ApplyTheme(detail.theme);
       try {
-        window.localStorage.setItem('fTelnet.theme', detail.theme);
+        window.sessionStorage.setItem('fTelnet.theme', detail.theme);
       } catch {
-        // Ignore — browser doesn't support localStorage.
+        // Ignore — browser doesn't support sessionStorage.
       }
     });
     this._SettingsPanel.addEventListener('settings-mute-change', (e: Event): void => {
@@ -896,7 +917,7 @@ export class fTelnetClient {
       this._Crt.Muted = detail.muted;
       this._Options.MuteSounds = detail.muted;
       try {
-        window.localStorage.setItem('fTelnet.mute', String(detail.muted));
+        window.sessionStorage.setItem('fTelnet.mute', String(detail.muted));
       } catch {
         // Ignore.
       }
@@ -906,7 +927,7 @@ export class fTelnetClient {
       this._Options.VirtualKeyboardVibrateDuration = detail.duration;
       this._VirtualKeyboard.vibrateDuration = detail.duration;
       try {
-        window.localStorage.setItem('fTelnet.vibrate', String(detail.duration));
+        window.sessionStorage.setItem('fTelnet.vibrate', String(detail.duration));
       } catch {
         // Ignore.
       }
@@ -921,7 +942,7 @@ export class fTelnetClient {
         // reconnect needed.
         this._Options.ZModemAutoDetect = detail.enabled;
         try {
-          window.localStorage.setItem(
+          window.sessionStorage.setItem(
             'fTelnet.zmodemAutoDetect',
             String(detail.enabled),
           );
@@ -950,7 +971,7 @@ export class fTelnetClient {
           this._UploadConfirm.transferProtocol = detail.protocol;
         }
         try {
-          window.localStorage.setItem(
+          window.sessionStorage.setItem(
             'fTelnet.defaultTransferProtocol',
             detail.protocol,
           );

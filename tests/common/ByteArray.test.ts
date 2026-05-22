@@ -100,6 +100,54 @@ describe('ByteArray', () => {
     });
   });
 
+  describe('toUint8Array', () => {
+    it('returns the bytes as a Uint8Array', () => {
+      const ba = new ByteArray();
+      ba.writeByte(0x00);
+      ba.writeByte(0x42);
+      ba.writeByte(0xff);
+      const arr = ba.toUint8Array();
+      expect(arr).toBeInstanceOf(Uint8Array);
+      expect(Array.from(arr)).toEqual([0x00, 0x42, 0xff]);
+    });
+
+    it('returns the full contents regardless of position', () => {
+      const ba = new ByteArray();
+      ba.writeString('hello');
+      ba.position = 3;
+      const arr = ba.toUint8Array();
+      expect(arr.length).toBe(5);
+      // 'hello' -> char codes
+      expect(Array.from(arr)).toEqual([104, 101, 108, 108, 111]);
+      // position is not disturbed by the read
+      expect(ba.position).toBe(3);
+    });
+
+    it('returns an empty array for an empty ByteArray', () => {
+      const ba = new ByteArray();
+      const arr = ba.toUint8Array();
+      expect(arr.length).toBe(0);
+    });
+
+    it('masks values to a single byte', () => {
+      const ba = new ByteArray();
+      // writeByte already masks, so to test the toUint8Array mask
+      // we confirm round-trip values stay in 0-255.
+      ba.writeByte(0x1ff); // stored as 0xff
+      const arr = ba.toUint8Array();
+      expect(arr[0]).toBe(0xff);
+    });
+
+    it('respects length truncation (does not over-read backing store)', () => {
+      const ba = new ByteArray();
+      ba.writeString('hello');
+      ba.length = 3; // truncate to 'hel'
+      const arr = ba.toUint8Array();
+      expect(arr.length).toBe(3);
+      expect(Array.from(arr)).toEqual([104, 101, 108]);
+    });
+  });
+
   describe('position and length manipulation', () => {
     it('clamps position to valid range', () => {
       const ba = new ByteArray();

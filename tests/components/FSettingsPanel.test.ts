@@ -494,38 +494,54 @@ describe('<f-settings-panel>', () => {
     });
   });
 
-  describe('four-column layout', () => {
+  describe('three-column layout', () => {
     /**
-     * Phase 5: panel uses a 4-column flex layout
-     * (Theme | Protocol | Sound+Touch | Reserved). Tests below
-     * verify each column has its expected fieldsets and content,
-     * and that the reserved 4th column exists as an empty
-     * placeholder.
+     * Phase 5: panel uses a 3-column flex layout
+     * (Theme | Protocol | Sound+Touch). The third column also holds
+     * an empty bordered placeholder fieldset (no legend) below
+     * Touch — reserved room for a future setting without committing
+     * a whole fourth column to it. Tests below verify the column
+     * count, order, and the placeholder's presence in column 3.
      */
-    it('renders four columns in the .fTelnetSettingsPanelColumns container', () => {
+    it('renders three columns in the .fTelnetSettingsPanelColumns container', () => {
       const cols = el.querySelectorAll('.fTelnetSettingsPanelColumn');
-      expect(cols.length).toBe(4);
+      expect(cols.length).toBe(3);
     });
 
-    it('column order is Theme | Protocol | Sound+Touch | Reserved', () => {
+    it('column order is Theme | Protocol | Sound+Touch(+placeholder)', () => {
       const cols = Array.from(
         el.querySelectorAll<HTMLDivElement>('.fTelnetSettingsPanelColumn'),
       );
 
       const themeLegend = cols[0]!.querySelector('legend')?.textContent;
       const protocolLegend = cols[1]!.querySelector('legend')?.textContent;
-      // Column 3 has TWO fieldsets (Sound, Touch); check both legends.
+      // Column 3 has Sound + Touch legends (the placeholder fieldset
+      // below them has no legend).
       const col3Legends = Array.from(
         cols[2]!.querySelectorAll('legend'),
       ).map((l) => l.textContent);
-      // Column 4 is the reserved empty fieldset — no legend.
-      const col4 = cols[3]!.querySelector('fieldset');
 
       expect(themeLegend).toBe('Theme');
       expect(protocolLegend).toBe('Protocol');
       expect(col3Legends).toEqual(['Sound', 'Touch']);
-      expect(col4?.querySelector('legend')).toBeNull();
-      expect(col4?.classList.contains('fTelnetSettingsPanelGroupReserved')).toBe(true);
+    });
+
+    it('column 3 ends with an empty bordered placeholder fieldset', () => {
+      const cols = Array.from(
+        el.querySelectorAll<HTMLDivElement>('.fTelnetSettingsPanelColumn'),
+      );
+      const col3 = cols[2]!;
+      const fieldsets = Array.from(col3.querySelectorAll('fieldset'));
+      // Sound, Touch, placeholder = 3 fieldsets.
+      expect(fieldsets.length).toBe(3);
+
+      const placeholder = fieldsets[fieldsets.length - 1]!;
+      // No legend, carries the reserved class, and is empty.
+      expect(placeholder.querySelector('legend')).toBeNull();
+      expect(
+        placeholder.classList.contains('fTelnetSettingsPanelGroupReserved'),
+      ).toBe(true);
+      expect(placeholder.children.length).toBe(0);
     });
 
     it('Protocol column has a "Default" sub-header above the radios', () => {

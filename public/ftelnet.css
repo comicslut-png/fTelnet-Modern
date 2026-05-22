@@ -423,12 +423,16 @@
   border: 1px solid var(--ft-popup-border);
   color: var(--ft-popup-fg);
   font: var(--ft-ui-font);
-  /* Phase 5: panel reshaped into a four-column layout
-     (Theme | Protocol | Sound/Touch | Reserved), with About
-     spanning full width below. The min-width bump accommodates
-     four narrow columns side-by-side without crowding. */
-  min-width: 720px;
-  max-width: 900px;
+  /* Phase 5: panel is a three-column layout
+     (Theme | Protocol | Sound+Touch), with About spanning full
+     width below. The third column also holds an empty bordered
+     placeholder fieldset below Touch — reserved room for a future
+     setting without committing a whole fourth column to it. The
+     Theme column (six radios) sets the panel height; the
+     placeholder stretches to fill the leftover space in column 3
+     so its bottom edge aligns with Theme's. */
+  min-width: 620px;
+  max-width: 820px;
   padding: 12px;
   position: absolute;
   text-shadow: var(--ft-ui-text-shadow);
@@ -437,8 +441,8 @@
   z-index: 1600;
 }
 
-/* Four-column layout container for Theme | Protocol | Sound+Touch
-   | Reserved. */
+/* Three-column layout container: Theme | Protocol |
+   Sound+Touch(+placeholder). */
 .fTelnetSettingsPanelColumns {
   display: flex;
   gap: 12px;
@@ -527,12 +531,15 @@
   min-width: 0;
 }
 
-/* The empty fourth column (reserved for future settings). Render
-   it as a bordered fieldset with no legend — preserves the grid
-   slot so layout doesn't shift when we add content later. */
+/* Empty placeholder fieldset at the bottom of the third column
+   (below Sound and Touch). Bordered, no legend — reserved room for
+   a future setting without dedicating a whole fourth column to it.
+   As the :last-child of its column it stretches (flex: 1 1 auto,
+   set above) to fill the leftover vertical space so its bottom
+   edge aligns with the taller Theme column. The min-height keeps
+   it from collapsing to nothing on very short panels. */
 .fTelnetSettingsPanelGroupReserved {
-  /* Match the size of other fieldsets in the column. */
-  min-height: 80px;
+  min-height: 40px;
 }
 
 /* About section sub-columns for left/right info split. */

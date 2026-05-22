@@ -160,6 +160,18 @@ export class ByteArray {
     return result;
   }
 
+  /**
+   * Return the array's contents as a `Uint8Array`. A single
+   * O(n) pass with no intermediate string — preferred over
+   * `toString()` followed by per-character `charCodeAt` walking
+   * when the consumer wants raw bytes (e.g. building a Blob for
+   * a file download). `Uint8Array.from` copies the backing
+   * `number[]`, masking each value to a byte for safety.
+   */
+  public toUint8Array(): Uint8Array {
+    return Uint8Array.from(this._bytes.slice(0, this._length), (b) => b & 0xff);
+  }
+
   public write24Bit(value: number): void {
     this.writeByte((value & 0xff0000) >> 16);
     this.writeByte((value & 0x00ff00) >> 8);

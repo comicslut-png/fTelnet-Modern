@@ -5,6 +5,65 @@ All notable changes to fTelnet-Modern are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.0.0-beta.5] — 2026-05-22
+
+A performance fix, a privacy/sharing fix, and a settings-panel
+layout tidy-up.
+
+### Fixed
+
+  - **YMODEM large-file save lag.** Saving a received YMODEM file
+    went through an intermediate JavaScript string the size of the
+    whole file, then a per-byte `DataView.setUint8` loop to walk
+    that string back into an `ArrayBuffer` — two O(n) main-thread
+    passes plus a full-size string allocation. On multi-megabyte
+    files this produced a visible freeze at save time. The file's
+    bytes are now read straight out of the `ByteArray` into a
+    `Uint8Array` (new `ByteArray.toUint8Array()` accessor) and
+    handed directly to the `Blob` constructor, which does the one
+    underlying copy in native code. This is the YMODEM analogue of
+    the ZMODEM save-lag fix already shipped earlier in Phase 5; the
+    two receive paths now save efficiently and consistently.
+
+  - **Settings no longer persist to the next visitor.** Theme,
+    mute, vibrate duration, ZMODEM auto-detect, and default
+    protocol were saved to localStorage and persisted forever — so
+    on a shared or public BBS page, the next visitor inherited
+    whatever the previous person had set. These now use
+    sessionStorage instead (the same approach beta.4 applied to
+    screen size): a user's choices survive reloads and
+    disconnect/reconnect within the same browser-tab session, but a
+    brand-new visitor in a fresh tab always starts at the
+    embed-time defaults. Stale localStorage keys from older
+    versions are cleaned up automatically. All six user-adjustable
+    settings (these five plus screen size) now behave consistently.
+
+### Changed
+
+  - **Settings panel: four columns → three.** The dedicated empty
+    fourth column is gone. The panel is now Theme | Protocol |
+    Sound+Touch, more compact, with the empty bordered placeholder
+    fieldset relocated to the bottom of the third column (below
+    Touch) rather than occupying a full column of its own. It still
+    reserves room for a future setting; it just doesn't waste a
+    whole column's width doing so. The Theme column sets the panel
+    height and the placeholder stretches to fill the leftover space
+    in column 3, keeping the bottom edges aligned.
+
+### Tests
+
+1121 → 1135. Five new tests for `ByteArray.toUint8Array()`; eight
+new tests for the sessionStorage settings persistence (one restore
+test per setting, plus legacy-localStorage-ignored,
+legacy-key-cleanup, and unknown-protocol-rejected); and the
+settings-panel layout tests updated from four-column to
+three-column with a new assertion that the placeholder fieldset
+sits at the bottom of column 3.
+
+### Bundle
+
+Essentially unchanged at ~646 KB raw / ~141 KB gzipped.
+
 ## [2.0.0-beta.4] — 2026-05-22
 
 A polish-and-fix release. No new headline feature — four focused

@@ -268,6 +268,124 @@ describe('fTelnetClient', () => {
     });
   });
 
+  describe('settings persistence (sessionStorage, per-tab)', () => {
+    /**
+     * Theme, mute, vibrate, auto-detect, and default protocol are
+     * restored from sessionStorage at construction — NOT
+     * localStorage. Same per-tab rationale as screen size: a user's
+     * choices survive reloads/reconnects within the session, but a
+     * fresh visitor starts at the embed-time defaults. Stale
+     * localStorage entries (from older versions) are ignored and
+     * cleaned up.
+     */
+    beforeEach(() => {
+      try {
+        window.sessionStorage.clear();
+        window.localStorage.clear();
+      } catch {
+        // ignore
+      }
+    });
+
+    afterEach(() => {
+      try {
+        window.sessionStorage.clear();
+        window.localStorage.clear();
+      } catch {
+        // ignore
+      }
+    });
+
+    it('restores theme from sessionStorage', () => {
+      window.sessionStorage.setItem('fTelnet.theme', 'gothic');
+      const opts = new fTelnetOptions();
+      createdClient = new fTelnetClient('fTelnetContainer', opts);
+      expect(opts.Theme).toBe('gothic');
+    });
+
+    it('restores mute from sessionStorage', () => {
+      window.sessionStorage.setItem('fTelnet.mute', 'true');
+      const opts = new fTelnetOptions();
+      createdClient = new fTelnetClient('fTelnetContainer', opts);
+      expect(opts.MuteSounds).toBe(true);
+    });
+
+    it('restores vibrate duration from sessionStorage', () => {
+      window.sessionStorage.setItem('fTelnet.vibrate', '40');
+      const opts = new fTelnetOptions();
+      createdClient = new fTelnetClient('fTelnetContainer', opts);
+      expect(opts.VirtualKeyboardVibrateDuration).toBe(40);
+    });
+
+    it('restores zmodem auto-detect from sessionStorage', () => {
+      window.sessionStorage.setItem('fTelnet.zmodemAutoDetect', 'false');
+      const opts = new fTelnetOptions();
+      createdClient = new fTelnetClient('fTelnetContainer', opts);
+      expect(opts.ZModemAutoDetect).toBe(false);
+    });
+
+    it('restores default protocol from sessionStorage', () => {
+      window.sessionStorage.setItem(
+        'fTelnet.defaultTransferProtocol',
+        'ymodem',
+      );
+      const opts = new fTelnetOptions();
+      createdClient = new fTelnetClient('fTelnetContainer', opts);
+      expect(opts.DefaultTransferProtocol).toBe('ymodem');
+    });
+
+    it('does NOT restore any setting from localStorage (legacy keys ignored)', () => {
+      // Stale values from the old localStorage behavior must be
+      // ignored — the new code only reads sessionStorage.
+      window.localStorage.setItem('fTelnet.theme', 'gothic');
+      window.localStorage.setItem('fTelnet.mute', 'true');
+      window.localStorage.setItem('fTelnet.vibrate', '40');
+      window.localStorage.setItem('fTelnet.zmodemAutoDetect', 'false');
+      window.localStorage.setItem('fTelnet.defaultTransferProtocol', 'ymodem');
+      const opts = new fTelnetOptions();
+      const defTheme = opts.Theme;
+      const defMute = opts.MuteSounds;
+      const defVibrate = opts.VirtualKeyboardVibrateDuration;
+      const defAuto = opts.ZModemAutoDetect;
+      const defProto = opts.DefaultTransferProtocol;
+      createdClient = new fTelnetClient('fTelnetContainer', opts);
+      expect(opts.Theme).toBe(defTheme);
+      expect(opts.MuteSounds).toBe(defMute);
+      expect(opts.VirtualKeyboardVibrateDuration).toBe(defVibrate);
+      expect(opts.ZModemAutoDetect).toBe(defAuto);
+      expect(opts.DefaultTransferProtocol).toBe(defProto);
+    });
+
+    it('removes stale legacy localStorage keys on construction', () => {
+      window.localStorage.setItem('fTelnet.theme', 'gothic');
+      window.localStorage.setItem('fTelnet.mute', 'true');
+      window.localStorage.setItem('fTelnet.vibrate', '40');
+      window.localStorage.setItem('fTelnet.zmodemAutoDetect', 'false');
+      window.localStorage.setItem('fTelnet.defaultTransferProtocol', 'ymodem');
+      createdClient = new fTelnetClient('fTelnetContainer', new fTelnetOptions());
+      expect(window.localStorage.getItem('fTelnet.theme')).toBeNull();
+      expect(window.localStorage.getItem('fTelnet.mute')).toBeNull();
+      expect(window.localStorage.getItem('fTelnet.vibrate')).toBeNull();
+      expect(
+        window.localStorage.getItem('fTelnet.zmodemAutoDetect'),
+      ).toBeNull();
+      expect(
+        window.localStorage.getItem('fTelnet.defaultTransferProtocol'),
+      ).toBeNull();
+    });
+
+    it('ignores an unknown protocol value in sessionStorage', () => {
+      window.sessionStorage.setItem(
+        'fTelnet.defaultTransferProtocol',
+        'bogus',
+      );
+      const opts = new fTelnetOptions();
+      const defProto = opts.DefaultTransferProtocol;
+      createdClient = new fTelnetClient('fTelnetContainer', opts);
+      expect(opts.DefaultTransferProtocol).toBe(defProto);
+    });
+  });
+
   describe('public getters', () => {
     it('Connected returns false when no connection exists', () => {
       createdClient = new fTelnetClient('fTelnetContainer', new fTelnetOptions());

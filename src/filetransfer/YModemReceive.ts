@@ -516,23 +516,23 @@ export class YModemReceive {
    * Trigger a browser download for the i-th received file using
    * `file-saver`.
    *
-   * The intermediate step of going through a string and then
-   * walking back to bytes is preserved from the original — slower
-   * than reading directly from ByteArray into ArrayBuffer, but
-   * functionally correct and not worth changing in a module that's
-   * scheduled for replacement in Phase 4.
+   * Phase 5 polish: read the file's bytes directly out of the
+   * ByteArray via `toUint8Array()` and hand the result straight to
+   * the Blob constructor. The previous implementation went through
+   * `toString()` (building an intermediate JS string the size of
+   * the whole file) and then a per-byte `DataView.setUint8` loop to
+   * walk that string back into an ArrayBuffer — two O(n) main-thread
+   * passes plus a full-size string allocation. On multi-MB files
+   * that produced a visible save-time freeze (the YMODEM analogue
+   * of the ZMODEM lag fixed earlier this phase). Blob now does the
+   * single underlying copy in native code.
    */
   private SaveFile(index: number): void {
     const file = this._Files[index]!;
-    const ByteString: string = file.data.toString();
-
-    const Buffer: ArrayBuffer = new ArrayBuffer(ByteString.length);
-    const View: DataView = new DataView(Buffer);
-    for (let i = 0; i < ByteString.length; i++) {
-      View.setUint8(i, ByteString.charCodeAt(i));
-    }
-
-    const FileBlob: Blob = new Blob([Buffer], { type: 'application/octet-binary' });
+    const bytes: Uint8Array = file.data.toUint8Array();
+    const FileBlob: Blob = new Blob([bytes as BlobPart], {
+      type: 'application/octet-binary',
+    });
     saveAs(FileBlob, file.name);
   }
 }
