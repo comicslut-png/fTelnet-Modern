@@ -197,6 +197,77 @@ describe('fTelnetClient', () => {
     });
   });
 
+  describe('screen size persistence (sessionStorage, per-tab)', () => {
+    /**
+     * Screen size is restored from sessionStorage at construction —
+     * NOT localStorage. This means a user's size choice survives
+     * reloads and reconnects within the same tab session, but a
+     * fresh visitor (new tab, or after the previous person closed
+     * theirs) starts at the default. Verifies the constructor reads
+     * sessionStorage and ignores any stale localStorage entry.
+     */
+    beforeEach(() => {
+      try {
+        window.sessionStorage.clear();
+        window.localStorage.clear();
+      } catch {
+        // ignore
+      }
+    });
+
+    afterEach(() => {
+      try {
+        window.sessionStorage.clear();
+        window.localStorage.clear();
+      } catch {
+        // ignore
+      }
+    });
+
+    it('restores a valid size from sessionStorage', () => {
+      window.sessionStorage.setItem('ScreenColumns', '132');
+      window.sessionStorage.setItem('ScreenRows', '37');
+      const opts = new fTelnetOptions();
+      createdClient = new fTelnetClient('fTelnetContainer', opts);
+      expect(opts.ScreenColumns).toBe(132);
+      expect(opts.ScreenRows).toBe(37);
+    });
+
+    it('does NOT restore from localStorage (legacy key ignored)', () => {
+      // Simulate a stale value left over from the old localStorage
+      // behavior. It must be ignored — the new code only reads
+      // sessionStorage.
+      window.localStorage.setItem('ScreenColumns', '132');
+      window.localStorage.setItem('ScreenRows', '37');
+      const opts = new fTelnetOptions();
+      const defaultColumns = opts.ScreenColumns;
+      const defaultRows = opts.ScreenRows;
+      createdClient = new fTelnetClient('fTelnetContainer', opts);
+      // Should remain at defaults, not the localStorage values.
+      expect(opts.ScreenColumns).toBe(defaultColumns);
+      expect(opts.ScreenRows).toBe(defaultRows);
+    });
+
+    it('removes stale legacy localStorage keys on construction', () => {
+      window.localStorage.setItem('ScreenColumns', '132');
+      window.localStorage.setItem('ScreenRows', '37');
+      createdClient = new fTelnetClient('fTelnetContainer', new fTelnetOptions());
+      expect(window.localStorage.getItem('ScreenColumns')).toBeNull();
+      expect(window.localStorage.getItem('ScreenRows')).toBeNull();
+    });
+
+    it('ignores out-of-range sessionStorage values', () => {
+      window.sessionStorage.setItem('ScreenColumns', '999');
+      window.sessionStorage.setItem('ScreenRows', '999');
+      const opts = new fTelnetOptions();
+      const defaultColumns = opts.ScreenColumns;
+      const defaultRows = opts.ScreenRows;
+      createdClient = new fTelnetClient('fTelnetContainer', opts);
+      expect(opts.ScreenColumns).toBe(defaultColumns);
+      expect(opts.ScreenRows).toBe(defaultRows);
+    });
+  });
+
   describe('public getters', () => {
     it('Connected returns false when no connection exists', () => {
       createdClient = new fTelnetClient('fTelnetContainer', new fTelnetOptions());

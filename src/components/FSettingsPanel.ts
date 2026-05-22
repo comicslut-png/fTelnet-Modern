@@ -101,7 +101,7 @@ export class FSettingsPanel extends LitElement {
    * tests and the panel can read the same value without needing
    * a build-time injection mechanism.
    */
-  public static readonly VERSION = '2.0.0-beta.3';
+  public static readonly VERSION = '2.0.0-beta.4';
 
   @property({ type: Boolean })
   open = false;
@@ -190,21 +190,21 @@ export class FSettingsPanel extends LitElement {
                 <input
                   type="radio"
                   name="default-protocol"
-                  value="ymodem"
-                  ?checked=${this.defaultProtocol === 'ymodem'}
-                  @change=${this.handleDefaultProtocolChange}
-                />
-                📼 YModem
-              </label>
-              <label class="fTelnetSettingsPanelOption">
-                <input
-                  type="radio"
-                  name="default-protocol"
                   value="zmodem"
                   ?checked=${this.defaultProtocol === 'zmodem'}
                   @change=${this.handleDefaultProtocolChange}
                 />
                 📡 ZModem
+              </label>
+              <label class="fTelnetSettingsPanelOption">
+                <input
+                  type="radio"
+                  name="default-protocol"
+                  value="ymodem"
+                  ?checked=${this.defaultProtocol === 'ymodem'}
+                  @change=${this.handleDefaultProtocolChange}
+                />
+                📼 YModem
               </label>
               <label
                 class="fTelnetSettingsPanelOption fTelnetSettingsPanelOptionDisabled"

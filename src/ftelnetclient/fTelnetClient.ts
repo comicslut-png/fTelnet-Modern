@@ -61,6 +61,7 @@ import '../components/index.js';
 import {
   FFocusWarning,
   FDropOverlay,
+  FInfoDialog,
   FMenuPopup,
   FScrollbackBar,
   FSettingsPanel,
@@ -154,9 +155,13 @@ import { TransferStats } from '../filetransfer/TransferStats.js';
  *     "Welcome to fTelnet" screens — long strings that would be
  *     pointless to break across lines.
  *
- *   - Several alert() calls preserved (ClipboardCopy, constructor
- *     for fatal errors). Phase 3 will replace these with proper
- *     toast notifications as part of the chrome facelift.
+ *   - alert() use: the two user-facing informational messages
+ *     (ClipboardCopy's drag-to-select hint and Download's ZMODEM
+ *     explanation) now use the themed <f-info-dialog> component
+ *     (Phase 5 beta.4). A few rare error-path alert()s remain in
+ *     the constructor and font loaders — those fire in failure
+ *     cases (and sometimes before the theme system is ready), so
+ *     a plain browser alert is acceptable there.
  *
  *   - `// TODOX return false` and `// TODOX return true` comments
  *     preserved — they're remnants from when this was a `Boolean
@@ -204,6 +209,13 @@ export class fTelnetClient {
    * component's `file` property.
    */
   private _UploadConfirm!: FUploadConfirm;
+  /**
+   * Phase 5 (beta.4): themed informational dialog — a replacement
+   * for browser alert() on user-facing info messages. Created
+   * lazily on first use, then stays in the DOM with its `open`
+   * property gating visibility.
+   */
+  private _InfoDialog?: FInfoDialog;
   /**
    * Phase 5 (beta.3): user manual popup. Created lazily on first
    * open. Stays in the DOM after that; its `open` property gates
@@ -375,13 +387,26 @@ export class fTelnetClient {
 
     this._Options = options;
 
-    // Restore the user's preferred screen size if they have one
-    // stored from a previous session. localStorage access is
-    // wrapped in try/catch because some browsers (or privacy modes)
-    // disable it entirely.
+    // Restore the user's preferred screen size if they set one
+    // earlier in THIS browser-tab session. We use sessionStorage
+    // (not localStorage) deliberately: the screen size should
+    // survive reloads and disconnect/reconnect within the same
+    // session — so a user who picks 132x37, connects, drops, and
+    // reconnects keeps their size without re-choosing — but it
+    // should NOT persist to a brand-new visitor. sessionStorage is
+    // cleared when the tab is closed, so the next person who opens
+    // the page fresh starts at the default 80x25 and makes their
+    // own choice. (Public/shared BBS pages especially want this:
+    // one visitor's size preference shouldn't stick the next
+    // visitor with it.)
+    //
+    // Access is wrapped in try/catch because some browsers (or
+    // privacy modes) disable web storage entirely.
     try {
-      const storedColumns: string | null = window.localStorage.getItem('ScreenColumns');
-      const storedRows: string | null = window.localStorage.getItem('ScreenRows');
+      const storedColumns: string | null =
+        window.sessionStorage.getItem('ScreenColumns');
+      const storedRows: string | null =
+        window.sessionStorage.getItem('ScreenRows');
       if (storedColumns !== null && storedRows !== null) {
         const intColumns: number = parseInt(storedColumns, 10);
         const intRows: number = parseInt(storedRows, 10);
@@ -392,7 +417,18 @@ export class fTelnetClient {
         }
       }
     } catch {
-      // Ignore — just means browser doesn't support localStorage.
+      // Ignore — just means browser doesn't support sessionStorage.
+    }
+
+    // One-time migration: earlier versions stored screen size in
+    // localStorage (persisted forever). We've moved to sessionStorage
+    // (per-tab-session). Remove any stale localStorage entries so we
+    // don't leave orphan keys behind that no longer do anything.
+    try {
+      window.localStorage.removeItem('ScreenColumns');
+      window.localStorage.removeItem('ScreenRows');
+    } catch {
+      // Ignore — browser doesn't support localStorage.
     }
 
     // Phase 3 Stage 2: restore the Settings panel's user choices
@@ -812,12 +848,16 @@ export class fTelnetClient {
       // the menu button, so we close without repositioning.
       this._MenuButtons.open = false;
 
-      // Persist the choice for next visit.
+      // Persist the choice for the rest of THIS tab session
+      // (sessionStorage, not localStorage) — survives reloads and
+      // reconnects, but a fresh visitor in a new tab starts at the
+      // 80x25 default. See the matching restore logic in the
+      // constructor for the full rationale.
       try {
-        window.localStorage.setItem('ScreenColumns', detail.columns.toString());
-        window.localStorage.setItem('ScreenRows', detail.rows.toString());
+        window.sessionStorage.setItem('ScreenColumns', detail.columns.toString());
+        window.sessionStorage.setItem('ScreenRows', detail.rows.toString());
       } catch {
-        // Ignore — browser doesn't support localStorage.
+        // Ignore — browser doesn't support sessionStorage.
       }
     });
 
@@ -1249,8 +1289,10 @@ export class fTelnetClient {
     if (this._MenuButtons !== undefined) {
       this._MenuButtons.open = false;
     }
-    // eslint-disable-next-line no-alert
-    alert('Click and drag your mouse over the text you want to copy');
+    this.showInfoDialog(
+      'Copying Text',
+      'Click and drag your mouse over the text you want to copy.',
+    );
   }
 
   /**
@@ -1491,8 +1533,8 @@ export class fTelnetClient {
       // ZRQINIT trigger sequence, our inbound-data watcher catches
       // it, and ZModemReceive takes over automatically. Tell the
       // user how that works rather than starting something here.
-      // eslint-disable-next-line no-alert
-      alert(
+      this.showInfoDialog(
+        'Downloading Files',
         'Use the BBS\'s download command — ZMODEM auto-detects.\n\n' +
           'When the BBS starts the transfer the progress panel ' +
           'appears automatically, and your browser will save the ' +
@@ -2720,6 +2762,36 @@ export class fTelnetClient {
       document.body.appendChild(this._UserManual);
     }
     this._UserManual.open = true;
+  }
+
+  /**
+   * Show a themed informational dialog — the replacement for raw
+   * alert() on user-facing info messages. Lazily creates the
+   * <f-info-dialog> on first use, then reuses it. Lives on
+   * document.body (like the other floating popups) so it can sit
+   * above everything regardless of container clipping.
+   *
+   * Acknowledge-only: OK / Escape / Enter / click-outside all
+   * dismiss it. Phase 5 (beta.4).
+   */
+  private showInfoDialog(title: string, message: string): void {
+    if (this._InfoDialog === undefined) {
+      this._InfoDialog = document.createElement(
+        'f-info-dialog',
+      ) as FInfoDialog;
+      this._InfoDialog.setAttribute('data-theme', this._Options.Theme);
+      this._InfoDialog.addEventListener('info-dialog-close', (): void => {
+        if (this._InfoDialog !== undefined) {
+          this._InfoDialog.open = false;
+        }
+      });
+      document.body.appendChild(this._InfoDialog);
+    }
+    // Keep the theme current in case it changed since last shown.
+    this._InfoDialog.setAttribute('data-theme', this._Options.Theme);
+    this._InfoDialog.dialogTitle = title;
+    this._InfoDialog.message = message;
+    this._InfoDialog.open = true;
   }
 
   /**

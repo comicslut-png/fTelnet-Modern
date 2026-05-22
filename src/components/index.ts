@@ -16,6 +16,7 @@
  */
 export { FFocusWarning } from './FFocusWarning.js';
 export { FDropOverlay, type DropFileSelectedDetail } from './FDropOverlay.js';
+export { FInfoDialog, type InfoDialogCloseDetail } from './FInfoDialog.js';
 export {
   FMenuPopup,
   type MenuActionDetail,

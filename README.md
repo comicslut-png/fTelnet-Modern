@@ -68,13 +68,44 @@ applicable.
   to YMODEM via **Settings → Protocol → YMODEM**; the menu's
   Upload/Download buttons then act on YMODEM with the original
   in-canvas progress dialog. ZMODEM remains the default.
+- **Multi-platform BBS rendering**: faithful character-set and
+  palette support for vintage BBS styles, well beyond just PC
+  ANSI. Switching is sysop-configured at embed time
+  (`Options.Emulation = '...'`), so users connecting to these
+  BBSes see them as they were designed to look:
+  - **ANSI / CP437** — the default. Classic PC-style colors,
+    box-drawing characters, blink attribute. What most BBSes
+    use today.
+  - **PETSCII** — Commodore 64 / 128 BBSes. The light-blue-on-dark
+    blue palette, the blocky character set, the inverted graphics.
+    `Emulation = 'C64'`.
+  - **ATASCII** — Atari 8-bit BBSes. Pale-blue-on-dark-blue
+    palette, the Atari character set, control codes that move
+    the cursor rather than print escape sequences.
+    `Emulation = 'Atari'`.
+  - **Topaz / Amiga ANSI** — Amiga BBSes. The Amiga's signature
+    Topaz font is bundled in several sizes (Topaz, TopazPlus,
+    8x11, 8x16), along with MicroKnight, MoSoul, PotNoodle, and
+    other classic Amiga fonts. Renders Amiga-style art and menus
+    faithfully on a modern browser.
+  - **RIPscrip** — graphical mode for BBSes that serve RIP.
+    Enabled by the sysop at embed time (`Options.Emulation = 'RIP'`)
+    in the `rip.*` builds. The RIPscrip 1.54 parser is preserved
+    from the original fTelnet.
+
+  Together these cover essentially every text-mode BBS style that
+  ever existed. If a BBS still runs anywhere today, fTelnet-Modern
+  can render it.
 - **Custom splash screen**: hand-crafted fTelnet-Modern ANSI block-art
   greets users on connect, displayed above R&M Software's preserved
   copyright line and the fork-credit line.
-- **All original features intact**: ANSI/CTERM parser, RIPscrip
-  graphics, telnet negotiation, font collection, virtual keyboard,
-  copy/paste, scrollback, focus warning, screen-size selector,
-  modern/classic scrollback modes.
+- **All original features intact**: telnet negotiation, virtual
+  keyboard, copy/paste, scrollback, focus warning, screen-size
+  selector, modern/classic scrollback modes, and the full font
+  collection. The ANSI/CTERM parser, RIPscrip interpreter, and
+  multi-platform rendering listed above are inherited from
+  upstream and remain working — fTelnet-Modern preserves them
+  while building new conveniences around them.
 
 ### What's coming in Phase 5
 
@@ -128,13 +159,13 @@ See `docs/` for stage-by-stage planning notes:
 
 ### Test coverage
 
-1099 unit tests across 53 files, run on every commit. Phase boundaries:
+1121 unit tests across 54 files, run on every commit. Phase boundaries:
 
   - End of Phase 1: 559 tests
   - End of Phase 2: 691 tests
   - End of Phase 3: 722 tests
   - End of Phase 4: 980 tests
-  - Phase 5 (in progress): 1099 tests
+  - Phase 5 (in progress): 1121 tests
 
 ## Testing against a real BBS
 
@@ -207,7 +238,7 @@ for that command, not a bug in the client.
 ```bash
 npm install              # install dependencies
 npm run dev              # start Vite dev server with hot reload (port 5173)
-npm test                 # run the full Vitest suite (1099 tests)
+npm test                 # run the full Vitest suite (1121 tests)
 npm run typecheck        # tsc --noEmit
 npm run build:all        # produce all four bundle flavors
 ```
@@ -217,7 +248,7 @@ Output bundles land in `dist/`:
 - `ftelnet.norip.noxfer.js` — ANSI/BBS only, smallest bundle
 - `ftelnet.norip.xfer.js` — adds YMODEM + ZMODEM file transfer
 - `ftelnet.rip.noxfer.js` — adds RIPscrip graphics emulation
-- `ftelnet.rip.xfer.js` — everything (~640 KB / ~140 KB gzipped)
+- `ftelnet.rip.xfer.js` — everything (~646 KB / ~141 KB gzipped)
 
 Each comes with a source map and a minified `.min.js` variant.
 

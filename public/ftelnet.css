@@ -1238,6 +1238,134 @@
   border-width: 3px;
 }
 
+/* ───── Info Dialog (Phase 5 beta.4) ─────
+ *
+ * Themed replacement for the browser's built-in alert() for
+ * informational messages. Title bar + larger readable body text +
+ * theme-aware chrome, matching the rest of the fTelnet popups.
+ * Acknowledge-only: a single OK button (Escape/Enter/click-outside
+ * also dismiss). Geometry centers on the viewport like
+ * FUploadConfirm. Body font is bumped above the chrome default
+ * because this is reading material, per user feedback that the
+ * native alert text was too small.
+ */
+.fTelnetInfoDialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: var(--ft-popup-bg);
+  border: 1px solid var(--ft-popup-border);
+  color: var(--ft-popup-fg);
+  font: var(--ft-ui-font);
+  min-width: 360px;
+  max-width: 520px;
+  padding: 0;
+  text-shadow: var(--ft-ui-text-shadow);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  /* Above settings (1600) and the upload confirm (1700) — an info
+     dialog is the topmost thing when shown. */
+  z-index: 1750;
+}
+
+.fTelnetInfoDialogHeader {
+  font-weight: bold;
+  font-size: 1.1em;
+  padding: 6px 14px;
+  background-color: var(--ft-popup-header-bg);
+  color: var(--ft-popup-header-fg);
+}
+
+.fTelnetInfoDialogBody {
+  padding: 14px 16px;
+  /* Larger than the chrome default — this is reading material, and
+     the native alert it replaces was uncomfortably small. */
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.fTelnetInfoDialogParagraph {
+  margin: 0 0 10px;
+}
+
+.fTelnetInfoDialogParagraph:last-child {
+  margin-bottom: 0;
+}
+
+.fTelnetInfoDialogFooter {
+  padding: 0 16px 14px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.fTelnetInfoDialogOk {
+  background-color: var(--ft-popup-header-bg);
+  color: var(--ft-popup-header-fg);
+  border: 1px solid var(--ft-popup-border);
+  font: var(--ft-ui-font);
+  font-size: 14px;
+  padding: 5px 18px;
+  cursor: pointer;
+}
+
+.fTelnetInfoDialogOk:hover {
+  filter: brightness(1.15);
+}
+
+/* dos-classic — TUI bevel border + raised OK button. */
+[data-theme='dos-classic'] .fTelnetInfoDialog {
+  border-color: var(--ft-bevel-light) var(--ft-bevel-outer-dark)
+    var(--ft-bevel-outer-dark) var(--ft-bevel-light);
+  border-width: 2px;
+  box-shadow: inset 1px 1px 0 0 var(--ft-bevel-light),
+    inset -1px -1px 0 0 var(--ft-bevel-shadow);
+}
+
+[data-theme='dos-classic'] .fTelnetInfoDialogOk {
+  border-color: var(--ft-bevel-light) var(--ft-bevel-outer-dark)
+    var(--ft-bevel-outer-dark) var(--ft-bevel-light);
+  border-width: 2px;
+}
+
+[data-theme='dos-classic'] .fTelnetInfoDialogOk:active {
+  border-color: var(--ft-bevel-outer-dark) var(--ft-bevel-light)
+    var(--ft-bevel-light) var(--ft-bevel-outer-dark);
+}
+
+/* crt-green — phosphor glow on text. */
+[data-theme='crt-green'] .fTelnetInfoDialogHeader,
+[data-theme='crt-green'] .fTelnetInfoDialogBody,
+[data-theme='crt-green'] .fTelnetInfoDialogOk {
+  text-shadow: var(--ft-ui-text-shadow);
+}
+
+/* cyberpunk — uppercase HUD header + OK. */
+[data-theme='cyberpunk'] .fTelnetInfoDialogHeader {
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+[data-theme='cyberpunk'] .fTelnetInfoDialogOk {
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: bold;
+}
+
+/* cartoon — thick rounded border + rounded OK button. */
+[data-theme='cartoon'] .fTelnetInfoDialog {
+  border-width: 3px;
+  border-radius: 12px;
+}
+
+[data-theme='cartoon'] .fTelnetInfoDialogHeader {
+  border-radius: 9px 9px 0 0;
+}
+
+[data-theme='cartoon'] .fTelnetInfoDialogOk {
+  border-radius: 8px;
+  border-width: 3px;
+}
+
 /* ──────────────────────────────────────────────────────────
    Theme: crt-green (Phase 3 Stage 3)
 

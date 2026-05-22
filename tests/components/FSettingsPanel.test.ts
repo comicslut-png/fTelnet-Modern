@@ -436,6 +436,21 @@ describe('<f-settings-panel>', () => {
       expect(ymodem.checked).toBe(false);
     });
 
+    it('lists ZModem first, then YModem (ZModem is the default)', () => {
+      const radios = Array.from(
+        el.querySelectorAll<HTMLInputElement>(
+          'input[type="radio"][name="default-protocol"]',
+        ),
+      );
+      // Two real protocol radios, ZModem first since it's the
+      // default the menu acts on; YModem second as the legacy
+      // fallback. (The disabled placeholder radio is in a separate
+      // radio group and not matched by this selector.)
+      expect(radios.length).toBe(2);
+      expect(radios[0]!.value).toBe('zmodem');
+      expect(radios[1]!.value).toBe('ymodem');
+    });
+
     it('reflects the defaultProtocol property in the radios', async () => {
       el.defaultProtocol = 'ymodem';
       await el.updateComplete;
