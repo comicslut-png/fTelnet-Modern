@@ -62,6 +62,7 @@ import {
   FFocusWarning,
   FDropOverlay,
   FInfoDialog,
+  FConfirmDialog,
   FMenuPopup,
   FScrollbackBar,
   FSettingsPanel,
@@ -218,6 +219,13 @@ export class fTelnetClient {
    * property gating visibility.
    */
   private _InfoDialog?: FInfoDialog;
+  /**
+   * Phase 5 (beta.22): themed yes/no confirm dialog, replacing the
+   * unthemed native confirm() (e.g. the disconnect prompt). Created
+   * lazily on first use; lives on document.body like the other
+   * floating popups. See showConfirmDialog().
+   */
+  private _ConfirmDialog?: FConfirmDialog;
   /**
    * Phase 5 (beta.3): user manual popup. Created lazily on first
    * open. Stays in the DOM after that; its `open` property gates
@@ -1561,6 +1569,23 @@ export class fTelnetClient {
    * strict mode. Equivalent: `this._Connection = undefined` plus
    * a `WebSocketConnection | undefined` typing on the field.
    */
+  /**
+   * Tear down the current connection.
+   *
+   * When `prompt` is true, asks the user to confirm first, using the
+   * themed <f-confirm-dialog> (replacing the old unthemed native
+   * confirm()). Because that dialog is asynchronous, the confirm
+   * path resolves on a later tick — so this method no longer returns
+   * a meaningful boolean for the prompted case. Neither caller (the
+   * 'disconnect' menu action and the internal security-error path)
+   * uses the return value, so this is safe; the signature is kept as
+   * `void`-effectively-boolean only for the immediate non-prompt /
+   * not-connected early-outs.
+   *
+   * Original used `delete this._Connection` which doesn't survive
+   * strict mode. Equivalent: `this._Connection = undefined` plus
+   * a `WebSocketConnection | undefined` typing on the field.
+   */
   public Disconnect(prompt: boolean): boolean {
     if (this._MenuButtons !== undefined) {
       this._MenuButtons.open = false;
@@ -1570,22 +1595,47 @@ export class fTelnetClient {
       return true;
     }
 
-    // eslint-disable-next-line no-alert
-    if (!prompt || confirm('Are you sure you want to disconnect?')) {
-      this._Connection.onclose.off();
-      this._Connection.onconnect.off();
-      this._Connection.ondata.off();
-      this._Connection.onioerror.off();
-      this._Connection.onlocalecho.off();
-      this._Connection.onsecurityerror.off();
-      this._Connection.close();
-      this._Connection = undefined;
-
-      this.OnConnectionClose();
+    if (!prompt) {
+      this.performDisconnect();
       return true;
     }
 
+    // Themed confirm. Resolves on a later tick; tear down only if the
+    // user confirms. We intentionally don't block on this (the native
+    // confirm() used to block synchronously, but no caller depends on
+    // the boolean result anymore).
+    void this.showConfirmDialog(
+      'Disconnect',
+      'Are you sure you want to disconnect?',
+    ).then((confirmed: boolean): void => {
+      if (confirmed) {
+        this.performDisconnect();
+      }
+    });
+
     return false;
+  }
+
+  /**
+   * Actually tear down the connection: detach all event handlers,
+   * close the socket, and fire OnConnectionClose. Split out of
+   * Disconnect so both the prompted (async-confirmed) and unprompted
+   * paths share one implementation.
+   */
+  private performDisconnect(): void {
+    if (this._Connection === undefined) {
+      return;
+    }
+    this._Connection.onclose.off();
+    this._Connection.onconnect.off();
+    this._Connection.ondata.off();
+    this._Connection.onioerror.off();
+    this._Connection.onlocalecho.off();
+    this._Connection.onsecurityerror.off();
+    this._Connection.close();
+    this._Connection = undefined;
+
+    this.OnConnectionClose();
   }
 
   /**
@@ -2899,6 +2949,44 @@ export class fTelnetClient {
     this._InfoDialog.dialogTitle = title;
     this._InfoDialog.message = message;
     this._InfoDialog.open = true;
+  }
+
+  /**
+   * Themed yes/no confirmation, replacing the browser's unthemed
+   * native confirm(). Lazily creates the <f-confirm-dialog> on first
+   * use, then reuses it. Lives on document.body like the other
+   * floating popups so it sits above everything regardless of
+   * container clipping. Phase 5 (beta.22).
+   *
+   * Returns a Promise that resolves true if the user confirmed
+   * (OK / Enter) or false if they cancelled (Cancel / Escape /
+   * click-outside). One result handler is registered per call and
+   * removed once it fires, so concurrent/repeat opens don't leak or
+   * cross-resolve.
+   */
+  private showConfirmDialog(title: string, message: string): Promise<boolean> {
+    if (this._ConfirmDialog === undefined) {
+      this._ConfirmDialog = document.createElement(
+        'f-confirm-dialog',
+      ) as FConfirmDialog;
+      document.body.appendChild(this._ConfirmDialog);
+    }
+    const dialog = this._ConfirmDialog;
+    // Keep the theme current in case it changed since last shown.
+    dialog.setAttribute('data-theme', this._Options.Theme);
+    dialog.dialogTitle = title;
+    dialog.message = message;
+
+    return new Promise<boolean>((resolve) => {
+      const handler = (e: Event): void => {
+        dialog.removeEventListener('confirm-dialog-result', handler);
+        dialog.open = false;
+        const detail = (e as CustomEvent<{ confirmed: boolean }>).detail;
+        resolve(detail.confirmed);
+      };
+      dialog.addEventListener('confirm-dialog-result', handler);
+      dialog.open = true;
+    });
   }
 
   /**

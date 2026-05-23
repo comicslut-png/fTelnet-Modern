@@ -188,6 +188,14 @@ export class Crt implements AnsiTarget {
   private _mouseDownPoint: Point | undefined;
   private _mouseMovePoint: Point | undefined;
 
+  // The selection rectangle left highlighted on screen AFTER a drag
+  // completes (the copy still happens on mouseup, but the highlight
+  // persists so the user can verify what they grabbed — like a
+  // normal desktop text selection). Cleared on the next mousedown
+  // (or naturally, when BBS output overwrites those cells). Stored
+  // as the two corner points of the completed selection.
+  private _persistedSelection: { from: Point; to: Point } | undefined;
+
   // ───────── Audio (Web Audio API) ─────────
   //
   // The original eagerly constructed an AudioContext in the constructor.
@@ -2443,12 +2451,38 @@ export class Crt implements AnsiTarget {
    * (xterm-style or SGR-extended depending on `ReportMouseSgr`).
    */
   private OnMouseDown(me: MouseEvent): void {
+    // If a previous selection is still highlighted on screen (left
+    // there after the last copy so the user could verify it), clear
+    // it now — the user is starting a new interaction, which is the
+    // desktop convention for dismissing a selection.
+    this.clearPersistedSelection();
+
     this._mouseDownPoint = this.mouseEventToScreenPosition(me);
     this._mouseMovePoint = new Point(this._mouseDownPoint.x, this._mouseDownPoint.y);
 
     if (this._reportMouse) {
       this.fireMouseReport(me.button, this._mouseDownPoint, false);
     }
+  }
+
+  /**
+   * Un-highlight the selection rectangle left on screen after the
+   * last completed drag-copy, if any. No-op when there's nothing
+   * persisted. Cells that have since been overwritten by BBS output
+   * are simply re-cleared harmlessly (setting Reverse=false on a cell
+   * the BBS already redrew just rewrites it with the attribute it
+   * already has).
+   */
+  private clearPersistedSelection(): void {
+    if (!this._persistedSelection) {
+      return;
+    }
+    this.applyHighlightRange(
+      this._persistedSelection.from,
+      this._persistedSelection.to,
+      false
+    );
+    this._persistedSelection = undefined;
   }
 
   /** Resolve a MouseEvent to a 1-based screen cell. */
@@ -2628,17 +2662,26 @@ export class Crt implements AnsiTarget {
   }
 
   /**
-   * Handle a multi-cell drag: un-highlight the selection rectangle
-   * and copy the selected text (with newlines between rows) to the
-   * clipboard.
+   * Handle a multi-cell drag: copy the selected text to the clipboard
+   * and LEAVE the selection highlighted on screen.
+   *
+   * The highlight intentionally persists after the mouse button is
+   * released (unlike the original, which cleared it here as part of
+   * the copy). This matches normal desktop text-selection behavior:
+   * the user can see exactly what was copied and verify it captured
+   * what they intended. The persisted highlight is recorded in
+   * `_persistedSelection` and cleared on the next mousedown (see
+   * OnMouseDown), or naturally when incoming BBS output overwrites
+   * those cells with its own attributes.
    *
    * Note: the original had a subtle bug — it added `\r\n` between
    * rows only when `y < DownPoint.y` (a condition that's impossible
    * after the point-flip earlier in the method, so it never fired).
    * The net effect was that multi-row selections came out concatenated
    * with no line breaks. We preserve the original's behavior here
-   * rather than "fix" it, since changing copy semantics during a pure
-   * migration is risky. Flagged as a TODO for a later pass.
+   * rather than "fix" it, since changing copy semantics is out of
+   * scope for this selection-persistence change. Flagged as a TODO
+   * for a later pass.
    */
   private handleDragSelectionCopy(downPoint: Point, upPoint: Point): void {
     let a = downPoint;
@@ -2657,8 +2700,9 @@ export class Crt implements AnsiTarget {
       for (let x = firstX; x <= lastX; x++) {
         const cell = row[x];
         if (cell) {
-          cell.Reverse = false;
-          this.FastWrite(cell.Ch, x, y, cell, false);
+          // Leave the cell highlighted (Reverse stays true from the
+          // drag) so the selection remains visible after release. We
+          // only read the character for the clipboard here.
           text += cell.Ch;
         } else {
           text += ' ';
@@ -2668,12 +2712,36 @@ export class Crt implements AnsiTarget {
       // was unreachable. Preserving that.
     }
 
-    ClipboardHelper.SetData(text);
+    // Write to the clipboard. SetData is async and rejects when the
+    // Clipboard API is unavailable (insecure/non-HTTPS context) or
+    // permission is denied. We attach a .catch() rather than awaiting
+    // (this handler isn't async) so a failure degrades gracefully —
+    // a console note, no unhandled rejection — matching the paste
+    // path's behavior in fTelnetClient. The on-screen highlight still
+    // persists either way, so the user at least sees what they tried
+    // to copy.
+    ClipboardHelper.SetData(text).catch((e: unknown) => {
+      // eslint-disable-next-line no-console
+      console.log('Clipboard copy failed: ' + String(e));
+    });
+
+    // Remember the highlighted rectangle so the next mousedown can
+    // clear it. The mousemove handler has already drawn the highlight
+    // for this range, so there's nothing to redraw here.
+    this._persistedSelection = {
+      from: new Point(a.x, a.y),
+      to: new Point(b.x, b.y),
+    };
   }
 
   /**
-   * Mouseup outside the canvas. If a drag was in progress, just
-   * un-highlight the selection — don't copy.
+   * Mouseup outside the canvas. If a drag was in progress, treat it
+   * like an on-canvas release: leave the selection highlighted (so it
+   * persists for the user to verify) and record it so the next
+   * mousedown clears it. We do NOT copy here — copying only happens
+   * on an on-canvas mouseup (OnMouseUp), matching the original; this
+   * handler just stops the in-progress drag without losing the
+   * highlight.
    */
   private OnMouseUpForWindow(_me: MouseEvent): void {
     if (this._mouseDownPoint && this._mouseMovePoint) {
@@ -2681,7 +2749,14 @@ export class Crt implements AnsiTarget {
         this._mouseDownPoint.x !== this._mouseMovePoint.x ||
         this._mouseDownPoint.y !== this._mouseMovePoint.y
       ) {
-        this.applyHighlightRange(this._mouseDownPoint, this._mouseMovePoint, false);
+        // The highlight for this range is already drawn (mousemove
+        // drew it); just remember it so the next mousedown clears it.
+        let a = new Point(this._mouseDownPoint.x, this._mouseDownPoint.y);
+        let b = new Point(this._mouseMovePoint.x, this._mouseMovePoint.y);
+        if (a.y > b.y || (a.y === b.y && a.x > b.x)) {
+          [a, b] = [b, a];
+        }
+        this._persistedSelection = { from: a, to: b };
       }
     }
     this._mouseDownPoint = undefined;

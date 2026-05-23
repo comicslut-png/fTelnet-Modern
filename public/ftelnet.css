@@ -1382,6 +1382,7 @@
   padding: 0 16px 14px;
   display: flex;
   justify-content: flex-end;
+  gap: 8px;
 }
 
 .fTelnetInfoDialogOk {
@@ -1396,6 +1397,16 @@
 
 .fTelnetInfoDialogOk:hover {
   filter: brightness(1.15);
+}
+
+/* Cancel button in the confirm dialog: reuses the OK button's themed
+   shape but reads as a secondary/neutral action — softer body colors
+   instead of the accented header colors, so the primary (OK) button
+   stays visually dominant. Themed via the same CSS variables, so it
+   adapts across all themes automatically. */
+.fTelnetConfirmDialogCancel {
+  background-color: var(--ft-ui-bg);
+  color: var(--ft-ui-fg);
 }
 
 /* dos-classic — TUI bevel border + raised OK button. */

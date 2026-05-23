@@ -5,6 +5,63 @@ All notable changes to fTelnet-Modern are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.0.0-beta.22] — 2026-05-23
+
+### Changed
+
+  - **Copy selection now persists on screen after you release the
+    mouse.** Previously, drag-selecting text to copy would un-
+    highlight the moment you let go of the mouse button, so you
+    couldn't verify what you'd actually selected. Now the highlight
+    stays visible after the copy — matching normal desktop text-
+    selection behavior — so you can confirm you grabbed what you
+    intended. The selection clears on your next click (or naturally,
+    when incoming BBS output overwrites those cells). The copy itself
+    still happens on release, exactly as before; only the visual
+    persistence changed. This applies whether the drag is released
+    over the canvas or off it.
+
+  - **The disconnect confirmation is now a themed dialog.** The
+    "Are you sure you want to disconnect?" prompt previously used the
+    browser's native `confirm()`, which can't be themed and has no
+    title bar — it looked like raw OS chrome bolted onto the UI. It's
+    now a proper fTelnet dialog (`<f-confirm-dialog>`) with a themed
+    background and a real "Disconnect" title bar, matching the rest
+    of the chrome across all six themes. It reuses the existing
+    InfoDialog styling and adds a Cancel button; OK/Enter confirms,
+    Cancel/Escape/click-outside dismisses. (This is the yes/no
+    companion to the informational `<f-info-dialog>` added in
+    beta.4, which solved the same problem for `alert()`.)
+
+### Fixed
+
+  - The clipboard write on copy is now handled gracefully if it
+    fails. `handleDragSelectionCopy` calls the async Clipboard API;
+    on an insecure (non-HTTPS) context or denied permission that
+    call rejects, and the rejection was previously unhandled (a
+    console error in the browser, and an "unhandled rejection" notice
+    in the test run). It's now caught and logged, matching the paste
+    path's behavior — copy degrades gracefully and the on-screen
+    selection still persists regardless.
+
+### Tests
+
+1233 → 1255. Five new Crt tests covering the selection-persistence
+behavior: the highlight remains after mouseup, clears on the next
+mousedown, a single click leaves no highlight, an off-canvas release
+still persists (and then clears), and starting a new drag clears the
+previous selection first. (The clipboard fix above also clears the
+three unhandled-rejection notices these tests would otherwise produce
+in a no-clipboard test environment.) Plus a new FConfirmDialog test
+file (17 tests) covering the themed disconnect dialog: rendering, the
+two buttons, custom labels, and every result path (OK/Enter →
+confirm, Cancel/Escape/click-outside → cancel) including the
+open-guard.
+
+### Bundle
+
+~710 → ~720 KB raw / ~156 KB gzipped.
+
 ## [2.0.0-beta.21] — 2026-05-23
 
 Japanese (日本語) joins the language list — the fifteenth language

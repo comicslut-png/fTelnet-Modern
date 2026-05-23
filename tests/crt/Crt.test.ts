@@ -1230,4 +1230,129 @@ describe('Crt — Delta 3c-1 foundation', () => {
       expect(fired).toBe(false);
     });
   });
+
+  describe('Drag-selection highlight persistence', () => {
+    // The canvas is 720x400 with a 9x16 font (80x25 cells). jsdom's
+    // getBoundingClientRect returns zeros, which would make the
+    // pixel->cell math divide by zero, so we stub it to the canvas's
+    // intrinsic size — then pixel (col*9, row*16) maps cleanly to a
+    // 1-based cell. Modern scrollback is off (new Crt(container,
+    // false)), so there's no vertical offset.
+    function stubRect(): void {
+      const canvas = crt.Canvas;
+      canvas.getBoundingClientRect = (): DOMRect =>
+        ({
+          x: 0,
+          y: 0,
+          left: 0,
+          top: 0,
+          right: 720,
+          bottom: 400,
+          width: 720,
+          height: 400,
+          toJSON: () => ({}),
+        }) as DOMRect;
+    }
+
+    // Dispatch a mouse event at a 1-based cell. Cell (cx, cy) maps to
+    // pixel (offsetX, offsetY) at the cell's top-left corner.
+    function dispatchAtCell(
+      eventType: string,
+      cx: number,
+      cy: number,
+      onWindow = false
+    ): void {
+      const offsetX = (cx - 1) * 9 + 1;
+      const offsetY = (cy - 1) * 16 + 1;
+      const evt = new MouseEvent(eventType, {
+        clientX: offsetX,
+        clientY: offsetY,
+        button: 0,
+        bubbles: true,
+      });
+      Object.defineProperty(evt, 'offsetX', { value: offsetX });
+      Object.defineProperty(evt, 'offsetY', { value: offsetY });
+      if (onWindow) {
+        window.dispatchEvent(evt);
+      } else {
+        crt.Canvas.dispatchEvent(evt);
+      }
+    }
+
+    // Read a cell's Reverse flag from the buffer (no public accessor).
+    function cellReverse(cx: number, cy: number): boolean {
+      const buf = (crt as unknown as Record<string, any>)._buffer;
+      return buf[cy]?.[cx]?.Reverse === true;
+    }
+
+    beforeEach(() => {
+      stubRect();
+      // Put some text on row 1 so the selected cells have content.
+      crt.GotoXY(1, 1);
+      crt.Write('HELLO WORLD');
+    });
+
+    it('leaves the selection highlighted after the drag (mouseup)', () => {
+      // Drag across cells (1,1)..(5,1).
+      dispatchAtCell('mousedown', 1, 1);
+      dispatchAtCell('mousemove', 5, 1);
+      dispatchAtCell('mouseup', 5, 1);
+
+      // The dragged cells should STILL be highlighted (Reverse=true)
+      // after release — the whole point of the change.
+      for (let x = 1; x <= 5; x++) {
+        expect(cellReverse(x, 1)).toBe(true);
+      }
+    });
+
+    it('clears the persisted highlight on the next mousedown', () => {
+      dispatchAtCell('mousedown', 1, 1);
+      dispatchAtCell('mousemove', 5, 1);
+      dispatchAtCell('mouseup', 5, 1);
+      // Sanity: highlighted.
+      expect(cellReverse(3, 1)).toBe(true);
+
+      // A new mousedown elsewhere should clear the old selection.
+      dispatchAtCell('mousedown', 10, 5);
+      for (let x = 1; x <= 5; x++) {
+        expect(cellReverse(x, 1)).toBe(false);
+      }
+    });
+
+    it('a single click (no drag) does not leave a highlight', () => {
+      dispatchAtCell('mousedown', 2, 1);
+      dispatchAtCell('mouseup', 2, 1);
+      expect(cellReverse(2, 1)).toBe(false);
+    });
+
+    it('persists the highlight when the drag is released off-canvas', () => {
+      dispatchAtCell('mousedown', 1, 1);
+      dispatchAtCell('mousemove', 4, 1);
+      // Release on window (outside the canvas).
+      dispatchAtCell('mouseup', 4, 1, true);
+      for (let x = 1; x <= 4; x++) {
+        expect(cellReverse(x, 1)).toBe(true);
+      }
+      // And the next mousedown still clears it.
+      dispatchAtCell('mousedown', 20, 10);
+      for (let x = 1; x <= 4; x++) {
+        expect(cellReverse(x, 1)).toBe(false);
+      }
+    });
+
+    it('starting a new drag clears the previous selection first', () => {
+      // First selection (1,1)..(5,1).
+      dispatchAtCell('mousedown', 1, 1);
+      dispatchAtCell('mousemove', 5, 1);
+      dispatchAtCell('mouseup', 5, 1);
+      expect(cellReverse(2, 1)).toBe(true);
+
+      // Second drag starts at (8,1) — the mousedown should clear the
+      // old highlight before the new drag begins.
+      dispatchAtCell('mousedown', 8, 1);
+      for (let x = 1; x <= 5; x++) {
+        expect(cellReverse(x, 1)).toBe(false);
+      }
+    });
+  });
 });
