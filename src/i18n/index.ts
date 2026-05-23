@@ -24,6 +24,7 @@ import { fr } from './fr.js';
 import { es } from './es.js';
 import { pt } from './pt.js';
 import { nl } from './nl.js';
+import { it } from './it.js';
 
 /**
  * fTelnet-Modern internationalization (i18n) core. Phase 5 (beta.6).
@@ -45,14 +46,14 @@ import { nl } from './nl.js';
  * The `available: false` mechanism remains for "coming soon"
  * languages: a future language can be listed in `LANGUAGES` (and
  * shown disabled in the picker to invite contributions) before its
- * catalog exists. As of beta.12 all six registered languages
- * (en/de/fr/es/pt/nl) are functional, so nothing currently uses
+ * catalog exists. As of beta.13 all seven registered languages
+ * (en/de/fr/es/pt/nl/it) are functional, so nothing currently uses
  * the disabled state — but the mechanism is intact for the next
  * one, and the picker's three "Other" slots still rely on it.
  */
 
 /** Supported language codes. 'en' is the base and always complete. */
-export type Language = 'en' | 'de' | 'fr' | 'es' | 'pt' | 'nl';
+export type Language = 'en' | 'de' | 'fr' | 'es' | 'pt' | 'nl' | 'it';
 
 /**
  * Catalogs for languages that have (at least partial) translations.
@@ -70,6 +71,7 @@ const CATALOGS: Partial<Record<Language, Catalog>> = {
   es,
   pt,
   nl,
+  it,
 };
 
 /**
@@ -87,11 +89,11 @@ export interface LanguageInfo {
 
 /**
  * The languages the picker knows about, in display order. As of
- * beta.12 all six — English, German, French, Spanish, Portuguese,
- * Dutch — are functional. To advertise a future language before
- * its catalog is ready, add it here with `available: false`; it
- * renders disabled ("coming soon") in the picker until you register
- * its catalog and flip the flag.
+ * beta.13 all seven — English, German, French, Spanish, Portuguese,
+ * Dutch, Italian — are functional. To advertise a future language
+ * before its catalog is ready, add it here with `available: false`;
+ * it renders disabled ("coming soon") in the picker until you
+ * register its catalog and flip the flag.
  */
 export const LANGUAGES: readonly LanguageInfo[] = [
   { code: 'en', endonym: 'English', available: true },
@@ -100,6 +102,7 @@ export const LANGUAGES: readonly LanguageInfo[] = [
   { code: 'es', endonym: 'Español', available: true },
   { code: 'pt', endonym: 'Português', available: true },
   { code: 'nl', endonym: 'Nederlands', available: true },
+  { code: 'it', endonym: 'Italiano', available: true },
 ];
 
 /** True if `lang` is a real, selectable (functional) language. */

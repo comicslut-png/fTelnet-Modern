@@ -20,7 +20,7 @@
 
 import { LitElement, html, type TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import { t, LANGUAGES, type Language } from '@i18n/index.js';
+import { t, LANGUAGES, type Language, type LanguageInfo } from '@i18n/index.js';
 
 /** Available themes, including their display labels. */
 export interface ThemeChoice {
@@ -107,7 +107,7 @@ export class FSettingsPanel extends LitElement {
    * tests and the panel can read the same value without needing
    * a build-time injection mechanism.
    */
-  public static readonly VERSION = '2.0.0-beta.12';
+  public static readonly VERSION = '2.0.0-beta.13';
 
   @property({ type: Boolean })
   open = false;
@@ -253,30 +253,34 @@ export class FSettingsPanel extends LitElement {
             <fieldset class="fTelnetSettingsPanelGroup">
               <legend>${t('settings.language', this.language)}</legend>
               <div class="fTelnetSettingsPanelLanguageColumns">
-                <div class="fTelnetSettingsPanelLanguageColumn">
-                  ${LANGUAGES.map(
-                    (lang): TemplateResult => html`
-                      <label
-                        class="fTelnetSettingsPanelOption${lang.available
-                          ? ''
-                          : ' fTelnetSettingsPanelOptionDisabled'}"
-                        title=${lang.available
-                          ? ''
-                          : 'Coming soon — translation help welcome'}
-                      >
-                        <input
-                          type="radio"
-                          name="language"
-                          value=${lang.code}
-                          ?checked=${lang.code === this.language}
-                          ?disabled=${!lang.available}
-                          @change=${this.handleLanguageChange}
-                        />
-                        ${lang.endonym}
-                      </label>
-                    `
-                  )}
-                </div>
+                ${this.languageColumns().map(
+                  (col): TemplateResult => html`
+                    <div class="fTelnetSettingsPanelLanguageColumn">
+                      ${col.map(
+                        (lang): TemplateResult => html`
+                          <label
+                            class="fTelnetSettingsPanelOption${lang.available
+                              ? ''
+                              : ' fTelnetSettingsPanelOptionDisabled'}"
+                            title=${lang.available
+                              ? ''
+                              : 'Coming soon — translation help welcome'}
+                          >
+                            <input
+                              type="radio"
+                              name="language"
+                              value=${lang.code}
+                              ?checked=${lang.code === this.language}
+                              ?disabled=${!lang.available}
+                              @change=${this.handleLanguageChange}
+                            />
+                            ${lang.endonym}
+                          </label>
+                        `
+                      )}
+                    </div>
+                  `
+                )}
                 <div class="fTelnetSettingsPanelLanguageColumn">
                   ${[0, 1, 2].map(
                     (): TemplateResult => html`
@@ -549,6 +553,29 @@ export class FSettingsPanel extends LitElement {
       ),
     );
   };
+
+  /**
+   * Split the registered languages into display columns of at most
+   * MAX_LANGUAGES_PER_COLUMN each, preserving registry order. The
+   * Settings Language fieldset renders one sub-column per chunk,
+   * then a final dedicated column for the "Other" placeholders.
+   *
+   * Capping the column height keeps the fieldset from growing
+   * arbitrarily tall as languages are added — overflow flows into a
+   * new column instead. With 7 languages and a cap of 5 that yields
+   * two language columns (5 + 2); adding more simply extends or
+   * adds columns automatically, no layout edit needed.
+   */
+  private static readonly MAX_LANGUAGES_PER_COLUMN = 5;
+
+  private languageColumns(): LanguageInfo[][] {
+    const perColumn = FSettingsPanel.MAX_LANGUAGES_PER_COLUMN;
+    const columns: LanguageInfo[][] = [];
+    for (let i = 0; i < LANGUAGES.length; i += perColumn) {
+      columns.push(LANGUAGES.slice(i, i + perColumn));
+    }
+    return columns;
+  }
 
   private handleLanguageChange = (e: Event): void => {
     const value = (e.target as HTMLInputElement).value;

@@ -5,6 +5,58 @@ All notable changes to fTelnet-Modern are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.0.0-beta.13] — 2026-05-23
+
+Italian (Italiano) joins the language list — the seventh language.
+Italy has a notably active vintage-computing scene (especially
+Commodore/Amiga), which dovetails with fTelnet's PETSCII/Topaz
+rendering support.
+
+### Added
+
+  - **Italian translation.** A new `it.ts` catalog covering the main
+    menu, status bar (with `{host}`/`{proxy}` interpolation),
+    screen-size dropdown, and Settings panel labels. Italian is now
+    selectable in the Settings language picker, appearing at the end
+    of the functional-languages column (directly below Dutch).
+    (Best-effort translation, native review pending; corrections are
+    catalog-only.)
+
+  - A `settings.language.italian` endonym key was added to every
+    catalog for consistency (the picker label itself comes from the
+    `LANGUAGES` registry's endonym field, "Italiano").
+
+  - As with the other languages, this was a catalog-plus-registry
+    change — the new `it.ts`, its registration in `index.ts`, and
+    the endonym key. The Settings picker renders the new radio
+    automatically from the registry; no layout code changed. The
+    User Manual's language list was updated to mention Italian.
+
+### Changed
+
+  - **Language picker layout — columns now cap at 5.** The Settings
+    Language fieldset previously listed all functional languages in
+    a single tall column beside the "Other" placeholders. With
+    seven languages that column was getting long, so the functional
+    languages now flow into columns of at most five (English →
+    Portuguese in the first, Dutch/Italian in a second), with the
+    three "Other" placeholders as a third, dedicated column. The
+    inter-column spacing was tightened so all three fit inside the
+    box. This is automatic: future languages extend or add columns
+    with no further layout edits.
+
+### Tests
+
+1192 → 1199. Italian lookup, interpolation, and picker-dispatch
+tests; a test asserting the Italian radio sits directly below
+Dutch; language-count assertions six → seven; and new
+language-picker layout tests (column count, 5-per-column chunking,
+the dedicated Other column).
+
+### Bundle
+
+~676 → ~680 KB raw / ~148 KB gzipped.
+
 ## [2.0.0-beta.12] — 2026-05-23
 
 Dutch (Nederlands) joins the language list — the sixth language.

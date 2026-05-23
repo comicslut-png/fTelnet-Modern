@@ -67,7 +67,7 @@ describe('i18n core', () => {
 
     it('never returns undefined for any base key in any language', () => {
       const enKeys = Object.keys(en) as (keyof typeof en)[];
-      const langs: Language[] = ['en', 'de', 'fr', 'es', 'pt', 'nl'];
+      const langs: Language[] = ['en', 'de', 'fr', 'es', 'pt', 'nl', 'it'];
       for (const lang of langs) {
         for (const key of enKeys) {
           const val = t(key, lang);
@@ -85,13 +85,14 @@ describe('i18n core', () => {
       expect(isAvailable('fr')).toBe(true);
     });
 
-    it('lists all six languages as available', () => {
+    it('lists all seven languages as available', () => {
       expect(isAvailable('en')).toBe(true);
       expect(isAvailable('de')).toBe(true);
       expect(isAvailable('fr')).toBe(true);
       expect(isAvailable('es')).toBe(true);
       expect(isAvailable('pt')).toBe(true);
       expect(isAvailable('nl')).toBe(true);
+      expect(isAvailable('it')).toBe(true);
     });
 
     it('returns the Spanish string when translated', () => {
@@ -109,12 +110,17 @@ describe('i18n core', () => {
       expect(t('menu.settings', 'nl')).toBe('Instellingen');
     });
 
+    it('returns the Italian string when translated', () => {
+      expect(t('menu.connect', 'it')).toBe('Connetti');
+      expect(t('menu.settings', 'it')).toBe('Impostazioni');
+    });
+
     it('rejects unknown language codes', () => {
       expect(isAvailable('klingon')).toBe(false);
       expect(isAvailable('')).toBe(false);
     });
 
-    it('exposes the six languages in display order with endonyms', () => {
+    it('exposes the seven languages in display order with endonyms', () => {
       expect(LANGUAGES.map((l) => l.code)).toEqual([
         'en',
         'de',
@@ -122,6 +128,7 @@ describe('i18n core', () => {
         'es',
         'pt',
         'nl',
+        'it',
       ]);
       expect(LANGUAGES.map((l) => l.endonym)).toEqual([
         'English',
@@ -130,12 +137,13 @@ describe('i18n core', () => {
         'Español',
         'Português',
         'Nederlands',
+        'Italiano',
       ]);
     });
 
-    it('marks all six languages available', () => {
+    it('marks all seven languages available', () => {
       const available = LANGUAGES.filter((l) => l.available).map((l) => l.code);
-      expect(available).toEqual(['en', 'de', 'fr', 'es', 'pt', 'nl']);
+      expect(available).toEqual(['en', 'de', 'fr', 'es', 'pt', 'nl', 'it']);
     });
 
     it('default language is English', () => {
@@ -192,6 +200,12 @@ describe('i18n core', () => {
     it('interpolates into the Dutch template', () => {
       expect(tf('status.connected', 'nl', { host: 'bbs:23' })).toBe(
         'Verbonden met bbs:23',
+      );
+    });
+
+    it('interpolates into the Italian template', () => {
+      expect(tf('status.connected', 'it', { host: 'bbs:23' })).toBe(
+        'Connesso a bbs:23',
       );
     });
 

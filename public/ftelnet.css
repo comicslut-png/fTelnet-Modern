@@ -476,16 +476,23 @@
   flex: 2 1 0;
 }
 
-/* Language fieldset: two side-by-side sub-columns of radios
-   (functional languages on the left, "Other" placeholders on the
-   right), per the mockup. */
+/* Language fieldset: side-by-side sub-columns of radios. Functional
+   languages are chunked into columns of at most 5 (see
+   FSettingsPanel.languageColumns()), followed by a dedicated column
+   for the three "Other" placeholders. With 7 languages that's three
+   columns total: [5 langs] [2 langs] [3 Other].
+
+   Columns size to their content and sit close together (tight gap)
+   rather than each grabbing an equal third of the width — that
+   keeps the short overflow column from leaving a wide empty gap and
+   lets all three fit comfortably inside the Language box. */
 .fTelnetSettingsPanelLanguageColumns {
   display: flex;
-  gap: 16px;
+  gap: 10px;
 }
 
 .fTelnetSettingsPanelLanguageColumn {
-  flex: 1 1 0;
+  flex: 0 0 auto;
   display: flex;
   flex-direction: column;
   gap: 4px;
