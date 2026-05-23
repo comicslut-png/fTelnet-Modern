@@ -5,6 +5,44 @@ All notable changes to fTelnet-Modern are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.0.0-beta.20] — 2026-05-23
+
+Czech (Čeština) joins the language list — the fourteenth language,
+rounding out the Central/Eastern European coverage alongside Polish,
+Russian, and Ukrainian.
+
+### Added
+
+  - **Czech translation.** A new `cs.ts` catalog (Latin with
+    háček/čárka diacritics) covering the main menu, status bar (with
+    `{host}`/`{proxy}` interpolation), screen-size dropdown, and
+    Settings panel labels. Czech is now selectable in the Settings
+    language picker, appearing in the third language column after
+    Greek. The ISO 639-1 code `cs` is used (not the country code
+    "cz"). (Best-effort translation, native review pending;
+    corrections are catalog-only.)
+
+  - A `settings.language.czech` endonym key was added to every
+    catalog (the picker label "Čeština" comes from the `LANGUAGES`
+    registry's endonym field).
+
+  - As with the other languages, this was a catalog-plus-registry
+    change — the new `cs.ts`, its registration in `index.ts`, and
+    the endonym key. The Settings picker renders the new radio
+    automatically; no layout or CSS change. The User Manual's
+    language list was updated to mention Czech.
+
+### Tests
+
+1225 → 1229. Czech lookup, interpolation, and picker-dispatch tests;
+a test asserting the Czech radio sits directly below Greek;
+language-count assertions thirteen → fourteen; the column-chunking
+test updated for the 5/5/4 split.
+
+### Bundle
+
+~702 → ~706 KB raw / ~154 KB gzipped.
+
 ## [2.0.0-beta.19] — 2026-05-23
 
 Greek (Ελληνικά) joins the language list — the thirteenth language

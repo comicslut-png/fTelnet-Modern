@@ -119,6 +119,7 @@ export const sv: Catalog = {
   'settings.language.ukrainian': 'Українська',
   'settings.language.finnish': 'Suomi',
   'settings.language.greek': 'Ελληνικά',
+  'settings.language.czech': 'Čeština',
   'settings.language.other': 'Annat',
 
   // ── Info dialogs (best-effort; review pending) ──────────────

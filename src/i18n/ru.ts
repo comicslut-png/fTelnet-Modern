@@ -129,6 +129,7 @@ export const ru: Catalog = {
   'settings.language.ukrainian': 'Українська',
   'settings.language.finnish': 'Suomi',
   'settings.language.greek': 'Ελληνικά',
+  'settings.language.czech': 'Čeština',
   'settings.language.other': 'Другой',
 
   // ── Info dialogs (best-effort; review pending) ──────────────

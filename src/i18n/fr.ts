@@ -113,6 +113,7 @@ export const fr: Catalog = {
   'settings.language.ukrainian': 'Українська',
   'settings.language.finnish': 'Suomi',
   'settings.language.greek': 'Ελληνικά',
+  'settings.language.czech': 'Čeština',
   'settings.language.other': 'Autre',
 
   // ── Info dialogs (best-effort; review pending) ──────────────

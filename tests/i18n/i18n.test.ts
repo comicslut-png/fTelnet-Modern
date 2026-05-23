@@ -67,7 +67,7 @@ describe('i18n core', () => {
 
     it('never returns undefined for any base key in any language', () => {
       const enKeys = Object.keys(en) as (keyof typeof en)[];
-      const langs: Language[] = ['en', 'de', 'fr', 'es', 'pt', 'nl', 'it', 'ru', 'sv', 'pl', 'uk', 'fi', 'el'];
+      const langs: Language[] = ['en', 'de', 'fr', 'es', 'pt', 'nl', 'it', 'ru', 'sv', 'pl', 'uk', 'fi', 'el', 'cs'];
       for (const lang of langs) {
         for (const key of enKeys) {
           const val = t(key, lang);
@@ -85,7 +85,7 @@ describe('i18n core', () => {
       expect(isAvailable('fr')).toBe(true);
     });
 
-    it('lists all thirteen languages as available', () => {
+    it('lists all fourteen languages as available', () => {
       expect(isAvailable('en')).toBe(true);
       expect(isAvailable('de')).toBe(true);
       expect(isAvailable('fr')).toBe(true);
@@ -99,6 +99,12 @@ describe('i18n core', () => {
       expect(isAvailable('uk')).toBe(true);
       expect(isAvailable('fi')).toBe(true);
       expect(isAvailable('el')).toBe(true);
+      expect(isAvailable('cs')).toBe(true);
+    });
+
+    it('returns the Czech string when translated', () => {
+      expect(t('menu.connect', 'cs')).toBe('Připojit');
+      expect(t('menu.settings', 'cs')).toBe('Nastavení');
     });
 
     it('returns the Greek string when translated', () => {
@@ -164,7 +170,7 @@ describe('i18n core', () => {
       expect(isAvailable('')).toBe(false);
     });
 
-    it('exposes the thirteen languages in display order with endonyms', () => {
+    it('exposes the fourteen languages in display order with endonyms', () => {
       expect(LANGUAGES.map((l) => l.code)).toEqual([
         'en',
         'de',
@@ -179,6 +185,7 @@ describe('i18n core', () => {
         'uk',
         'fi',
         'el',
+        'cs',
       ]);
       expect(LANGUAGES.map((l) => l.endonym)).toEqual([
         'English',
@@ -194,10 +201,11 @@ describe('i18n core', () => {
         'Українська',
         'Suomi',
         'Ελληνικά',
+        'Čeština',
       ]);
     });
 
-    it('marks all thirteen languages available', () => {
+    it('marks all fourteen languages available', () => {
       const available = LANGUAGES.filter((l) => l.available).map((l) => l.code);
       expect(available).toEqual([
         'en',
@@ -213,6 +221,7 @@ describe('i18n core', () => {
         'uk',
         'fi',
         'el',
+        'cs',
       ]);
     });
 
@@ -312,6 +321,12 @@ describe('i18n core', () => {
     it('interpolates into the Greek template', () => {
       expect(tf('status.connected', 'el', { host: 'bbs:23' })).toBe(
         'Συνδέθηκε με bbs:23',
+      );
+    });
+
+    it('interpolates into the Czech template', () => {
+      expect(tf('status.connected', 'cs', { host: 'bbs:23' })).toBe(
+        'Připojeno k bbs:23',
       );
     });
 

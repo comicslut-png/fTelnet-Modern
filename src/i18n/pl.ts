@@ -122,6 +122,7 @@ export const pl: Catalog = {
   'settings.language.ukrainian': 'Українська',
   'settings.language.finnish': 'Suomi',
   'settings.language.greek': 'Ελληνικά',
+  'settings.language.czech': 'Čeština',
   'settings.language.other': 'Inny',
 
   // ── Info dialogs (best-effort; review pending) ──────────────
