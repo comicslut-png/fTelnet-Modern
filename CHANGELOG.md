@@ -5,6 +5,45 @@ All notable changes to fTelnet-Modern are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.0.0-beta.16] — 2026-05-23
+
+Polish (Polski) joins the language list — the tenth language. Poland
+had a large FidoNet/BBS scene and retains an active retro-computing
+community, reaching another pocket of fTelnet's natural audience.
+
+### Added
+
+  - **Polish translation.** A new `pl.ts` catalog covering the main
+    menu, status bar (with `{host}`/`{proxy}` interpolation),
+    screen-size dropdown, and Settings panel labels. Polish is now
+    selectable in the Settings language picker, completing the
+    second language column (which is now full at five: Dutch,
+    Italian, Russian, Swedish, Polish). (Best-effort translation,
+    native review pending; corrections are catalog-only.)
+
+  - A `settings.language.polish` endonym key was added to every
+    catalog (the picker label "Polski" comes from the `LANGUAGES`
+    registry's endonym field).
+
+  - As with the other languages, this was a catalog-plus-registry
+    change — the new `pl.ts`, its registration in `index.ts`, and
+    the endonym key. The Settings picker renders the new radio
+    automatically; no layout or CSS change. The User Manual's
+    language list was updated to mention Polish. (At ten languages,
+    the two language columns are now both full at five; an eleventh
+    language would automatically start a third language column.)
+
+### Tests
+
+1208 → 1212. Polish lookup, interpolation, and picker-dispatch
+tests; a test asserting the Polish radio sits directly below
+Swedish; language-count assertions nine → ten; the column-chunking
+test updated for the 5 + 5 split.
+
+### Bundle
+
+~687 → ~691 KB raw / ~150 KB gzipped.
+
 ## [2.0.0-beta.15] — 2026-05-23
 
 Swedish (Svenska) joins the language list — the ninth language.
