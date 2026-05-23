@@ -5,6 +5,39 @@ All notable changes to fTelnet-Modern are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.0.0-beta.8] — 2026-05-22
+
+French (Français) joins the language list — the first language added
+purely through the catalog system, with no component changes, which
+is exactly what the i18n architecture was built for.
+
+### Added
+
+  - **French translation.** A new `fr.ts` catalog covering
+    everything German covers today: the main menu, the status bar
+    (with `{host}`/`{proxy}` interpolation), and the Settings panel
+    labels. French is now selectable in the Settings language
+    picker — its radio, previously a disabled "coming soon"
+    placeholder, is now live. (Best-effort translation, native
+    review pending; corrections are catalog-only.)
+
+  - Adding French touched only `src/i18n/` — the new `fr.ts`, plus
+    registering it in `index.ts` (import, `CATALOGS`, and flipping
+    its `available` flag to true). No component, client, or CSS
+    changes were needed. Spanish remains a "coming soon"
+    placeholder.
+
+### Tests
+
+1175 → 1179. French lookup and interpolation tests, a French
+menu-switch test, and a French language-picker dispatch test; the
+existing "placeholder language" fallback tests were repointed from
+French to Spanish (since French now has a real catalog).
+
+### Bundle
+
+~660 → ~663 KB raw / ~144 KB gzipped.
+
 ## [2.0.0-beta.7] — 2026-05-22
 
 Continues the localization work from beta.6: the status bar — the

@@ -20,6 +20,7 @@
 
 import { en, type TranslationKey, type Catalog } from './en.js';
 import { de } from './de.js';
+import { fr } from './fr.js';
 
 /**
  * fTelnet-Modern internationalization (i18n) core. Phase 5 (beta.6).
@@ -50,12 +51,14 @@ export type Language = 'en' | 'de' | 'fr' | 'es';
 /**
  * Catalogs for languages that have (at least partial) translations.
  * English is the base; others are partial and fall back to it.
- * Languages NOT in this map (fr, es) are placeholders — selecting
- * them is prevented at the UI layer (see `available` below), but if
- * one somehow reached `t()` it would simply fall back to English.
+ * Languages NOT in this map (currently 'es') are placeholders —
+ * selecting them is prevented at the UI layer (see `available`
+ * below), but if one somehow reached `t()` it would simply fall
+ * back to English.
  */
 const CATALOGS: Partial<Record<Language, Catalog>> = {
   de,
+  fr,
 };
 
 /**
@@ -72,8 +75,8 @@ export interface LanguageInfo {
 }
 
 /**
- * The languages the picker knows about, in display order. English
- * and German are functional; French and Spanish are placeholders
+ * The languages the picker knows about, in display order. English,
+ * German, and French are functional; Spanish is a placeholder
  * ("coming soon") to advertise the feature and invite translation
  * help. Add real translations by flipping `available` to true and
  * registering the catalog above.
@@ -81,7 +84,7 @@ export interface LanguageInfo {
 export const LANGUAGES: readonly LanguageInfo[] = [
   { code: 'en', endonym: 'English', available: true },
   { code: 'de', endonym: 'Deutsch', available: true },
-  { code: 'fr', endonym: 'Français', available: false },
+  { code: 'fr', endonym: 'Français', available: true },
   { code: 'es', endonym: 'Español', available: false },
 ];
 

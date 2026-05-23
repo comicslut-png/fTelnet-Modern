@@ -50,11 +50,16 @@ describe('i18n core', () => {
       }
     });
 
-    it('falls back to English for a placeholder language (fr/es)', () => {
-      // fr and es have no catalog registered — every key should
-      // return the English base.
-      expect(t('menu.connect', 'fr' as Language)).toBe('Connect');
+    it('falls back to English for a placeholder language (es)', () => {
+      // es has no catalog registered — every key should return the
+      // English base. (fr is now a real catalog, see below.)
+      expect(t('menu.connect', 'es' as Language)).toBe('Connect');
       expect(t('menu.settings', 'es' as Language)).toBe('Settings');
+    });
+
+    it('returns the French string when translated', () => {
+      expect(t('menu.connect', 'fr')).toBe('Se connecter');
+      expect(t('menu.settings', 'fr')).toBe('Paramètres');
     });
 
     it('never returns undefined for any base key in any language', () => {
@@ -71,13 +76,13 @@ describe('i18n core', () => {
   });
 
   describe('language registry', () => {
-    it('lists English and German as available', () => {
+    it('lists English, German, and French as available', () => {
       expect(isAvailable('en')).toBe(true);
       expect(isAvailable('de')).toBe(true);
+      expect(isAvailable('fr')).toBe(true);
     });
 
-    it('lists French and Spanish as NOT available (placeholders)', () => {
-      expect(isAvailable('fr')).toBe(false);
+    it('lists Spanish as NOT available (placeholder)', () => {
       expect(isAvailable('es')).toBe(false);
     });
 
@@ -98,7 +103,7 @@ describe('i18n core', () => {
 
     it('marks exactly the available languages', () => {
       const available = LANGUAGES.filter((l) => l.available).map((l) => l.code);
-      expect(available).toEqual(['en', 'de']);
+      expect(available).toEqual(['en', 'de', 'fr']);
     });
 
     it('default language is English', () => {
@@ -134,8 +139,14 @@ describe('i18n core', () => {
       );
     });
 
+    it('interpolates into the French template', () => {
+      expect(tf('status.connected', 'fr', { host: 'bbs:23' })).toBe(
+        'Connecté à bbs:23',
+      );
+    });
+
     it('falls back to English template for placeholder languages', () => {
-      expect(tf('status.connected', 'fr' as Language, { host: 'x:1' })).toBe(
+      expect(tf('status.connected', 'es' as Language, { host: 'x:1' })).toBe(
         'Connected to x:1',
       );
     });

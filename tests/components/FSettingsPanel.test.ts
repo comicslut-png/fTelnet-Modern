@@ -516,13 +516,13 @@ describe('<f-settings-panel>', () => {
       expect(values).toEqual(['en', 'de', 'fr', 'es']);
     });
 
-    it('English and German are enabled; French and Spanish are disabled', () => {
+    it('English, German, and French are enabled; Spanish is disabled', () => {
       const radios = getLanguageRadios();
       const byValue = (v: string): HTMLInputElement =>
         radios.find((r) => r.value === v)!;
       expect(byValue('en').disabled).toBe(false);
       expect(byValue('de').disabled).toBe(false);
-      expect(byValue('fr').disabled).toBe(true);
+      expect(byValue('fr').disabled).toBe(false);
       expect(byValue('es').disabled).toBe(true);
     });
 
@@ -559,6 +559,21 @@ describe('<f-settings-panel>', () => {
       de.dispatchEvent(new Event('change', { bubbles: true }));
 
       expect(captured).toEqual({ language: 'de' });
+    });
+
+    it('selecting French dispatches settings-language-change with language=fr', () => {
+      const radios = getLanguageRadios();
+      const fr = radios.find((r) => r.value === 'fr')!;
+
+      let captured: { language: string } | undefined;
+      el.addEventListener('settings-language-change', (e): void => {
+        captured = (e as CustomEvent<{ language: string }>).detail;
+      });
+
+      fr.checked = true;
+      fr.dispatchEvent(new Event('change', { bubbles: true }));
+
+      expect(captured).toEqual({ language: 'fr' });
     });
 
     it('the Language fieldset uses two internal sub-columns', () => {

@@ -80,7 +80,7 @@ describe('<f-status-bar>', () => {
     });
 
     it('falls back to English Menu label for a placeholder language', async () => {
-      el.language = 'fr';
+      el.language = 'es';
       await el.updateComplete;
       expect(
         el.querySelector('.fTelnetMenuButton')?.textContent?.trim(),

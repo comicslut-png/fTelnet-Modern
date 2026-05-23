@@ -68,12 +68,23 @@ describe('<f-menu-popup>', () => {
     });
 
     it('falls back to English for an untranslated/placeholder language', async () => {
-      el.language = 'fr'; // placeholder, no catalog
+      el.language = 'es'; // placeholder, no catalog (fr is now real)
       await el.updateComplete;
       const labels = Array.from(el.querySelectorAll('a')).map((a) =>
         a.textContent?.trim(),
       );
       expect(labels).toContain('Connect');
+    });
+
+    it('switches button labels to French when language="fr"', async () => {
+      el.language = 'fr';
+      await el.updateComplete;
+      const labels = Array.from(el.querySelectorAll('a')).map((a) =>
+        a.textContent?.trim(),
+      );
+      expect(labels).toContain('Se connecter'); // Connect
+      expect(labels).toContain('Paramètres'); // Settings
+      expect(labels).not.toContain('Connect');
     });
   });
 
