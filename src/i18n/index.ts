@@ -32,6 +32,7 @@ import { uk } from './uk.js';
 import { fi } from './fi.js';
 import { el } from './el.js';
 import { cs } from './cs.js';
+import { ja } from './ja.js';
 
 /**
  * fTelnet-Modern internationalization (i18n) core. Phase 5 (beta.6).
@@ -53,19 +54,21 @@ import { cs } from './cs.js';
  * The `available: false` mechanism remains for "coming soon"
  * languages: a future language can be listed in `LANGUAGES` (and
  * shown disabled in the picker to invite contributions) before its
- * catalog exists. As of beta.20 all fourteen registered languages
- * (en/de/fr/es/pt/nl/it/ru/sv/pl/uk/fi/el/cs) are functional, so
+ * catalog exists. As of beta.21 all fifteen registered languages
+ * (en/de/fr/es/pt/nl/it/ru/sv/pl/uk/fi/el/cs/ja) are functional, so
  * nothing currently uses the disabled state — but the mechanism is
  * intact for the next one. Russian (beta.14) is the first
  * non-Latin-script catalog; Ukrainian (beta.17) is a second
- * Cyrillic alphabet (і/ї/є/ґ); Greek (beta.19) is the third script
- * entirely. The
+ * Cyrillic alphabet; Greek (beta.19) is a third script; Japanese
+ * (beta.21) is the first CJK language — it ships with a subset
+ * Noto Sans JP webfont (see public/ftelnet.css) since the chrome's
+ * normal fonts have no CJK glyphs. The
  * lookup/fallback machinery is script-agnostic (plain UTF-8
  * strings), so no special handling is needed here.
  */
 
 /** Supported language codes. 'en' is the base and always complete. */
-export type Language = 'en' | 'de' | 'fr' | 'es' | 'pt' | 'nl' | 'it' | 'ru' | 'sv' | 'pl' | 'uk' | 'fi' | 'el' | 'cs';
+export type Language = 'en' | 'de' | 'fr' | 'es' | 'pt' | 'nl' | 'it' | 'ru' | 'sv' | 'pl' | 'uk' | 'fi' | 'el' | 'cs' | 'ja';
 
 /**
  * Catalogs for languages that have (at least partial) translations.
@@ -91,6 +94,7 @@ const CATALOGS: Partial<Record<Language, Catalog>> = {
   fi,
   el,
   cs,
+  ja,
 };
 
 /**
@@ -108,14 +112,15 @@ export interface LanguageInfo {
 
 /**
  * The languages the picker knows about, in display order. As of
- * beta.20 all fourteen — English, German, French, Spanish,
+ * beta.21 all fifteen — English, German, French, Spanish,
  * Portuguese, Dutch, Italian, Russian, Swedish, Polish, Ukrainian,
- * Finnish, Greek, Czech — are functional (spanning Latin, Cyrillic,
- * and Greek scripts). With fourteen languages the 5-per-column
- * chunking produces three language columns (5 + 5 + 4). To
- * advertise a future language before its catalog is ready, add it
- * here with `available: false`; it renders disabled ("coming soon")
- * in the picker until you register its catalog and flip the flag.
+ * Finnish, Greek, Czech, Japanese — are functional (spanning Latin,
+ * Cyrillic, Greek, and CJK scripts). With fifteen languages the
+ * 5-per-column chunking produces three full language columns
+ * (5 + 5 + 5). To advertise a future language before its catalog is
+ * ready, add it here with `available: false`; it renders disabled
+ * ("coming soon") in the picker until you register its catalog and
+ * flip the flag.
  */
 export const LANGUAGES: readonly LanguageInfo[] = [
   { code: 'en', endonym: 'English', available: true },
@@ -132,6 +137,7 @@ export const LANGUAGES: readonly LanguageInfo[] = [
   { code: 'fi', endonym: 'Suomi', available: true },
   { code: 'el', endonym: 'Ελληνικά', available: true },
   { code: 'cs', endonym: 'Čeština', available: true },
+  { code: 'ja', endonym: '日本語', available: true },
 ];
 
 /** True if `lang` is a real, selectable (functional) language. */

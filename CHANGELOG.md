@@ -5,6 +5,65 @@ All notable changes to fTelnet-Modern are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.0.0-beta.21] — 2026-05-23
+
+Japanese (日本語) joins the language list — the fifteenth language
+and fTelnet-Modern's **first CJK language**. This is the first
+language whose script the chrome's normal fonts can't render, so it
+ships with a (small, subset) Japanese webfont.
+
+### Added
+
+  - **Japanese translation.** A new `ja.ts` catalog (kanji, hiragana,
+    katakana) covering the main menu, status bar (with
+    `{host}`/`{proxy}` interpolation), screen-size dropdown, and
+    Settings panel labels. Japanese is now selectable in the Settings
+    language picker, completing the third language column (now full
+    at five: Ukrainian, Finnish, Greek, Czech, Japanese).
+    (Best-effort translation, **native review strongly recommended**
+    before relying on it — corrections are catalog-only.)
+
+  - **Subset Noto Sans JP webfont.** The chrome's normal fonts
+    (Courier New, Georgia) have no CJK glyphs, so a Noto Sans JP face
+    is added — SUBSET to only the ~190 characters the Japanese
+    catalog uses, so it's only ~18 KB. It's defined via `@font-face`
+    in `public/ftelnet.css` and appended as a trailing fallback on
+    the chrome containers, so the browser uses it only for Japanese
+    codepoints; all other languages are visually unchanged. The font
+    file lives at `public/fonts/noto-sans-jp-subset.woff2` and is
+    copied into the build output. (Noto is OFL-licensed.)
+
+  - A `settings.language.japanese` endonym key was added to every
+    catalog (the picker label "日本語" comes from the `LANGUAGES`
+    registry's endonym field).
+
+### Important notes
+
+  - **The terminal canvas is unaffected.** It still renders the retro
+    CP437/PETSCII/Topaz bitmap fonts. The Japanese setting translates
+    the client's own chrome (menus, settings, status), NOT the
+    content of the BBS you connect to — that's inherent to a retro
+    terminal. The User Manual now states this.
+
+  - **If you edit `ja.ts`**, the subset font must be regenerated to
+    include any new characters, or new glyphs will fall back to a
+    system font.
+
+  - **Deployment:** the `noto-sans-jp-subset.woff2` font (under
+    `fonts/`) must ship alongside `ftelnet.css`, the same way the
+    keyboard assets do.
+
+### Tests
+
+1229 → 1233. Japanese lookup, interpolation, and picker-dispatch
+tests; a test asserting the Japanese radio sits directly below
+Czech; language-count assertions fourteen → fifteen; the
+column-chunking test updated for the now-full 5/5/5 split.
+
+### Bundle
+
+~706 → ~710 KB raw / ~155 KB gzipped (plus the ~18 KB font asset).
+
 ## [2.0.0-beta.20] — 2026-05-23
 
 Czech (Čeština) joins the language list — the fourteenth language,

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>fTelnet — Japanese font plumbing test (beta.21 step 1)</title>
+<style>
+  @font-face {
+    font-family: 'Noto Sans JP Subset';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('fonts/noto-sans-jp-subset.woff2') format('woff2');
+  }
+  body { background:#111; color:#eee; font-family: 'Courier New', monospace, 'Noto Sans JP Subset'; padding:24px; }
+  h1 { font-size:18px; color:#5cf; }
+  .note { color:#aaa; font-size:13px; max-width:640px; line-height:1.5; }
+  table { border-collapse:collapse; margin-top:16px; }
+  td { border:1px solid #333; padding:6px 12px; vertical-align:top; }
+  .key { color:#888; font-size:12px; }
+  .jp { font-size:18px; }
+  .big { font-size:42px; color:#fff; margin:20px 0; }
+  .fallbacktest { font-family:'Courier New', monospace; }
+  .withfont { font-family:'Courier New', monospace, 'Noto Sans JP Subset'; }
+</style>
+</head>
+<body>
+  <h1>fTelnet — Japanese font plumbing test (beta.21, step 1)</h1>
+  <p class="note">
+    This standalone page loads ONLY the subset Noto Sans JP webfont and the
+    same fallback font stack the chrome uses. It is a verification aid for
+    step 1 — it is NOT part of the app. If the Japanese below renders as
+    proper characters (not boxes/tofu □□□), the font path works and we can
+    proceed to step 2 (wiring Japanese into the language picker).
+  </p>
+
+  <div class="big">接続 設定 言語 日本語</div>
+
+  <p class="note">Big sample above. Full catalog below (left = key, right = Japanese):</p>
+  <table id="rows"></table>
+
+  <p class="note" style="margin-top:24px;">
+    Control test — the same string WITHOUT the JP fallback (should show tofu
+    boxes, proving the fallback is what's doing the work):
+  </p>
+  <div class="fallbacktest jp">接続 設定 — (no JP font: expect boxes)</div>
+  <div class="withfont jp">接続 設定 — (with JP fallback: expect characters)</div>
+
+<script>
+  const rows = [["menu.connect","接続"],["menu.disconnect","切断"],["menu.copy","コピー"],["menu.paste","ペースト"],["menu.upload","アップロード"],["menu.download","ダウンロード"],["menu.keyboard","キーボード"],["menu.fullscreen","全画面"],["menu.scrollback","履歴を表示"],["menu.settings","設定"],["menu.manual","マニュアル"],["menu.button","メニュー"],["menu.screensize","{cols} 列 x {rows} 行"],["status.notConnected","未接続"],["status.connecting","{host} に接続中"],["status.connecting.proxy","{proxy} 経由で {host} に接続中"],["status.connected","{host} に接続しました"],["status.connected.proxy","{proxy} 経由で {host} に接続しました"],["status.disconnected","{host} から切断しました"],["status.unable","{host} に接続できません"],["status.unable.proxy","{proxy} 経由で {host} に接続できません"],["status.button.connect","接続"],["status.button.reconnect","再接続"],["status.button.retry","再試行"],["settings.title","設定"],["settings.theme","テーマ"],["settings.protocol","プロトコル"],["settings.protocol.default","デフォルト"],["settings.protocol.autodetect","自動検出"],["settings.language","言語"],["settings.sound","サウンド"],["settings.sound.mute","音を消す"],["settings.touch","タッチ"],["settings.touch.vibrate","振動の長さ:"],["settings.touch.ms","ミリ秒"],["settings.about","情報"],["settings.close","閉じる"],["dialog.download.title","ファイルのダウンロード"],["dialog.download.body","BBS のダウンロードコマンドを使用してください。ZMODEM は自動的に検出されます。\n\nBBS が転送を開始すると、進行状況パネルが自動的に表示され、完了するとブラウザがファイルを保存します。\n\nメニューボタンからダウンロードを開始するには、設定でデフォルトのプロトコルを YMODEM に変更してください。"],["dialog.copy.title","テキストのコピー"],["dialog.copy.body","コピーしたいテキストの上でマウスをクリックしてドラッグしてください。"]];
+  const tbl = document.getElementById('rows');
+  for (const [k, v] of rows) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = '<td class="key">' + k + '</td><td class="jp">' + v.replace(/</g,'&lt;') + '</td>';
+    tbl.appendChild(tr);
+  }
+</script>
+</body>
+</html>

@@ -593,9 +593,16 @@ export class FUserManual extends LitElement {
         <strong>Polski</strong> (Polish),
         <strong>Українська</strong> (Ukrainian),
         <strong>Suomi</strong> (Finnish),
-        <strong>Ελληνικά</strong> (Greek), and
-        <strong>Čeština</strong> (Czech). More languages may be
+        <strong>Ελληνικά</strong> (Greek),
+        <strong>Čeština</strong> (Czech), and
+        <strong>日本語</strong> (Japanese). More languages may be
         added in future releases.
+      </p>
+      <p>
+        Note: the language setting changes the client's own menus,
+        settings, and status messages. It does not translate the
+        content of the BBS you connect to — that text comes from the
+        BBS itself, in whatever language and encoding it sends.
       </p>
       <p>
         A few things worth knowing:

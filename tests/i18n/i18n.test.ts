@@ -67,7 +67,7 @@ describe('i18n core', () => {
 
     it('never returns undefined for any base key in any language', () => {
       const enKeys = Object.keys(en) as (keyof typeof en)[];
-      const langs: Language[] = ['en', 'de', 'fr', 'es', 'pt', 'nl', 'it', 'ru', 'sv', 'pl', 'uk', 'fi', 'el', 'cs'];
+      const langs: Language[] = ['en', 'de', 'fr', 'es', 'pt', 'nl', 'it', 'ru', 'sv', 'pl', 'uk', 'fi', 'el', 'cs', 'ja'];
       for (const lang of langs) {
         for (const key of enKeys) {
           const val = t(key, lang);
@@ -85,7 +85,7 @@ describe('i18n core', () => {
       expect(isAvailable('fr')).toBe(true);
     });
 
-    it('lists all fourteen languages as available', () => {
+    it('lists all fifteen languages as available', () => {
       expect(isAvailable('en')).toBe(true);
       expect(isAvailable('de')).toBe(true);
       expect(isAvailable('fr')).toBe(true);
@@ -100,6 +100,12 @@ describe('i18n core', () => {
       expect(isAvailable('fi')).toBe(true);
       expect(isAvailable('el')).toBe(true);
       expect(isAvailable('cs')).toBe(true);
+      expect(isAvailable('ja')).toBe(true);
+    });
+
+    it('returns the Japanese (CJK) string when translated', () => {
+      expect(t('menu.connect', 'ja')).toBe('接続');
+      expect(t('menu.settings', 'ja')).toBe('設定');
     });
 
     it('returns the Czech string when translated', () => {
@@ -170,7 +176,7 @@ describe('i18n core', () => {
       expect(isAvailable('')).toBe(false);
     });
 
-    it('exposes the fourteen languages in display order with endonyms', () => {
+    it('exposes the fifteen languages in display order with endonyms', () => {
       expect(LANGUAGES.map((l) => l.code)).toEqual([
         'en',
         'de',
@@ -186,6 +192,7 @@ describe('i18n core', () => {
         'fi',
         'el',
         'cs',
+        'ja',
       ]);
       expect(LANGUAGES.map((l) => l.endonym)).toEqual([
         'English',
@@ -202,10 +209,11 @@ describe('i18n core', () => {
         'Suomi',
         'Ελληνικά',
         'Čeština',
+        '日本語',
       ]);
     });
 
-    it('marks all fourteen languages available', () => {
+    it('marks all fifteen languages available', () => {
       const available = LANGUAGES.filter((l) => l.available).map((l) => l.code);
       expect(available).toEqual([
         'en',
@@ -222,6 +230,7 @@ describe('i18n core', () => {
         'fi',
         'el',
         'cs',
+        'ja',
       ]);
     });
 
@@ -327,6 +336,12 @@ describe('i18n core', () => {
     it('interpolates into the Czech template', () => {
       expect(tf('status.connected', 'cs', { host: 'bbs:23' })).toBe(
         'Připojeno k bbs:23',
+      );
+    });
+
+    it('interpolates into the Japanese (CJK) template', () => {
+      expect(tf('status.connected', 'ja', { host: 'bbs:23' })).toBe(
+        'bbs:23 に接続しました',
       );
     });
 

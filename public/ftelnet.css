@@ -16,6 +16,51 @@
 */
 
 /* ──────────────────────────────────────────────────────────
+   CJK chrome font (Japanese, beta.21)
+
+   The UI chrome's normal fonts (Courier New, Georgia, etc.) have no
+   Japanese glyphs. This is a Noto Sans JP face SUBSET to only the
+   characters used by the Japanese catalog (~190 chars, ~18 KB), so
+   it adds negligible weight. It is appended as a FALLBACK on the
+   chrome containers below — Latin/Cyrillic/Greek text keeps using
+   the existing fonts; only codepoints those fonts lack (i.e. the
+   Japanese ones) fall through to this face.
+
+   IMPORTANT: this affects ONLY the HTML chrome. The terminal canvas
+   still renders the retro CP437/PETSCII/Topaz bitmap fonts and is
+   completely untouched by this.
+
+   If the Japanese catalog (src/i18n/ja.ts) gains new characters,
+   the subset must be regenerated to include them (see the release
+   notes), or those new glyphs will fall back to a system font.
+   ────────────────────────────────────────────────────────── */
+@font-face {
+  font-family: 'Noto Sans JP Subset';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('fonts/noto-sans-jp-subset.woff2') format('woff2');
+}
+
+/* Append the Japanese subset face as a trailing fallback on the
+   chrome containers that hold translatable text. The browser uses
+   it only for codepoints the primary font lacks, so non-Japanese
+   languages are visually unchanged. The terminal canvas is not a
+   text element and is unaffected. */
+.fTelnetStatusBar,
+.fTelnetMenuButton,
+.fTelnetMenuPopup,
+.fTelnetMenuButtons,
+.fTelnetSettingsPanel,
+.fTelnetInfoDialog,
+.fTelnetUploadConfirm,
+.fTelnetDropOverlayMessage,
+.fTelnetUserManual {
+  font-family: var(--ft-ui-font-family, 'Courier New', monospace),
+    'Noto Sans JP Subset';
+}
+
+/* ──────────────────────────────────────────────────────────
    Theme: classic (default)
 
    Active when `data-theme="classic"` is set on an ancestor.

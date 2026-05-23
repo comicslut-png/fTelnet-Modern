@@ -125,6 +125,7 @@ export const pt: Catalog = {
   'settings.language.finnish': 'Suomi',
   'settings.language.greek': 'Ελληνικά',
   'settings.language.czech': 'Čeština',
+  'settings.language.japanese': '日本語',
   'settings.language.other': 'Outro',
 
   // ── Info dialogs (best-effort; review pending) ──────────────
