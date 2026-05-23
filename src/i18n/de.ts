@@ -62,6 +62,20 @@ export const de: Catalog = {
   'menu.manual': 'Handbuch',
   'menu.button': 'Menü',
 
+  // ── Status bar (best-effort; review pending) ────────────────
+  // {host}/{proxy} placeholders are preserved verbatim.
+  'status.notConnected': 'Nicht verbunden',
+  'status.connecting': 'Verbinde mit {host}',
+  'status.connecting.proxy': 'Verbinde mit {host} über {proxy}',
+  'status.connected': 'Verbunden mit {host}',
+  'status.connected.proxy': 'Verbunden mit {host} über {proxy}',
+  'status.disconnected': 'Getrennt von {host}',
+  'status.unable': 'Verbindung zu {host} nicht möglich',
+  'status.unable.proxy': 'Verbindung zu {host} über {proxy} nicht möglich',
+  'status.button.connect': 'Verbinden',
+  'status.button.reconnect': 'Erneut verbinden',
+  'status.button.retry': 'Erneut versuchen',
+
   // ── Settings panel (best-effort; review pending) ────────────
   'settings.title': 'Einstellungen',
   'settings.theme': 'Design',

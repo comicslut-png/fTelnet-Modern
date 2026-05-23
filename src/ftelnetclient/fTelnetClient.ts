@@ -85,7 +85,7 @@ import {
 } from '../components/index.js';
 import { fTelnetOptions } from './fTelnetOptions.js';
 import { TransferStats } from '../filetransfer/TransferStats.js';
-import { isAvailable, type Language } from '../i18n/index.js';
+import { isAvailable, t, tf, type Language } from '../i18n/index.js';
 
 /**
  * Top-level fTelnet client.
@@ -769,6 +769,17 @@ export class fTelnetClient {
     // changes (label text, button visibility, background color)
     // are reactive property writes on this one component.
     this._StatusBar = document.createElement('f-status-bar') as FStatusBar;
+    this._StatusBar.language = this._Options.Language as Language;
+    // Localize the initial idle-state labels (the component's raw
+    // defaults are English; push the active language's versions).
+    this._StatusBar.statusText = t(
+      'status.notConnected',
+      this._Options.Language as Language,
+    );
+    this._StatusBar.connectButtonText = t(
+      'status.button.connect',
+      this._Options.Language as Language,
+    );
     this._StatusBar.addEventListener('menu-click', (e: Event): void => {
       const detail = (e as CustomEvent<MenuClickDetail>).detail;
       // OnMenuButtonClick accepts a MouseEvent-like object with
@@ -1015,6 +1026,14 @@ export class fTelnetClient {
           this._MenuButtons.language = detail.language;
         }
         this._SettingsPanel.language = detail.language;
+        if (this._StatusBar !== undefined) {
+          // Updates the "Menu" button immediately. The dynamic
+          // status text (Connected/Disconnected/...) is composed at
+          // connection-event time, so it adopts the new language on
+          // the next such event rather than retroactively — an
+          // acceptable, low-surprise behavior for a status line.
+          this._StatusBar.language = detail.language;
+        }
         try {
           window.sessionStorage.setItem(
             'fTelnet.language',
@@ -1481,8 +1500,11 @@ export class fTelnetClient {
     // Direct connection (no proxy) vs proxied connection.
     if (this._Options.ProxyHostname === '') {
       this._StatusBar.connectButtonVisible = false;
-      this._StatusBar.statusText =
-        'Connecting to ' + this._Options.Hostname + ':' + this._Options.Port;
+      this._StatusBar.statusText = tf(
+        'status.connecting',
+        this._Options.Language as Language,
+        { host: this._Options.Hostname + ':' + this._Options.Port },
+      );
       this._StatusBar.state = 'active';
       this._ClientContainer.style.opacity = '1.0';
       this._Connection.connect(
@@ -1493,13 +1515,14 @@ export class fTelnetClient {
       );
     } else {
       this._StatusBar.connectButtonVisible = false;
-      this._StatusBar.statusText =
-        'Connecting to ' +
-        this._Options.Hostname +
-        ':' +
-        this._Options.Port +
-        ' via ' +
-        this._Options.ProxyHostname;
+      this._StatusBar.statusText = tf(
+        'status.connecting.proxy',
+        this._Options.Language as Language,
+        {
+          host: this._Options.Hostname + ':' + this._Options.Port,
+          proxy: this._Options.ProxyHostname,
+        },
+      );
       this._StatusBar.state = 'active';
       this._ClientContainer.style.opacity = '1.0';
       this._Connection.connect(
@@ -1909,11 +1932,17 @@ export class fTelnetClient {
   // ───── Connection lifecycle handlers ─────
 
   private OnConnectionClose(): void {
-    this._StatusBar.connectButtonText = 'Reconnect';
+    this._StatusBar.connectButtonText = t(
+      'status.button.reconnect',
+      this._Options.Language as Language,
+    );
     this._StatusBar.connectButtonVisible = true;
 
-    this._StatusBar.statusText =
-      'Disconnected from ' + this._Options.Hostname + ':' + this._Options.Port;
+    this._StatusBar.statusText = tf(
+      'status.disconnected',
+      this._Options.Language as Language,
+      { host: this._Options.Hostname + ':' + this._Options.Port },
+    );
     this._StatusBar.state = 'error';
     this._ClientContainer.style.opacity = '0.5';
 
@@ -1945,18 +1974,22 @@ export class fTelnetClient {
     }
 
     if (this._Options.ProxyHostname === '') {
-      this._StatusBar.statusText =
-        'Connected to ' + this._Options.Hostname + ':' + this._Options.Port;
+      this._StatusBar.statusText = tf(
+        'status.connected',
+        this._Options.Language as Language,
+        { host: this._Options.Hostname + ':' + this._Options.Port },
+      );
       this._StatusBar.state = 'active';
       this._ClientContainer.style.opacity = '1.0';
     } else {
-      this._StatusBar.statusText =
-        'Connected to ' +
-        this._Options.Hostname +
-        ':' +
-        this._Options.Port +
-        ' via ' +
-        this._Options.ProxyHostname;
+      this._StatusBar.statusText = tf(
+        'status.connected.proxy',
+        this._Options.Language as Language,
+        {
+          host: this._Options.Hostname + ':' + this._Options.Port,
+          proxy: this._Options.ProxyHostname,
+        },
+      );
       this._StatusBar.state = 'active';
       this._ClientContainer.style.opacity = '1.0';
     }
@@ -2613,22 +2646,29 @@ export class fTelnetClient {
   }
 
   private OnConnectionSecurityError(): void {
-    this._StatusBar.connectButtonText = 'Retry Connection';
+    this._StatusBar.connectButtonText = t(
+      'status.button.retry',
+      this._Options.Language as Language,
+    );
     this._StatusBar.connectButtonVisible = true;
 
     if (this._Options.ProxyHostname === '') {
-      this._StatusBar.statusText =
-        'Unable to connect to ' + this._Options.Hostname + ':' + this._Options.Port;
+      this._StatusBar.statusText = tf(
+        'status.unable',
+        this._Options.Language as Language,
+        { host: this._Options.Hostname + ':' + this._Options.Port },
+      );
       this._StatusBar.state = 'error';
       this._ClientContainer.style.opacity = '0.5';
     } else {
-      this._StatusBar.statusText =
-        'Unable to connect to ' +
-        this._Options.Hostname +
-        ':' +
-        this._Options.Port +
-        ' via ' +
-        this._Options.ProxyHostname;
+      this._StatusBar.statusText = tf(
+        'status.unable.proxy',
+        this._Options.Language as Language,
+        {
+          host: this._Options.Hostname + ':' + this._Options.Port,
+          proxy: this._Options.ProxyHostname,
+        },
+      );
       this._StatusBar.state = 'error';
       this._ClientContainer.style.opacity = '0.5';
     }

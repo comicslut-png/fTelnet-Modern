@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   t,
+  tf,
   LANGUAGES,
   isAvailable,
   DEFAULT_LANGUAGE,
@@ -102,6 +103,41 @@ describe('i18n core', () => {
 
     it('default language is English', () => {
       expect(DEFAULT_LANGUAGE).toBe('en');
+    });
+  });
+
+  describe('tf (interpolation)', () => {
+    it('fills a single placeholder', () => {
+      expect(tf('status.connecting', 'en', { host: 'bbs:23' })).toBe(
+        'Connecting to bbs:23',
+      );
+    });
+
+    it('fills multiple placeholders', () => {
+      expect(
+        tf('status.connecting.proxy', 'en', {
+          host: 'bbs:23',
+          proxy: 'p.example.com',
+        }),
+      ).toBe('Connecting to bbs:23 via p.example.com');
+    });
+
+    it('interpolates into the German template', () => {
+      expect(tf('status.connected', 'de', { host: 'bbs:23' })).toBe(
+        'Verbunden mit bbs:23',
+      );
+    });
+
+    it('leaves an unmatched placeholder token untouched', () => {
+      expect(tf('status.connecting.proxy', 'en', { host: 'bbs:23' })).toBe(
+        'Connecting to bbs:23 via {proxy}',
+      );
+    });
+
+    it('falls back to English template for placeholder languages', () => {
+      expect(tf('status.connected', 'fr' as Language, { host: 'x:1' })).toBe(
+        'Connected to x:1',
+      );
     });
   });
 

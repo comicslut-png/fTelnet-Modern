@@ -114,4 +114,27 @@ export function t(key: TranslationKey, lang: Language = DEFAULT_LANGUAGE): strin
   return en[key];
 }
 
+/**
+ * Translate `key` and interpolate `{placeholder}` tokens from
+ * `params`. Used for parameterized strings like the status-bar
+ * messages ("Connecting to {host}"). A token with no matching
+ * param is left untouched (so a missing param is visible rather
+ * than silently dropped). Falls back to English like `t()`.
+ *
+ * @example tf('status.connecting', 'de', { host: 'bbs:23' })
+ *          → "Verbinde mit bbs:23"
+ */
+export function tf(
+  key: TranslationKey,
+  lang: Language,
+  params: Record<string, string>,
+): string {
+  const template = t(key, lang);
+  return template.replace(/\{(\w+)\}/g, (match, name: string) => {
+    return Object.prototype.hasOwnProperty.call(params, name)
+      ? params[name]!
+      : match;
+  });
+}
+
 export type { TranslationKey, Catalog } from './en.js';

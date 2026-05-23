@@ -5,6 +5,53 @@ All notable changes to fTelnet-Modern are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.0.0-beta.7] — 2026-05-22
+
+Continues the localization work from beta.6: the status bar — the
+persistent chrome below the terminal — now translates too.
+
+### Added
+
+  - **Localized status bar.** The "Menu" button and every dynamic
+    connection-status message — "Connecting to…", "Connected to…",
+    "Disconnected from…", "Unable to connect to…" (each with its
+    "via proxy" variant), plus the "Not connected" idle label and
+    the Connect / Reconnect / Retry Connection button text — now
+    render in the active language. German is translated (best
+    effort, review pending); other languages fall back to English
+    per key as usual.
+
+  - **Parameterized translations.** A new `tf(key, lang, params)`
+    helper interpolates `{host}` / `{proxy}` placeholders into a
+    translated template, so status messages keep their
+    hostname/port (which stay language-neutral) while the
+    surrounding words translate. Unmatched tokens are left intact
+    rather than silently dropped.
+
+### Note on timing
+
+The "Menu" button and idle labels switch language immediately. The
+live connection-status text is composed at connection-event time,
+so a mid-session language change is reflected on the next status
+event (connect/disconnect) rather than retroactively — a
+deliberate, low-surprise choice for a status line.
+
+### Still English for now
+
+Screen-size dropdown, user manual, virtual keyboard, and transfer
+dialogs remain English — later passes. (The info-dialog keys
+already exist in the catalog.)
+
+### Tests
+
+1168 → 1175. Five new `tf()` interpolation tests (single/multiple
+placeholders, German template, unmatched-token, placeholder-language
+fallback) and two status-bar Menu-button localization tests.
+
+### Bundle
+
+~657 → ~660 KB raw / ~143 → ~144 KB gzipped.
+
 ## [2.0.0-beta.6] — 2026-05-22
 
 The first step toward a multilingual fTelnet-Modern: a language

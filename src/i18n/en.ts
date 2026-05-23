@@ -55,6 +55,21 @@ export const en = {
   'menu.manual': 'Manual',
   'menu.button': 'Menu',
 
+  // ── Status bar ──────────────────────────────────────────────
+  // {host} expands to "hostname:port"; {proxy} to the proxy host.
+  // The "*.proxy" variants are used when a proxy is configured.
+  'status.notConnected': 'Not connected',
+  'status.connecting': 'Connecting to {host}',
+  'status.connecting.proxy': 'Connecting to {host} via {proxy}',
+  'status.connected': 'Connected to {host}',
+  'status.connected.proxy': 'Connected to {host} via {proxy}',
+  'status.disconnected': 'Disconnected from {host}',
+  'status.unable': 'Unable to connect to {host}',
+  'status.unable.proxy': 'Unable to connect to {host} via {proxy}',
+  'status.button.connect': 'Connect',
+  'status.button.reconnect': 'Reconnect',
+  'status.button.retry': 'Retry Connection',
+
   // ── Settings panel ──────────────────────────────────────────
   'settings.title': 'Settings',
   'settings.theme': 'Theme',

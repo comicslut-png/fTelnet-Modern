@@ -20,6 +20,7 @@
 
 import { LitElement, html, type TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
+import { t, type Language } from '@i18n/index.js';
 
 /**
  * Payload for the `menu-click` custom event.
@@ -120,6 +121,16 @@ export class FStatusBar extends LitElement {
   @property({ type: Number, attribute: 'width-px' })
   widthPx = 0;
 
+  /**
+   * Active UI language — drives the localized "Menu" button label.
+   * The dynamic statusText and connectButtonText are composed and
+   * pushed by fTelnetClient (already localized there), so this
+   * property only governs the bits the component renders itself.
+   * Phase 5 (beta.6).
+   */
+  @property({ type: String })
+  language: Language = 'en';
+
   protected override createRenderRoot(): HTMLElement {
     return this;
   }
@@ -137,7 +148,7 @@ export class FStatusBar extends LitElement {
           class="fTelnetMenuButton"
           href="#"
           @click=${this.handleMenuClick}
-          >Menu</a
+          >${t('menu.button', this.language)}</a
         >
         <a
           class="fTelnetConnectButton"

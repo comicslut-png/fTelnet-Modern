@@ -48,7 +48,7 @@ describe('<f-status-bar>', () => {
       expect(el.querySelector('.fTelnetStatusBarLabel')).not.toBeNull();
     });
 
-    it('shows the Menu button with hardcoded text', () => {
+    it('shows the Menu button (English by default)', () => {
       expect(el.querySelector('.fTelnetMenuButton')?.textContent?.trim()).toBe('Menu');
     });
 
@@ -67,6 +67,24 @@ describe('<f-status-bar>', () => {
       // CSS defaults apply.
       const style = inner?.getAttribute('style') ?? '';
       expect(style).toBe('');
+    });
+  });
+
+  describe('localization (Menu button)', () => {
+    it('localizes the Menu button label to German', async () => {
+      el.language = 'de';
+      await el.updateComplete;
+      expect(
+        el.querySelector('.fTelnetMenuButton')?.textContent?.trim(),
+      ).toBe('Menü');
+    });
+
+    it('falls back to English Menu label for a placeholder language', async () => {
+      el.language = 'fr';
+      await el.updateComplete;
+      expect(
+        el.querySelector('.fTelnetMenuButton')?.textContent?.trim(),
+      ).toBe('Menu');
     });
   });
 
