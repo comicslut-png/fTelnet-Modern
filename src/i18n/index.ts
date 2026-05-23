@@ -22,6 +22,7 @@ import { en, type TranslationKey, type Catalog } from './en.js';
 import { de } from './de.js';
 import { fr } from './fr.js';
 import { es } from './es.js';
+import { pt } from './pt.js';
 
 /**
  * fTelnet-Modern internationalization (i18n) core. Phase 5 (beta.6).
@@ -50,7 +51,7 @@ import { es } from './es.js';
  */
 
 /** Supported language codes. 'en' is the base and always complete. */
-export type Language = 'en' | 'de' | 'fr' | 'es';
+export type Language = 'en' | 'de' | 'fr' | 'es' | 'pt';
 
 /**
  * Catalogs for languages that have (at least partial) translations.
@@ -66,6 +67,7 @@ const CATALOGS: Partial<Record<Language, Catalog>> = {
   de,
   fr,
   es,
+  pt,
 };
 
 /**
@@ -94,6 +96,7 @@ export const LANGUAGES: readonly LanguageInfo[] = [
   { code: 'de', endonym: 'Deutsch', available: true },
   { code: 'fr', endonym: 'Français', available: true },
   { code: 'es', endonym: 'Español', available: true },
+  { code: 'pt', endonym: 'Português', available: true },
 ];
 
 /** True if `lang` is a real, selectable (functional) language. */

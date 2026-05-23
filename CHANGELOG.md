@@ -5,6 +5,42 @@ All notable changes to fTelnet-Modern are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.0.0-beta.11] — 2026-05-22
+
+Portuguese (Português) joins the language list — the fifth language,
+and likely the one reaching the most real BBS users, given Brazil's
+active retro-BBS scene.
+
+### Added
+
+  - **Portuguese translation.** A new `pt.ts` catalog covering the
+    main menu, status bar (with `{host}`/`{proxy}` interpolation),
+    screen-size dropdown, and Settings panel labels. Portuguese is
+    now selectable in the Settings language picker, appearing
+    directly below Spanish in the left sub-column. (Best-effort
+    translation leaning toward forms common to both Brazilian and
+    European Portuguese; native review pending. The system supports
+    splitting into distinct pt-BR / pt-PT codes later if wanted.)
+
+  - A new `settings.language.portuguese` endonym key was added to
+    every catalog (the picker shows "Português" in all languages).
+
+  - As with the other languages, this was a catalog-plus-registry
+    change — the new `pt.ts`, its registration in `index.ts`, and
+    the endonym key. The Settings picker renders the new radio
+    automatically from the registry; no layout code changed. The
+    User Manual's language list was updated to mention Portuguese.
+
+### Tests
+
+1184 → 1188. Portuguese lookup, interpolation, and picker-dispatch
+tests; a test asserting the Portuguese radio sits directly below
+Spanish; language-count assertions updated four → five.
+
+### Bundle
+
+~669 → ~673 KB raw / ~146 KB gzipped.
+
 ## [2.0.0-beta.10] — 2026-05-22
 
 Extends localization coverage beyond the chrome translated in
