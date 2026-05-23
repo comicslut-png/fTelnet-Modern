@@ -516,14 +516,14 @@ describe('<f-settings-panel>', () => {
       expect(values).toEqual(['en', 'de', 'fr', 'es']);
     });
 
-    it('English, German, and French are enabled; Spanish is disabled', () => {
+    it('all four languages are enabled (none disabled)', () => {
       const radios = getLanguageRadios();
       const byValue = (v: string): HTMLInputElement =>
         radios.find((r) => r.value === v)!;
       expect(byValue('en').disabled).toBe(false);
       expect(byValue('de').disabled).toBe(false);
       expect(byValue('fr').disabled).toBe(false);
-      expect(byValue('es').disabled).toBe(true);
+      expect(byValue('es').disabled).toBe(false);
     });
 
     it('reflects the language property in the checked radio', async () => {
@@ -574,6 +574,21 @@ describe('<f-settings-panel>', () => {
       fr.dispatchEvent(new Event('change', { bubbles: true }));
 
       expect(captured).toEqual({ language: 'fr' });
+    });
+
+    it('selecting Spanish dispatches settings-language-change with language=es', () => {
+      const radios = getLanguageRadios();
+      const es = radios.find((r) => r.value === 'es')!;
+
+      let captured: { language: string } | undefined;
+      el.addEventListener('settings-language-change', (e): void => {
+        captured = (e as CustomEvent<{ language: string }>).detail;
+      });
+
+      es.checked = true;
+      es.dispatchEvent(new Event('change', { bubbles: true }));
+
+      expect(captured).toEqual({ language: 'es' });
     });
 
     it('the Language fieldset uses two internal sub-columns', () => {

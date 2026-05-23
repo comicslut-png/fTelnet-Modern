@@ -50,11 +50,14 @@ describe('i18n core', () => {
       }
     });
 
-    it('falls back to English for a placeholder language (es)', () => {
-      // es has no catalog registered — every key should return the
-      // English base. (fr is now a real catalog, see below.)
-      expect(t('menu.connect', 'es' as Language)).toBe('Connect');
-      expect(t('menu.settings', 'es' as Language)).toBe('Settings');
+    it('falls back to English for an unregistered language code', () => {
+      // All four listed languages now have catalogs, so to exercise
+      // the fallback path we use a code with no catalog registered.
+      // (The mechanism still matters for any future language added
+      // to the picker before its catalog ships.)
+      const fake = 'xx' as Language;
+      expect(t('menu.connect', fake)).toBe('Connect');
+      expect(t('menu.settings', fake)).toBe('Settings');
     });
 
     it('returns the French string when translated', () => {
@@ -82,8 +85,16 @@ describe('i18n core', () => {
       expect(isAvailable('fr')).toBe(true);
     });
 
-    it('lists Spanish as NOT available (placeholder)', () => {
-      expect(isAvailable('es')).toBe(false);
+    it('lists English, German, French, and Spanish as available', () => {
+      expect(isAvailable('en')).toBe(true);
+      expect(isAvailable('de')).toBe(true);
+      expect(isAvailable('fr')).toBe(true);
+      expect(isAvailable('es')).toBe(true);
+    });
+
+    it('returns the Spanish string when translated', () => {
+      expect(t('menu.connect', 'es')).toBe('Conectar');
+      expect(t('menu.settings', 'es')).toBe('Configuración');
     });
 
     it('rejects unknown language codes', () => {
@@ -101,9 +112,9 @@ describe('i18n core', () => {
       ]);
     });
 
-    it('marks exactly the available languages', () => {
+    it('marks all four languages available', () => {
       const available = LANGUAGES.filter((l) => l.available).map((l) => l.code);
-      expect(available).toEqual(['en', 'de', 'fr']);
+      expect(available).toEqual(['en', 'de', 'fr', 'es']);
     });
 
     it('default language is English', () => {
@@ -145,8 +156,14 @@ describe('i18n core', () => {
       );
     });
 
-    it('falls back to English template for placeholder languages', () => {
-      expect(tf('status.connected', 'es' as Language, { host: 'x:1' })).toBe(
+    it('interpolates into the Spanish template', () => {
+      expect(tf('status.connected', 'es', { host: 'bbs:23' })).toBe(
+        'Conectado a bbs:23',
+      );
+    });
+
+    it('falls back to English template for an unregistered language', () => {
+      expect(tf('status.connected', 'xx' as Language, { host: 'x:1' })).toBe(
         'Connected to x:1',
       );
     });

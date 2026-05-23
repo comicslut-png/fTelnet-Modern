@@ -5,6 +5,46 @@ All notable changes to fTelnet-Modern are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.0.0-beta.9] — 2026-05-22
+
+Spanish (Español) joins the language list, completing the four
+languages the picker has advertised since beta.6. Like French, it's
+a catalog-only addition.
+
+### Added
+
+  - **Spanish translation.** A new `es.ts` catalog covering the main
+    menu, the status bar (with `{host}`/`{proxy}` interpolation),
+    and the Settings panel labels. Spanish is now selectable in the
+    Settings language picker — its radio, the last remaining
+    disabled "coming soon" placeholder, is now live. (Best-effort
+    translation, native review pending; corrections are
+    catalog-only.)
+
+  - As with French, this touched only `src/i18n/` — the new
+    `es.ts` plus registering it in `index.ts`. No component,
+    client, or CSS changes.
+
+### Note
+
+All four advertised languages (English, German, French, Spanish)
+are now functional — none of the picker's language radios are
+disabled anymore. The "coming soon" disabled-radio mechanism
+remains in the code for any future language and still backs the
+three "Other" placeholder slots.
+
+### Tests
+
+1179 → 1182. Spanish lookup, interpolation, menu-switch, and
+picker-dispatch tests. The fallback-to-English tests, which
+previously used Spanish as the unregistered example, now use a
+synthetic unregistered code (since all four listed languages have
+catalogs).
+
+### Bundle
+
+~663 → ~666 KB raw / ~145 KB gzipped.
+
 ## [2.0.0-beta.8] — 2026-05-22
 
 French (Français) joins the language list — the first language added

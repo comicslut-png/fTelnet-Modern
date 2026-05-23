@@ -67,13 +67,15 @@ describe('<f-menu-popup>', () => {
       expect(upload?.textContent?.trim()).toBe('Hochladen (ZMODEM)');
     });
 
-    it('falls back to English for an untranslated/placeholder language', async () => {
-      el.language = 'es'; // placeholder, no catalog (fr is now real)
+    it('switches button labels to Spanish when language="es"', async () => {
+      el.language = 'es';
       await el.updateComplete;
       const labels = Array.from(el.querySelectorAll('a')).map((a) =>
         a.textContent?.trim(),
       );
-      expect(labels).toContain('Connect');
+      expect(labels).toContain('Conectar'); // Connect
+      expect(labels).toContain('Configuración'); // Settings
+      expect(labels).not.toContain('Connect');
     });
 
     it('switches button labels to French when language="fr"', async () => {

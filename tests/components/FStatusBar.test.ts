@@ -79,12 +79,12 @@ describe('<f-status-bar>', () => {
       ).toBe('Menü');
     });
 
-    it('falls back to English Menu label for a placeholder language', async () => {
+    it('localizes the Menu button label to Spanish', async () => {
       el.language = 'es';
       await el.updateComplete;
       expect(
         el.querySelector('.fTelnetMenuButton')?.textContent?.trim(),
-      ).toBe('Menu');
+      ).toBe('Menú');
     });
   });
 
