@@ -54,6 +54,10 @@ export const en = {
   'menu.settings': 'Settings',
   'menu.manual': 'Manual',
   'menu.button': 'Menu',
+  // Screen-size dropdown option label. {cols}/{rows} are numbers
+  // (language-neutral); only the surrounding words translate. An
+  // aspect-ratio suffix like " (16:9)" may be appended after this.
+  'menu.screensize': '{cols} columns x {rows} rows',
 
   // ── Status bar ──────────────────────────────────────────────
   // {host} expands to "hostname:port"; {proxy} to the proxy host.

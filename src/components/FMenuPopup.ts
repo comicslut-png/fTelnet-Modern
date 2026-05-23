@@ -20,7 +20,7 @@
 
 import { LitElement, html, type TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import { t, type Language } from '@i18n/index.js';
+import { t, tf, type Language } from '@i18n/index.js';
 
 /**
  * Names for actions dispatched via the `menu-action` event.
@@ -294,7 +294,10 @@ export class FMenuPopup extends LitElement {
                 ${this.supportedScreenSizes.map(
                   (size: string): TemplateResult => {
                     const [cols, rows] = size.split('x');
-                    let label = `${cols} columns x ${rows} rows`;
+                    let label = tf('menu.screensize', this.language, {
+                      cols: cols ?? '',
+                      rows: rows ?? '',
+                    });
                     if (size === '132x37') {
                       label += ' (16:9)';
                     } else if (size === '132x52') {

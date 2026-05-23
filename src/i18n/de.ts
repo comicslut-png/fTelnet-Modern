@@ -61,6 +61,8 @@ export const de: Catalog = {
   'menu.settings': 'Einstellungen',
   'menu.manual': 'Handbuch',
   'menu.button': 'Menü',
+  // {cols}/{rows} stay as numbers; "Spalten"=columns, "Zeilen"=rows.
+  'menu.screensize': '{cols} Spalten x {rows} Zeilen',
 
   // ── Status bar (best-effort; review pending) ────────────────
   // {host}/{proxy} placeholders are preserved verbatim.

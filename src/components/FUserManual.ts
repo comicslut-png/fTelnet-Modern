@@ -360,6 +360,14 @@ export class FUserManual extends LitElement {
         </li>
         <li>
           <a
+            href="#language"
+            @click=${(e: MouseEvent): void =>
+              this.handleTocClick(e, 'language')}
+            >Language</a
+          >
+        </li>
+        <li>
+          <a
             href="#tips"
             @click=${(e: MouseEvent): void => this.handleTocClick(e, 'tips')}
             >Tips &amp; Troubleshooting</a
@@ -539,6 +547,11 @@ export class FUserManual extends LitElement {
         off.
       </p>
       <p>
+        <strong>Language</strong> — Switch the menus, buttons, and
+        status messages between English, German, French, and
+        Spanish. See <strong>Language</strong> below for details.
+      </p>
+      <p>
         <strong>Sound</strong> — Mute or unmute the bell sound
         BBSes occasionally play.
       </p>
@@ -553,8 +566,57 @@ export class FUserManual extends LitElement {
         code.
       </p>
       <p>
-        All your choices are saved automatically, so when you
-        come back tomorrow, fTelnet will remember.
+        Your choices stick around while you're using fTelnet —
+        they survive reloading the page or reconnecting. They
+        reset to the defaults when you close the tab, so the next
+        person to open fTelnet on a shared computer starts fresh.
+      </p>
+
+      <h2 data-anchor="language">Language</h2>
+      <p>
+        fTelnet can display its menus, buttons, and connection
+        messages in several languages. Open
+        <strong>Settings</strong> and find the
+        <strong>Language</strong> box, then pick the one you want.
+        The change happens instantly — no need to reconnect.
+      </p>
+      <p>
+        Available languages right now are
+        <strong>English</strong>, <strong>Deutsch</strong>
+        (German), <strong>Français</strong> (French), and
+        <strong>Español</strong> (Spanish). The grayed-out
+        <em>Other</em> slots are placeholders for languages that
+        may be added later.
+      </p>
+      <p>
+        A few things worth knowing:
+      </p>
+      <ul>
+        <li>
+          Only the fTelnet interface changes language — the menus,
+          the buttons, and the status line at the bottom. What the
+          BBS itself sends you stays in whatever language the BBS
+          uses; fTelnet can't translate the BBS.
+        </li>
+        <li>
+          The on-screen keyboard stays in English regardless of
+          the language you pick.
+        </li>
+        <li>
+          Like the other settings, your language choice lasts for
+          your current session and resets when you close the tab.
+        </li>
+        <li>
+          If a particular word hasn't been translated yet, fTelnet
+          shows the English version for that one item rather than
+          leaving it blank — so nothing ever goes missing.
+        </li>
+      </ul>
+      <p>
+        Are you a sysop or user who speaks a language not listed
+        here, and would like to help translate fTelnet? Reach out
+        through the project page in the <strong>About</strong>
+        section — contributions are welcome.
       </p>
 
       <h2 data-anchor="tips">Tips &amp; Troubleshooting</h2>

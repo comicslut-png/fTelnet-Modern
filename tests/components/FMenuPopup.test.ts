@@ -427,6 +427,31 @@ describe('<f-menu-popup>', () => {
       expect(captured).toEqual({ columns: 132, rows: 43 });
     });
 
+    it('localizes the option labels (English default)', () => {
+      const opts = Array.from(
+        el.querySelectorAll<HTMLOptionElement>('select option'),
+      );
+      // At least one option should read "<n> columns x <m> rows".
+      expect(opts.some((o) => /columns x .* rows/.test(o.textContent ?? ''))).toBe(
+        true,
+      );
+    });
+
+    it('localizes the option labels to German, numbers preserved', async () => {
+      el.language = 'de';
+      await el.updateComplete;
+      const opts = Array.from(
+        el.querySelectorAll<HTMLOptionElement>('select option'),
+      );
+      const text = opts.map((o) => o.textContent ?? '').join(' | ');
+      // German words present, English absent, numbers + aspect
+      // ratios preserved.
+      expect(text).toContain('Spalten');
+      expect(text).toContain('Zeilen');
+      expect(text).not.toContain('columns');
+      expect(text).toContain('80'); // a column count survives
+    });
+
     it('screen-size-change event bubbles and is composed', () => {
       const select = el.querySelector<HTMLSelectElement>('select');
 

@@ -63,6 +63,8 @@ export const es: Catalog = {
   'menu.settings': 'Configuración',
   'menu.manual': 'Manual',
   'menu.button': 'Menú',
+  // "columnas"=columns, "filas"=rows.
+  'menu.screensize': '{cols} columnas x {rows} filas',
 
   // ── Status bar ──────────────────────────────────────────────
   'status.notConnected': 'No conectado',

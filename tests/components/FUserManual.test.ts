@@ -76,6 +76,7 @@ describe('<f-user-manual>', () => {
         'screen-size',
         'scrollback',
         'settings',
+        'language',
         'tips',
       ];
       for (const anchor of expectedAnchors) {
@@ -86,8 +87,8 @@ describe('<f-user-manual>', () => {
 
     it('TOC contains a link for each section', () => {
       const tocLinks = el.querySelectorAll('.fTelnetUserManualToc a');
-      // 9 sections in the TOC
-      expect(tocLinks.length).toBe(9);
+      // 10 sections in the TOC (Language added in beta.9)
+      expect(tocLinks.length).toBe(10);
     });
   });
 

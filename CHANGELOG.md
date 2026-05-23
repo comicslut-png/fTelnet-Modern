@@ -5,6 +5,40 @@ All notable changes to fTelnet-Modern are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.0.0-beta.10] — 2026-05-22
+
+Extends localization coverage beyond the chrome translated in
+beta.6–9: the screen-size dropdown now translates, and the in-app
+User Manual documents the language feature. No new language — this
+broadens what the existing four languages cover.
+
+### Added
+
+  - **Screen-size dropdown localized.** The "{n} columns x {m}
+    rows" option labels in the menu's screen-size picker now
+    translate (German "Spalten/Zeilen", French "colonnes/lignes",
+    Spanish "columnas/filas") via a new `menu.screensize` catalog
+    key and the `tf()` interpolation helper. The numbers and
+    aspect-ratio suffixes (16:9, 5:4) stay as-is. The on-screen
+    keyboard deliberately remains English — localizing keymaps/IME
+    is out of scope.
+
+  - **User Manual: Language section.** The in-app manual gained a
+    new "Language" section (and a Settings-panel mention) explaining
+    the language picker, which areas translate, that the BBS content
+    and the keyboard stay as-is, and how to volunteer a translation.
+    The Settings section's persistence note was also corrected to
+    describe the per-session (reset-for-next-visitor) behavior.
+
+### Tests
+
+1182 → 1184. Two screen-size dropdown localization tests; User
+Manual TOC/section assertions updated for the new Language section.
+
+### Bundle
+
+~666 → ~669 KB raw / ~146 KB gzipped.
+
 ## [2.0.0-beta.9] — 2026-05-22
 
 Spanish (Español) joins the language list, completing the four
