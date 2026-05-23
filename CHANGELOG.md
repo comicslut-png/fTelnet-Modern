@@ -5,6 +5,42 @@ All notable changes to fTelnet-Modern are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.0.0-beta.15] — 2026-05-23
+
+Swedish (Svenska) joins the language list — the ninth language.
+Sweden has a strong demoscene heritage and an active retro-computing
+community, reaching another pocket of fTelnet's natural audience.
+
+### Added
+
+  - **Swedish translation.** A new `sv.ts` catalog covering the main
+    menu, status bar (with `{host}`/`{proxy}` interpolation),
+    screen-size dropdown, and Settings panel labels. Swedish is now
+    selectable in the Settings language picker, appearing in the
+    second language column after Russian. (Best-effort translation,
+    native review pending; corrections are catalog-only.)
+
+  - A `settings.language.swedish` endonym key was added to every
+    catalog (the picker label "Svenska" comes from the `LANGUAGES`
+    registry's endonym field).
+
+  - As with the other languages, this was a catalog-plus-registry
+    change — the new `sv.ts`, its registration in `index.ts`, and
+    the endonym key. The Settings picker renders the new radio
+    automatically; no layout or CSS change. The User Manual's
+    language list was updated to mention Swedish.
+
+### Tests
+
+1204 → 1208. Swedish lookup, interpolation, and picker-dispatch
+tests; a test asserting the Swedish radio sits directly below
+Russian; language-count assertions eight → nine; the column-chunking
+test updated for the 5 + 4 split.
+
+### Bundle
+
+~684 → ~687 KB raw / ~150 KB gzipped.
+
 ## [2.0.0-beta.14] — 2026-05-23
 
 Russian (Русский) joins the language list — the eighth language and

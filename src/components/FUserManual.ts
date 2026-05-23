@@ -587,8 +587,9 @@ export class FUserManual extends LitElement {
         <strong>Español</strong> (Spanish),
         <strong>Português</strong> (Portuguese),
         <strong>Nederlands</strong> (Dutch),
-        <strong>Italiano</strong> (Italian), and
-        <strong>Русский</strong> (Russian). The grayed-out
+        <strong>Italiano</strong> (Italian),
+        <strong>Русский</strong> (Russian), and
+        <strong>Svenska</strong> (Swedish). The grayed-out
         <em>Other</em> slots are placeholders for languages that
         may be added later.
       </p>

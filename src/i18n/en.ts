@@ -111,6 +111,7 @@ export const en = {
   'settings.language.dutch': 'Dutch',
   'settings.language.italian': 'Italian',
   'settings.language.russian': 'Russian',
+  'settings.language.swedish': 'Swedish',
   'settings.language.other': 'Other',
 
   // ── Info dialogs ────────────────────────────────────────────

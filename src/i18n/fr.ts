@@ -108,6 +108,7 @@ export const fr: Catalog = {
   'settings.language.dutch': 'Nederlands',
   'settings.language.italian': 'Italiano',
   'settings.language.russian': 'Русский',
+  'settings.language.swedish': 'Svenska',
   'settings.language.other': 'Autre',
 
   // ── Info dialogs (best-effort; review pending) ──────────────

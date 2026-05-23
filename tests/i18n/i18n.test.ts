@@ -67,7 +67,7 @@ describe('i18n core', () => {
 
     it('never returns undefined for any base key in any language', () => {
       const enKeys = Object.keys(en) as (keyof typeof en)[];
-      const langs: Language[] = ['en', 'de', 'fr', 'es', 'pt', 'nl', 'it', 'ru'];
+      const langs: Language[] = ['en', 'de', 'fr', 'es', 'pt', 'nl', 'it', 'ru', 'sv'];
       for (const lang of langs) {
         for (const key of enKeys) {
           const val = t(key, lang);
@@ -85,7 +85,7 @@ describe('i18n core', () => {
       expect(isAvailable('fr')).toBe(true);
     });
 
-    it('lists all eight languages as available', () => {
+    it('lists all nine languages as available', () => {
       expect(isAvailable('en')).toBe(true);
       expect(isAvailable('de')).toBe(true);
       expect(isAvailable('fr')).toBe(true);
@@ -94,6 +94,12 @@ describe('i18n core', () => {
       expect(isAvailable('nl')).toBe(true);
       expect(isAvailable('it')).toBe(true);
       expect(isAvailable('ru')).toBe(true);
+      expect(isAvailable('sv')).toBe(true);
+    });
+
+    it('returns the Swedish string when translated', () => {
+      expect(t('menu.connect', 'sv')).toBe('Anslut');
+      expect(t('menu.settings', 'sv')).toBe('Inställningar');
     });
 
     it('returns the Spanish string when translated', () => {
@@ -134,7 +140,7 @@ describe('i18n core', () => {
       expect(isAvailable('')).toBe(false);
     });
 
-    it('exposes the eight languages in display order with endonyms', () => {
+    it('exposes the nine languages in display order with endonyms', () => {
       expect(LANGUAGES.map((l) => l.code)).toEqual([
         'en',
         'de',
@@ -144,6 +150,7 @@ describe('i18n core', () => {
         'nl',
         'it',
         'ru',
+        'sv',
       ]);
       expect(LANGUAGES.map((l) => l.endonym)).toEqual([
         'English',
@@ -154,10 +161,11 @@ describe('i18n core', () => {
         'Nederlands',
         'Italiano',
         'Русский',
+        'Svenska',
       ]);
     });
 
-    it('marks all eight languages available', () => {
+    it('marks all nine languages available', () => {
       const available = LANGUAGES.filter((l) => l.available).map((l) => l.code);
       expect(available).toEqual([
         'en',
@@ -168,6 +176,7 @@ describe('i18n core', () => {
         'nl',
         'it',
         'ru',
+        'sv',
       ]);
     });
 
@@ -237,6 +246,12 @@ describe('i18n core', () => {
     it('interpolates into the Russian (Cyrillic) template, host stays Latin', () => {
       expect(tf('status.connected', 'ru', { host: 'bbs:23' })).toBe(
         'Подключено к bbs:23',
+      );
+    });
+
+    it('interpolates into the Swedish template', () => {
+      expect(tf('status.connected', 'sv', { host: 'bbs:23' })).toBe(
+        'Ansluten till bbs:23',
       );
     });
 
