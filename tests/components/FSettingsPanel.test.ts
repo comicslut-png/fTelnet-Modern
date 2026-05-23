@@ -510,10 +510,10 @@ describe('<f-settings-panel>', () => {
       expect(langFieldset).toBeDefined();
     });
 
-    it('renders the five known languages with endonyms', () => {
+    it('renders the six known languages with endonyms', () => {
       const radios = getLanguageRadios();
       const values = radios.map((r) => r.value);
-      expect(values).toEqual(['en', 'de', 'fr', 'es', 'pt']);
+      expect(values).toEqual(['en', 'de', 'fr', 'es', 'pt', 'nl']);
     });
 
     it('Portuguese radio appears directly below Spanish', () => {
@@ -524,7 +524,15 @@ describe('<f-settings-panel>', () => {
       expect(ptIndex).toBe(esIndex + 1);
     });
 
-    it('all five languages are enabled (none disabled)', () => {
+    it('Dutch radio appears directly below Portuguese', () => {
+      const radios = getLanguageRadios();
+      const values = radios.map((r) => r.value);
+      const ptIndex = values.indexOf('pt');
+      const nlIndex = values.indexOf('nl');
+      expect(nlIndex).toBe(ptIndex + 1);
+    });
+
+    it('all six languages are enabled (none disabled)', () => {
       const radios = getLanguageRadios();
       const byValue = (v: string): HTMLInputElement =>
         radios.find((r) => r.value === v)!;
@@ -533,6 +541,7 @@ describe('<f-settings-panel>', () => {
       expect(byValue('fr').disabled).toBe(false);
       expect(byValue('es').disabled).toBe(false);
       expect(byValue('pt').disabled).toBe(false);
+      expect(byValue('nl').disabled).toBe(false);
     });
 
     it('reflects the language property in the checked radio', async () => {
@@ -615,6 +624,21 @@ describe('<f-settings-panel>', () => {
       expect(captured).toEqual({ language: 'pt' });
     });
 
+    it('selecting Dutch dispatches settings-language-change with language=nl', () => {
+      const radios = getLanguageRadios();
+      const nl = radios.find((r) => r.value === 'nl')!;
+
+      let captured: { language: string } | undefined;
+      el.addEventListener('settings-language-change', (e): void => {
+        captured = (e as CustomEvent<{ language: string }>).detail;
+      });
+
+      nl.checked = true;
+      nl.dispatchEvent(new Event('change', { bubbles: true }));
+
+      expect(captured).toEqual({ language: 'nl' });
+    });
+
     it('the Language fieldset uses two internal sub-columns', () => {
       const langCols = el.querySelectorAll(
         '.fTelnetSettingsPanelLanguageColumn',
@@ -671,6 +695,7 @@ describe('<f-settings-panel>', () => {
       expect(labels).toContain('Français');
       expect(labels).toContain('Español');
       expect(labels).toContain('Português');
+      expect(labels).toContain('Nederlands');
     });
 
     it('removes the emoji icons from option labels', () => {

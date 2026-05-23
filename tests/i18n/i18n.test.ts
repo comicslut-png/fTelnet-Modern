@@ -67,7 +67,7 @@ describe('i18n core', () => {
 
     it('never returns undefined for any base key in any language', () => {
       const enKeys = Object.keys(en) as (keyof typeof en)[];
-      const langs: Language[] = ['en', 'de', 'fr', 'es', 'pt'];
+      const langs: Language[] = ['en', 'de', 'fr', 'es', 'pt', 'nl'];
       for (const lang of langs) {
         for (const key of enKeys) {
           const val = t(key, lang);
@@ -85,12 +85,13 @@ describe('i18n core', () => {
       expect(isAvailable('fr')).toBe(true);
     });
 
-    it('lists English, German, French, Spanish, and Portuguese as available', () => {
+    it('lists all six languages as available', () => {
       expect(isAvailable('en')).toBe(true);
       expect(isAvailable('de')).toBe(true);
       expect(isAvailable('fr')).toBe(true);
       expect(isAvailable('es')).toBe(true);
       expect(isAvailable('pt')).toBe(true);
+      expect(isAvailable('nl')).toBe(true);
     });
 
     it('returns the Spanish string when translated', () => {
@@ -103,18 +104,24 @@ describe('i18n core', () => {
       expect(t('menu.settings', 'pt')).toBe('Configurações');
     });
 
+    it('returns the Dutch string when translated', () => {
+      expect(t('menu.connect', 'nl')).toBe('Verbinden');
+      expect(t('menu.settings', 'nl')).toBe('Instellingen');
+    });
+
     it('rejects unknown language codes', () => {
       expect(isAvailable('klingon')).toBe(false);
       expect(isAvailable('')).toBe(false);
     });
 
-    it('exposes the five languages in display order with endonyms', () => {
+    it('exposes the six languages in display order with endonyms', () => {
       expect(LANGUAGES.map((l) => l.code)).toEqual([
         'en',
         'de',
         'fr',
         'es',
         'pt',
+        'nl',
       ]);
       expect(LANGUAGES.map((l) => l.endonym)).toEqual([
         'English',
@@ -122,12 +129,13 @@ describe('i18n core', () => {
         'Français',
         'Español',
         'Português',
+        'Nederlands',
       ]);
     });
 
-    it('marks all five languages available', () => {
+    it('marks all six languages available', () => {
       const available = LANGUAGES.filter((l) => l.available).map((l) => l.code);
-      expect(available).toEqual(['en', 'de', 'fr', 'es', 'pt']);
+      expect(available).toEqual(['en', 'de', 'fr', 'es', 'pt', 'nl']);
     });
 
     it('default language is English', () => {
@@ -178,6 +186,12 @@ describe('i18n core', () => {
     it('interpolates into the Portuguese template', () => {
       expect(tf('status.connected', 'pt', { host: 'bbs:23' })).toBe(
         'Conectado a bbs:23',
+      );
+    });
+
+    it('interpolates into the Dutch template', () => {
+      expect(tf('status.connected', 'nl', { host: 'bbs:23' })).toBe(
+        'Verbonden met bbs:23',
       );
     });
 

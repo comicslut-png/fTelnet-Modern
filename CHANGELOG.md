@@ -5,6 +5,43 @@ All notable changes to fTelnet-Modern are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.0.0-beta.12] — 2026-05-23
+
+Dutch (Nederlands) joins the language list — the sixth language.
+The Netherlands had an enormous 1990s BBS/FidoNet scene and retains
+an unusually active retro-computing community, so Dutch reaches a
+concentrated pocket of fTelnet's natural audience.
+
+### Added
+
+  - **Dutch translation.** A new `nl.ts` catalog covering the main
+    menu, status bar (with `{host}`/`{proxy}` interpolation),
+    screen-size dropdown, and Settings panel labels. Dutch is now
+    selectable in the Settings language picker, appearing at the end
+    of the functional-languages column (directly below Portuguese).
+    (Best-effort translation, native review pending; corrections are
+    catalog-only.)
+
+  - A `settings.language.dutch` endonym key was added to every
+    catalog for consistency (the picker label itself comes from the
+    `LANGUAGES` registry's endonym field, "Nederlands").
+
+  - As with the other languages, this was a catalog-plus-registry
+    change — the new `nl.ts`, its registration in `index.ts`, and
+    the endonym key. The Settings picker renders the new radio
+    automatically from the registry; no layout code changed. The
+    User Manual's language list was updated to mention Dutch.
+
+### Tests
+
+1188 → 1192. Dutch lookup, interpolation, and picker-dispatch
+tests; a test asserting the Dutch radio sits directly below
+Portuguese; language-count assertions five → six.
+
+### Bundle
+
+~673 → ~676 KB raw / ~147 KB gzipped.
+
 ## [2.0.0-beta.11] — 2026-05-22
 
 Portuguese (Português) joins the language list — the fifth language,

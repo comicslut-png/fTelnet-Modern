@@ -108,6 +108,7 @@ export const en = {
   'settings.language.french': 'French',
   'settings.language.spanish': 'Spanish',
   'settings.language.portuguese': 'Portuguese',
+  'settings.language.dutch': 'Dutch',
   'settings.language.other': 'Other',
 
   // ── Info dialogs ────────────────────────────────────────────
