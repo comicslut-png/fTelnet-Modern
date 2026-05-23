@@ -56,14 +56,14 @@ applicable.
   Topaz), and troubleshooting tips. Written for all experience
   levels — from users who've never seen a BBS to seasoned sysops.
 - **Multilingual UI** (new in beta.6): a Language picker in
-  Settings switches the client chrome between languages. Ten ship
+  Settings switches the client chrome between languages. Eleven ship
   functional today — English, German, French, Spanish, Portuguese,
-  Dutch, Italian, Russian (the first non-Latin script), Swedish, and
-  Polish — with room in the picker to add more. Built on a simple
-  per-language string catalog with English fallback, so any
-  untranslated text stays readable and adding a language is
-  catalog-only. The main menu and status bar are translated; other
-  areas follow in later releases.
+  Dutch, Italian, Russian, Swedish, Polish, and Ukrainian (Russian
+  and Ukrainian being non-Latin Cyrillic) — with room in the picker
+  to add more. Built on a simple per-language string catalog with
+  English fallback, so any untranslated text stays readable and
+  adding a language is catalog-only. The main menu and status bar
+  are translated; other areas follow in later releases.
 - **ZMODEM file transfers** (new in Phase 4): receive downloads from
   any BBS that speaks ZMODEM. Auto-detects when the BBS initiates a
   transfer; no user configuration required. Confirmed working across
@@ -168,13 +168,13 @@ See `docs/` for stage-by-stage planning notes:
 
 ### Test coverage
 
-1212 unit tests across 55 files, run on every commit. Phase boundaries:
+1217 unit tests across 55 files, run on every commit. Phase boundaries:
 
   - End of Phase 1: 559 tests
   - End of Phase 2: 691 tests
   - End of Phase 3: 722 tests
   - End of Phase 4: 980 tests
-  - Phase 5 (in progress): 1212 tests
+  - Phase 5 (in progress): 1217 tests
 
 ## Testing against a real BBS
 
@@ -247,7 +247,7 @@ for that command, not a bug in the client.
 ```bash
 npm install              # install dependencies
 npm run dev              # start Vite dev server with hot reload (port 5173)
-npm test                 # run the full Vitest suite (1212 tests)
+npm test                 # run the full Vitest suite (1217 tests)
 npm run typecheck        # tsc --noEmit
 npm run build:all        # produce all four bundle flavors
 ```
@@ -257,7 +257,7 @@ Output bundles land in `dist/`:
 - `ftelnet.norip.noxfer.js` — ANSI/BBS only, smallest bundle
 - `ftelnet.norip.xfer.js` — adds YMODEM + ZMODEM file transfer
 - `ftelnet.rip.noxfer.js` — adds RIPscrip graphics emulation
-- `ftelnet.rip.xfer.js` — everything (~691 KB / ~150 KB gzipped)
+- `ftelnet.rip.xfer.js` — everything (~695 KB / ~151 KB gzipped)
 
 Each comes with a source map and a minified `.min.js` variant.
 

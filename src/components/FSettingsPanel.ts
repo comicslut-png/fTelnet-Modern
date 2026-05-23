@@ -107,7 +107,7 @@ export class FSettingsPanel extends LitElement {
    * tests and the panel can read the same value without needing
    * a build-time injection mechanism.
    */
-  public static readonly VERSION = '2.0.0-beta.16';
+  public static readonly VERSION = '2.0.0-beta.17';
 
   @property({ type: Boolean })
   open = false;
@@ -281,24 +281,6 @@ export class FSettingsPanel extends LitElement {
                     </div>
                   `
                 )}
-                <div class="fTelnetSettingsPanelLanguageColumn">
-                  ${[0, 1, 2].map(
-                    (): TemplateResult => html`
-                      <label
-                        class="fTelnetSettingsPanelOption fTelnetSettingsPanelOptionDisabled"
-                        title="Coming soon — translation help welcome"
-                      >
-                        <input
-                          type="radio"
-                          name="language-other"
-                          value="other"
-                          disabled
-                        />
-                        ${t('settings.language.other', this.language)}
-                      </label>
-                    `
-                  )}
-                </div>
               </div>
             </fieldset>
           </div>
@@ -557,14 +539,14 @@ export class FSettingsPanel extends LitElement {
   /**
    * Split the registered languages into display columns of at most
    * MAX_LANGUAGES_PER_COLUMN each, preserving registry order. The
-   * Settings Language fieldset renders one sub-column per chunk,
-   * then a final dedicated column for the "Other" placeholders.
+   * Settings Language fieldset renders one sub-column per chunk.
    *
    * Capping the column height keeps the fieldset from growing
    * arbitrarily tall as languages are added — overflow flows into a
-   * new column instead. With 7 languages and a cap of 5 that yields
-   * two language columns (5 + 2); adding more simply extends or
-   * adds columns automatically, no layout edit needed.
+   * new column instead. With 11 languages and a cap of 5 that yields
+   * three columns (5 + 5 + 1); adding more simply extends or adds
+   * columns automatically, no layout edit needed. The columns are
+   * spread evenly across the fieldset width (see the CSS).
    */
   private static readonly MAX_LANGUAGES_PER_COLUMN = 5;
 

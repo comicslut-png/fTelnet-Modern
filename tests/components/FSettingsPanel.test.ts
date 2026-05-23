@@ -510,7 +510,7 @@ describe('<f-settings-panel>', () => {
       expect(langFieldset).toBeDefined();
     });
 
-    it('renders the ten known languages with endonyms', () => {
+    it('renders the eleven known languages with endonyms', () => {
       const radios = getLanguageRadios();
       const values = radios.map((r) => r.value);
       expect(values).toEqual([
@@ -524,6 +524,7 @@ describe('<f-settings-panel>', () => {
         'ru',
         'sv',
         'pl',
+        'uk',
       ]);
     });
 
@@ -575,7 +576,15 @@ describe('<f-settings-panel>', () => {
       expect(plIndex).toBe(svIndex + 1);
     });
 
-    it('all ten languages are enabled (none disabled)', () => {
+    it('Ukrainian radio appears directly below Polish', () => {
+      const radios = getLanguageRadios();
+      const values = radios.map((r) => r.value);
+      const plIndex = values.indexOf('pl');
+      const ukIndex = values.indexOf('uk');
+      expect(ukIndex).toBe(plIndex + 1);
+    });
+
+    it('all eleven languages are enabled (none disabled)', () => {
       const radios = getLanguageRadios();
       const byValue = (v: string): HTMLInputElement =>
         radios.find((r) => r.value === v)!;
@@ -589,6 +598,7 @@ describe('<f-settings-panel>', () => {
       expect(byValue('ru').disabled).toBe(false);
       expect(byValue('sv').disabled).toBe(false);
       expect(byValue('pl').disabled).toBe(false);
+      expect(byValue('uk').disabled).toBe(false);
     });
 
     it('reflects the language property in the checked radio', async () => {
@@ -601,14 +611,13 @@ describe('<f-settings-panel>', () => {
       expect(en.checked).toBe(false);
     });
 
-    it('renders three disabled "Other" placeholder radios', () => {
+    it('renders no "Other" placeholder radios (removed in beta.17)', () => {
       const others = Array.from(
         el.querySelectorAll<HTMLInputElement>(
           'input[type="radio"][name="language-other"]',
         ),
       );
-      expect(others.length).toBe(3);
-      expect(others.every((r) => r.disabled)).toBe(true);
+      expect(others.length).toBe(0);
     });
 
     it('selecting German dispatches settings-language-change with language=de', () => {
@@ -746,16 +755,32 @@ describe('<f-settings-panel>', () => {
       expect(captured).toEqual({ language: 'pl' });
     });
 
-    it('splits languages into columns of at most 5, plus an Other column', () => {
+    it('selecting Ukrainian dispatches settings-language-change with language=uk', () => {
+      const radios = getLanguageRadios();
+      const uk = radios.find((r) => r.value === 'uk')!;
+
+      let captured: { language: string } | undefined;
+      el.addEventListener('settings-language-change', (e): void => {
+        captured = (e as CustomEvent<{ language: string }>).detail;
+      });
+
+      uk.checked = true;
+      uk.dispatchEvent(new Event('change', { bubbles: true }));
+
+      expect(captured).toEqual({ language: 'uk' });
+    });
+
+    it('splits languages into three columns of at most 5 (no Other column)', () => {
       const langCols = el.querySelectorAll(
         '.fTelnetSettingsPanelLanguageColumn',
       );
-      // 10 functional languages chunked 5-per-column = 2 language
-      // columns (5 + 5), plus 1 dedicated "Other" column = 3 total.
+      // 11 functional languages chunked 5-per-column = 3 language
+      // columns (5 + 5 + 1). The "Other" placeholder column was
+      // removed in beta.17, so there are exactly 3 columns now.
       expect(langCols.length).toBe(3);
     });
 
-    it('first language column holds 5 languages, second holds the overflow', () => {
+    it('chunks languages 5/5/1 across three language columns', () => {
       const cols = Array.from(
         el.querySelectorAll('.fTelnetSettingsPanelLanguageColumn'),
       );
@@ -766,6 +791,7 @@ describe('<f-settings-panel>', () => {
           ),
         );
       // Column 1: en/de/fr/es/pt (5). Column 2: nl/it/ru/sv/pl (5).
+      // Column 3: uk (1).
       expect(realRadios(cols[0]!).map((r) => r.value)).toEqual([
         'en',
         'de',
@@ -780,6 +806,7 @@ describe('<f-settings-panel>', () => {
         'sv',
         'pl',
       ]);
+      expect(realRadios(cols[2]!).map((r) => r.value)).toEqual(['uk']);
     });
 
     it('no language column exceeds 5 entries', () => {
@@ -792,14 +819,13 @@ describe('<f-settings-panel>', () => {
       }
     });
 
-    it('the third column holds the three Other placeholders', () => {
-      const cols = Array.from(
-        el.querySelectorAll('.fTelnetSettingsPanelLanguageColumn'),
+    it('every column contains only real (enabled) language radios', () => {
+      // After removing the Other placeholders, there should be no
+      // disabled radios anywhere in the language fieldset.
+      const disabled = el.querySelectorAll(
+        '.fTelnetSettingsPanelLanguageColumns input[type="radio"]:disabled',
       );
-      const others = cols[2]!.querySelectorAll(
-        'input[type="radio"][name="language-other"]',
-      );
-      expect(others.length).toBe(3);
+      expect(disabled.length).toBe(0);
     });
   });
 
@@ -856,6 +882,7 @@ describe('<f-settings-panel>', () => {
       expect(labels).toContain('Русский');
       expect(labels).toContain('Svenska');
       expect(labels).toContain('Polski');
+      expect(labels).toContain('Українська');
     });
 
     it('removes the emoji icons from option labels', () => {

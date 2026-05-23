@@ -36,7 +36,9 @@ describe('<f-status-bar>', () => {
     it('has sensible defaults for all reactive properties', () => {
       expect(el.statusText).toBe('Not connected');
       expect(el.connectButtonText).toBe('Connect');
-      expect(el.connectButtonVisible).toBe(true);
+      // beta.17: connect button hidden by default (initial idle
+      // state shows Menu only; Reconnect/Retry reappear later).
+      expect(el.connectButtonVisible).toBe(false);
       expect(el.state).toBe('idle');
       expect(el.widthPx).toBe(0);
     });
@@ -44,6 +46,9 @@ describe('<f-status-bar>', () => {
     it('renders inner divs with the legacy CSS classes', () => {
       expect(el.querySelector('.fTelnetStatusBar')).not.toBeNull();
       expect(el.querySelector('.fTelnetMenuButton')).not.toBeNull();
+      // The connect button element is still rendered (just hidden
+      // via inline display:none by default) so reconnect/retry can
+      // reveal it without re-rendering structure.
       expect(el.querySelector('.fTelnetConnectButton')).not.toBeNull();
       expect(el.querySelector('.fTelnetStatusBarLabel')).not.toBeNull();
     });
@@ -52,7 +57,14 @@ describe('<f-status-bar>', () => {
       expect(el.querySelector('.fTelnetMenuButton')?.textContent?.trim()).toBe('Menu');
     });
 
-    it('shows the connect button with text from connectButtonText', () => {
+    it('hides the connect button by default (initial state = Menu only)', () => {
+      const btn = el.querySelector<HTMLElement>('.fTelnetConnectButton');
+      expect(btn?.getAttribute('style')).toContain('display: none');
+    });
+
+    it('the connect button still carries its text for when it is revealed', () => {
+      // Hidden, but the label is "Connect" until reconnect/retry
+      // change it — confirms we didn't break the text binding.
       expect(el.querySelector('.fTelnetConnectButton')?.textContent?.trim()).toBe('Connect');
     });
 
@@ -232,6 +244,14 @@ describe('<f-status-bar>', () => {
   });
 
   describe('connect-click event', () => {
+    // The connect button is hidden by default (beta.17); these tests
+    // exercise its click behavior in the revealed (reconnect/retry)
+    // state, so make it visible first.
+    beforeEach(async () => {
+      el.connectButtonVisible = true;
+      await el.updateComplete;
+    });
+
     it('fires when Connect button is clicked', () => {
       let fired = 0;
       el.addEventListener('connect-click', () => fired++);

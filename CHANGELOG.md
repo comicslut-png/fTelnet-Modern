@@ -5,6 +5,64 @@ All notable changes to fTelnet-Modern are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.0.0-beta.17] — 2026-05-23
+
+Two changes: the status-bar **Connect button is hidden on first
+load** (to push users toward the Menu), and **Ukrainian (Українська)**
+joins as the eleventh language.
+
+### Changed
+
+  - **Connect button hidden in the initial idle state.** Long-time
+    users reflexively clicked the status-bar "Connect" button and
+    never discovered the menu (Settings, Language, and now Connect
+    itself live there). The button no longer appears on first load —
+    the only status-bar control is **Menu**, so both new and
+    returning users go through it. The button still **reappears** as
+    "Reconnect" after a disconnect and "Retry Connection" after a
+    failed attempt, so the convenient one-click reconnect path is
+    preserved for users who were already connected. Implemented by
+    defaulting `FStatusBar.connectButtonVisible` to `false`; the
+    client's disconnect/error handlers still set it visible.
+
+### Added
+
+  - **Ukrainian translation.** A new `uk.ts` catalog (Cyrillic)
+    covering the main menu, status bar (with `{host}`/`{proxy}`
+    interpolation), screen-size dropdown, and Settings panel labels.
+    Ukrainian is the second Cyrillic-script language but a distinct
+    alphabet (і/ї/є/ґ), translated independently — not a Russian
+    transliteration. Selectable in the Settings picker after Polish.
+    (Best-effort translation, native review pending; corrections are
+    catalog-only.)
+
+  - A `settings.language.ukrainian` endonym key was added to every
+    catalog (the picker label "Українська" comes from the
+    `LANGUAGES` registry's endonym field).
+
+  - **First three-language-column picker, evenly spaced.** At
+    eleven languages the 5-per-column chunking now produces a third
+    language column (5 + 5 + 1 = English…Portuguese / Dutch…Polish /
+    Ukrainian). The three "Other" / "coming soon" placeholder radios
+    were **removed** — with eleven real languages they were just
+    clutter — and the three language columns are now spread evenly
+    across the full width of the Language box. (Chunking is still
+    automatic; no per-language layout edits.)
+
+### Tests
+
+1212 → 1217. Ukrainian lookup, interpolation, and picker-dispatch
+tests; a test asserting the Ukrainian radio sits directly below
+Polish; language-count assertions ten → eleven; the column-chunking
+test updated for the 5/5/1 split across three columns (and a test
+confirming the "Other" placeholders are gone / no disabled radios
+remain); and FStatusBar default-visibility tests updated for the
+hidden-by-default button.
+
+### Bundle
+
+~691 → ~695 KB raw / ~151 KB gzipped.
+
 ## [2.0.0-beta.16] — 2026-05-23
 
 Polish (Polski) joins the language list — the tenth language. Poland

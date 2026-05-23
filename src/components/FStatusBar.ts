@@ -105,8 +105,27 @@ export class FStatusBar extends LitElement {
   @property({ type: String, attribute: 'connect-button-text' })
   connectButtonText = 'Connect';
 
+  /**
+   * Whether the status-bar action button (Connect / Reconnect /
+   * Retry Connection) is shown.
+   *
+   * Phase 5 (beta.17): defaults to FALSE so the INITIAL idle state
+   * shows no Connect button — only the Menu button. This is
+   * deliberate: long-time users reflexively clicked "Connect" and
+   * never discovered the menu (Settings, Language, etc.). Starting
+   * with Menu as the only option forces both new and returning
+   * users to go through it, where Connect now lives alongside the
+   * other options.
+   *
+   * The button still REAPPEARS as "Reconnect" after a disconnect
+   * and "Retry Connection" after a failed attempt (the client sets
+   * this true in OnConnectionClose / OnConnectionSecurityError), so
+   * the convenient one-click reconnect path is preserved for users
+   * who were already connected — only the initial reflex-Connect is
+   * removed.
+   */
   @property({ type: Boolean, attribute: 'connect-button-visible' })
-  connectButtonVisible = true;
+  connectButtonVisible = false;
 
   /**
    * Semantic connection state. Drives the background color and
