@@ -494,54 +494,218 @@ describe('<f-settings-panel>', () => {
     });
   });
 
-  describe('three-column layout', () => {
+  describe('language picker', () => {
+    function getLanguageRadios(): HTMLInputElement[] {
+      return Array.from(
+        el.querySelectorAll<HTMLInputElement>(
+          'input[type="radio"][name="language"]',
+        ),
+      );
+    }
+
+    it('renders a Language fieldset', () => {
+      const langFieldset = Array.from(
+        el.querySelectorAll<HTMLFieldSetElement>('fieldset'),
+      ).find((f) => f.querySelector('legend')?.textContent?.trim() === 'Language');
+      expect(langFieldset).toBeDefined();
+    });
+
+    it('renders the four known languages with endonyms', () => {
+      const radios = getLanguageRadios();
+      const values = radios.map((r) => r.value);
+      expect(values).toEqual(['en', 'de', 'fr', 'es']);
+    });
+
+    it('English and German are enabled; French and Spanish are disabled', () => {
+      const radios = getLanguageRadios();
+      const byValue = (v: string): HTMLInputElement =>
+        radios.find((r) => r.value === v)!;
+      expect(byValue('en').disabled).toBe(false);
+      expect(byValue('de').disabled).toBe(false);
+      expect(byValue('fr').disabled).toBe(true);
+      expect(byValue('es').disabled).toBe(true);
+    });
+
+    it('reflects the language property in the checked radio', async () => {
+      el.language = 'de';
+      await el.updateComplete;
+      const radios = getLanguageRadios();
+      const de = radios.find((r) => r.value === 'de')!;
+      const en = radios.find((r) => r.value === 'en')!;
+      expect(de.checked).toBe(true);
+      expect(en.checked).toBe(false);
+    });
+
+    it('renders three disabled "Other" placeholder radios', () => {
+      const others = Array.from(
+        el.querySelectorAll<HTMLInputElement>(
+          'input[type="radio"][name="language-other"]',
+        ),
+      );
+      expect(others.length).toBe(3);
+      expect(others.every((r) => r.disabled)).toBe(true);
+    });
+
+    it('selecting German dispatches settings-language-change with language=de', () => {
+      const radios = getLanguageRadios();
+      const de = radios.find((r) => r.value === 'de')!;
+
+      let captured: { language: string } | undefined;
+      el.addEventListener('settings-language-change', (e): void => {
+        captured = (e as CustomEvent<{ language: string }>).detail;
+      });
+
+      de.checked = true;
+      de.dispatchEvent(new Event('change', { bubbles: true }));
+
+      expect(captured).toEqual({ language: 'de' });
+    });
+
+    it('the Language fieldset uses two internal sub-columns', () => {
+      const langCols = el.querySelectorAll(
+        '.fTelnetSettingsPanelLanguageColumn',
+      );
+      expect(langCols.length).toBe(2);
+    });
+  });
+
+  describe('localization of panel labels', () => {
+    it('shows English legends by default', () => {
+      const legends = Array.from(el.querySelectorAll('legend')).map((l) =>
+        l.textContent?.trim(),
+      );
+      expect(legends).toContain('Theme');
+      expect(legends).toContain('Protocol');
+      expect(legends).toContain('Language');
+      expect(legends).toContain('Sound');
+      expect(legends).toContain('Touch');
+      expect(legends).toContain('About');
+    });
+
+    it('switches panel labels to German when language="de"', async () => {
+      el.language = 'de';
+      await el.updateComplete;
+      const legends = Array.from(el.querySelectorAll('legend')).map((l) =>
+        l.textContent?.trim(),
+      );
+      expect(legends).toContain('Design');
+      expect(legends).toContain('Protokoll');
+      expect(legends).toContain('Sprache');
+      expect(legends).toContain('Ton');
+      expect(legends).toContain('Über');
+      expect(legends).not.toContain('Theme');
+    });
+
+    it('localizes the header and close button', async () => {
+      el.language = 'de';
+      await el.updateComplete;
+      const header = el.querySelector('.fTelnetSettingsPanelHeader');
+      const close = el.querySelector('.fTelnetSettingsPanelClose');
+      expect(header?.textContent?.trim()).toBe('Einstellungen');
+      expect(close?.textContent?.trim()).toBe('Schließen');
+    });
+
+    it('language names are endonyms regardless of active language', () => {
+      const radios = Array.from(
+        el.querySelectorAll<HTMLInputElement>(
+          'input[type="radio"][name="language"]',
+        ),
+      );
+      const labels = radios.map((r) => r.parentElement?.textContent?.trim());
+      expect(labels).toContain('English');
+      expect(labels).toContain('Deutsch');
+      expect(labels).toContain('Français');
+      expect(labels).toContain('Español');
+    });
+
+    it('removes the emoji icons from option labels', () => {
+      const text = el.textContent ?? '';
+      expect(text).not.toContain('🎨');
+      expect(text).not.toContain('📡');
+      expect(text).not.toContain('📼');
+      expect(text).not.toContain('🔍');
+      expect(text).not.toContain('🔇');
+      expect(text).not.toContain('📳');
+    });
+  });
+
+  describe('two-row grid layout', () => {
     /**
-     * Phase 5: panel uses a 3-column flex layout
-     * (Theme | Protocol | Sound+Touch). The third column also holds
-     * an empty bordered placeholder fieldset (no legend) below
-     * Touch — reserved room for a future setting without committing
-     * a whole fourth column to it. Tests below verify the column
-     * count, order, and the placeholder's presence in column 3.
+     * Phase 5 (beta.6): panel is a two-row grid, three columns per
+     * row:
+     *   Row 1:  Theme | Protocol | Language (wide)
+     *   Row 2:  Sound | Touch    | placeholder (wide)
+     * About spans full width below. Tests verify the row/column
+     * structure, the column order, and the placeholder in row 2.
      */
-    it('renders three columns in the .fTelnetSettingsPanelColumns container', () => {
+    it('renders two .fTelnetSettingsPanelColumns rows', () => {
+      const rows = el.querySelectorAll('.fTelnetSettingsPanelColumns');
+      expect(rows.length).toBe(2);
+    });
+
+    it('renders six columns total (three per row)', () => {
       const cols = el.querySelectorAll('.fTelnetSettingsPanelColumn');
-      expect(cols.length).toBe(3);
+      expect(cols.length).toBe(6);
     });
 
-    it('column order is Theme | Protocol | Sound+Touch(+placeholder)', () => {
-      const cols = Array.from(
-        el.querySelectorAll<HTMLDivElement>('.fTelnetSettingsPanelColumn'),
+    it('row 1 order is Theme | Protocol | Language', () => {
+      const rows = Array.from(
+        el.querySelectorAll('.fTelnetSettingsPanelColumns'),
       );
-
-      const themeLegend = cols[0]!.querySelector('legend')?.textContent;
-      const protocolLegend = cols[1]!.querySelector('legend')?.textContent;
-      // Column 3 has Sound + Touch legends (the placeholder fieldset
-      // below them has no legend).
-      const col3Legends = Array.from(
-        cols[2]!.querySelectorAll('legend'),
-      ).map((l) => l.textContent);
-
-      expect(themeLegend).toBe('Theme');
-      expect(protocolLegend).toBe('Protocol');
-      expect(col3Legends).toEqual(['Sound', 'Touch']);
+      const row1Cols = Array.from(
+        rows[0]!.querySelectorAll('.fTelnetSettingsPanelColumn'),
+      );
+      const legends = row1Cols.map(
+        (c) => c.querySelector('legend')?.textContent?.trim(),
+      );
+      expect(legends).toEqual(['Theme', 'Protocol', 'Language']);
     });
 
-    it('column 3 ends with an empty bordered placeholder fieldset', () => {
-      const cols = Array.from(
-        el.querySelectorAll<HTMLDivElement>('.fTelnetSettingsPanelColumn'),
+    it('row 2 order is Sound | Touch | (placeholder)', () => {
+      const rows = Array.from(
+        el.querySelectorAll('.fTelnetSettingsPanelColumns'),
       );
-      const col3 = cols[2]!;
-      const fieldsets = Array.from(col3.querySelectorAll('fieldset'));
-      // Sound, Touch, placeholder = 3 fieldsets.
-      expect(fieldsets.length).toBe(3);
+      const row2Cols = Array.from(
+        rows[1]!.querySelectorAll('.fTelnetSettingsPanelColumn'),
+      );
+      const soundLegend = row2Cols[0]!.querySelector('legend')?.textContent?.trim();
+      const touchLegend = row2Cols[1]!.querySelector('legend')?.textContent?.trim();
+      // Third column is the placeholder fieldset — no legend.
+      const placeholder = row2Cols[2]!.querySelector('fieldset');
 
-      const placeholder = fieldsets[fieldsets.length - 1]!;
-      // No legend, carries the reserved class, and is empty.
-      expect(placeholder.querySelector('legend')).toBeNull();
+      expect(soundLegend).toBe('Sound');
+      expect(touchLegend).toBe('Touch');
+      expect(placeholder?.querySelector('legend')).toBeNull();
+      expect(
+        placeholder?.classList.contains('fTelnetSettingsPanelGroupReserved'),
+      ).toBe(true);
+    });
+
+    it('the Language column is the wide column in row 1', () => {
+      const rows = Array.from(
+        el.querySelectorAll('.fTelnetSettingsPanelColumns'),
+      );
+      const row1Cols = Array.from(
+        rows[0]!.querySelectorAll('.fTelnetSettingsPanelColumn'),
+      );
+      const langCol = row1Cols[2]!;
+      expect(
+        langCol.classList.contains('fTelnetSettingsPanelColumnWide'),
+      ).toBe(true);
+    });
+
+    it('the placeholder in row 2 is empty and bordered', () => {
+      const rows = Array.from(
+        el.querySelectorAll('.fTelnetSettingsPanelColumns'),
+      );
+      const row2Cols = Array.from(
+        rows[1]!.querySelectorAll('.fTelnetSettingsPanelColumn'),
+      );
+      const placeholder = row2Cols[2]!.querySelector('fieldset')!;
+      expect(placeholder.children.length).toBe(0);
       expect(
         placeholder.classList.contains('fTelnetSettingsPanelGroupReserved'),
       ).toBe(true);
-      expect(placeholder.children.length).toBe(0);
     });
 
     it('Protocol column has a "Default" sub-header above the radios', () => {

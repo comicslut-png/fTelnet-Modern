@@ -12,6 +12,7 @@ export default defineConfig({
       '@filetransfer': resolve(__dirname, 'src/filetransfer'),
       '@graph': resolve(__dirname, 'src/graph'),
       '@ftelnetclient': resolve(__dirname, 'src/ftelnetclient'),
+      '@i18n': resolve(__dirname, 'src/i18n'),
     },
   },
   test: {

@@ -31,6 +31,7 @@ export {
   type SettingsVibrateChangeDetail,
   type SettingsZModemAutoDetectChangeDetail,
   type SettingsDefaultProtocolChangeDetail,
+  type SettingsLanguageChangeDetail,
   type ThemeChoice,
 } from './FSettingsPanel.js';
 export { FStatusBar, type MenuClickDetail } from './FStatusBar.js';

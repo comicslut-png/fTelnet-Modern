@@ -129,6 +129,15 @@ export class fTelnetOptions {
    * has no saved preference.
    */
   public Theme = 'classic';
+  /**
+   * UI language code ('en', 'de', ...). Phase 5 (beta.6). The
+   * settings panel exposes a runtime language picker; the choice
+   * persists for the browser-tab session via sessionStorage (same
+   * per-visitor-reset behavior as the other settings). This is the
+   * embed-time default when sessionStorage has no saved preference.
+   * Untranslated keys fall back to English (see src/i18n).
+   */
+  public Language = 'en';
   public VirtualKeyboardVibrateDuration = 25;
   public VirtualKeyboardVisible: boolean = DetectMobileBrowser.IsMobile;
   public WebSocketUrlPath = '';

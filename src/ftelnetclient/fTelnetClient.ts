@@ -79,11 +79,13 @@ import {
   type SettingsVibrateChangeDetail,
   type SettingsZModemAutoDetectChangeDetail,
   type SettingsDefaultProtocolChangeDetail,
+  type SettingsLanguageChangeDetail,
   type UploadConfirmDetail,
   type VKKeyEventDetail,
 } from '../components/index.js';
 import { fTelnetOptions } from './fTelnetOptions.js';
 import { TransferStats } from '../filetransfer/TransferStats.js';
+import { isAvailable, type Language } from '../i18n/index.js';
 
 /**
  * Top-level fTelnet client.
@@ -483,6 +485,17 @@ export class fTelnetClient {
       ) {
         this._Options.DefaultTransferProtocol = storedDefaultProtocol;
       }
+
+      // UI language. Only honor it if it's a functional language
+      // (English or German today); placeholder codes like 'fr'/'es'
+      // — or any junk — are ignored so we never select a
+      // non-working language. isAvailable() is the gate.
+      const storedLanguage = window.sessionStorage.getItem(
+        'fTelnet.language',
+      );
+      if (storedLanguage !== null && isAvailable(storedLanguage)) {
+        this._Options.Language = storedLanguage;
+      }
     } catch {
       // Ignore — same as above.
     }
@@ -498,6 +511,7 @@ export class fTelnetClient {
       window.localStorage.removeItem('fTelnet.vibrate');
       window.localStorage.removeItem('fTelnet.zmodemAutoDetect');
       window.localStorage.removeItem('fTelnet.defaultTransferProtocol');
+      window.localStorage.removeItem('fTelnet.language');
     } catch {
       // Ignore — browser doesn't support localStorage.
     }
@@ -819,6 +833,7 @@ export class fTelnetClient {
     this._MenuButtons.currentScreenSize = CurrentScreenSize;
     this._MenuButtons.supportedScreenSizes = SupportedScreenSizes;
     this._MenuButtons.transferProtocol = this._Options.DefaultTransferProtocol;
+    this._MenuButtons.language = this._Options.Language as Language;
 
     this._MenuButtons.addEventListener('menu-action', (e: Event): void => {
       const detail = (e as CustomEvent<MenuActionDetail>).detail;
@@ -902,6 +917,7 @@ export class fTelnetClient {
     this._SettingsPanel.vibrateDuration = this._Options.VirtualKeyboardVibrateDuration;
     this._SettingsPanel.zmodemAutoDetect = this._Options.ZModemAutoDetect;
     this._SettingsPanel.defaultProtocol = this._Options.DefaultTransferProtocol;
+    this._SettingsPanel.language = this._Options.Language as Language;
 
     this._SettingsPanel.addEventListener('settings-theme-change', (e: Event): void => {
       const detail = (e as CustomEvent<SettingsThemeChangeDetail>).detail;
@@ -974,6 +990,35 @@ export class fTelnetClient {
           window.sessionStorage.setItem(
             'fTelnet.defaultTransferProtocol',
             detail.protocol,
+          );
+        } catch {
+          // Ignore.
+        }
+      },
+    );
+    this._SettingsPanel.addEventListener(
+      'settings-language-change',
+      (e: Event): void => {
+        const detail = (e as CustomEvent<SettingsLanguageChangeDetail>)
+          .detail;
+        // Only functional languages reach here (the picker disables
+        // placeholder options), but guard anyway.
+        if (!isAvailable(detail.language)) {
+          return;
+        }
+        this._Options.Language = detail.language;
+        // Propagate to every localized component so Lit re-renders
+        // it in the new language. Today that's the menu popup and
+        // the settings panel itself; as more components adopt t(),
+        // add them here.
+        if (this._MenuButtons !== undefined) {
+          this._MenuButtons.language = detail.language;
+        }
+        this._SettingsPanel.language = detail.language;
+        try {
+          window.sessionStorage.setItem(
+            'fTelnet.language',
+            detail.language,
           );
         } catch {
           // Ignore.
@@ -2748,6 +2793,7 @@ export class fTelnetClient {
     this._SettingsPanel.vibrateDuration = this._Options.VirtualKeyboardVibrateDuration;
     this._SettingsPanel.zmodemAutoDetect = this._Options.ZModemAutoDetect;
     this._SettingsPanel.defaultProtocol = this._Options.DefaultTransferProtocol;
+    this._SettingsPanel.language = this._Options.Language as Language;
     this._SettingsPanel.open = true;
   }
 

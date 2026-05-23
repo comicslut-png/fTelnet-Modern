@@ -20,6 +20,7 @@
 
 import { LitElement, html, type TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
+import { t, LANGUAGES, type Language } from '@i18n/index.js';
 
 /** Available themes, including their display labels. */
 export interface ThemeChoice {
@@ -50,6 +51,11 @@ export interface SettingsZModemAutoDetectChangeDetail {
 /** Payload for the `settings-default-protocol-change` event. */
 export interface SettingsDefaultProtocolChangeDetail {
   protocol: 'zmodem' | 'ymodem';
+}
+
+/** Payload for the `settings-language-change` event. */
+export interface SettingsLanguageChangeDetail {
+  language: Language;
 }
 
 /**
@@ -101,7 +107,7 @@ export class FSettingsPanel extends LitElement {
    * tests and the panel can read the same value without needing
    * a build-time injection mechanism.
    */
-  public static readonly VERSION = '2.0.0-beta.5';
+  public static readonly VERSION = '2.0.0-beta.6';
 
   @property({ type: Boolean })
   open = false;
@@ -150,6 +156,14 @@ export class FSettingsPanel extends LitElement {
   @property({ type: String, attribute: 'default-protocol' })
   defaultProtocol: 'zmodem' | 'ymodem' = 'zmodem';
 
+  /**
+   * Active UI language. Drives the panel's own labels via `t()`
+   * and is the selected radio in the Language fieldset. Mirrors
+   * `fTelnetOptions.Language`. Phase 5 (beta.6).
+   */
+  @property({ type: String })
+  language: Language = 'en';
+
   protected override createRenderRoot(): HTMLElement {
     return this;
   }
@@ -159,23 +173,26 @@ export class FSettingsPanel extends LitElement {
 
     return html`
       <div class="fTelnetSettingsPanel" style=${inlineStyle}>
-        <div class="fTelnetSettingsPanelHeader">Settings</div>
+        <div class="fTelnetSettingsPanelHeader">
+          ${t('settings.title', this.language)}
+        </div>
 
+        <!-- Row 1: Theme | Protocol | Language -->
         <div class="fTelnetSettingsPanelColumns">
           <div class="fTelnetSettingsPanelColumn">
             <fieldset class="fTelnetSettingsPanelGroup">
-              <legend>Theme</legend>
+              <legend>${t('settings.theme', this.language)}</legend>
               ${this.themes.map(
-                (t): TemplateResult => html`
+                (th): TemplateResult => html`
                   <label class="fTelnetSettingsPanelOption">
                     <input
                       type="radio"
                       name="theme"
-                      value=${t.id}
-                      ?checked=${t.id === this.currentTheme}
+                      value=${th.id}
+                      ?checked=${th.id === this.currentTheme}
                       @change=${this.handleThemeChange}
                     />
-                    🎨 ${t.label}
+                    ${th.label}
                   </label>
                 `
               )}
@@ -184,8 +201,10 @@ export class FSettingsPanel extends LitElement {
 
           <div class="fTelnetSettingsPanelColumn">
             <fieldset class="fTelnetSettingsPanelGroup">
-              <legend>Protocol</legend>
-              <div class="fTelnetSettingsPanelSubheader">Default</div>
+              <legend>${t('settings.protocol', this.language)}</legend>
+              <div class="fTelnetSettingsPanelSubheader">
+                ${t('settings.protocol.default', this.language)}
+              </div>
               <label class="fTelnetSettingsPanelOption">
                 <input
                   type="radio"
@@ -194,7 +213,7 @@ export class FSettingsPanel extends LitElement {
                   ?checked=${this.defaultProtocol === 'zmodem'}
                   @change=${this.handleDefaultProtocolChange}
                 />
-                📡 ZModem
+                ZModem
               </label>
               <label class="fTelnetSettingsPanelOption">
                 <input
@@ -204,7 +223,7 @@ export class FSettingsPanel extends LitElement {
                   ?checked=${this.defaultProtocol === 'ymodem'}
                   @change=${this.handleDefaultProtocolChange}
                 />
-                📼 YModem
+                YModem
               </label>
               <label
                 class="fTelnetSettingsPanelOption fTelnetSettingsPanelOptionDisabled"
@@ -225,28 +244,83 @@ export class FSettingsPanel extends LitElement {
                   ?checked=${this.zmodemAutoDetect}
                   @change=${this.handleZModemAutoDetectChange}
                 />
-                🔍 Auto Detect
+                ${t('settings.protocol.autodetect', this.language)}
               </label>
             </fieldset>
           </div>
 
+          <div class="fTelnetSettingsPanelColumn fTelnetSettingsPanelColumnWide">
+            <fieldset class="fTelnetSettingsPanelGroup">
+              <legend>${t('settings.language', this.language)}</legend>
+              <div class="fTelnetSettingsPanelLanguageColumns">
+                <div class="fTelnetSettingsPanelLanguageColumn">
+                  ${LANGUAGES.map(
+                    (lang): TemplateResult => html`
+                      <label
+                        class="fTelnetSettingsPanelOption${lang.available
+                          ? ''
+                          : ' fTelnetSettingsPanelOptionDisabled'}"
+                        title=${lang.available
+                          ? ''
+                          : 'Coming soon — translation help welcome'}
+                      >
+                        <input
+                          type="radio"
+                          name="language"
+                          value=${lang.code}
+                          ?checked=${lang.code === this.language}
+                          ?disabled=${!lang.available}
+                          @change=${this.handleLanguageChange}
+                        />
+                        ${lang.endonym}
+                      </label>
+                    `
+                  )}
+                </div>
+                <div class="fTelnetSettingsPanelLanguageColumn">
+                  ${[0, 1, 2].map(
+                    (): TemplateResult => html`
+                      <label
+                        class="fTelnetSettingsPanelOption fTelnetSettingsPanelOptionDisabled"
+                        title="Coming soon — translation help welcome"
+                      >
+                        <input
+                          type="radio"
+                          name="language-other"
+                          value="other"
+                          disabled
+                        />
+                        ${t('settings.language.other', this.language)}
+                      </label>
+                    `
+                  )}
+                </div>
+              </div>
+            </fieldset>
+          </div>
+        </div>
+
+        <!-- Row 2: Sound | Touch | (empty placeholder) -->
+        <div class="fTelnetSettingsPanelColumns">
           <div class="fTelnetSettingsPanelColumn">
             <fieldset class="fTelnetSettingsPanelGroup">
-              <legend>Sound</legend>
+              <legend>${t('settings.sound', this.language)}</legend>
               <label class="fTelnetSettingsPanelOption">
                 <input
                   type="checkbox"
                   ?checked=${this.muted}
                   @change=${this.handleMuteChange}
                 />
-                🔇 Mute bell sounds
+                ${t('settings.sound.mute', this.language)}
               </label>
             </fieldset>
+          </div>
 
+          <div class="fTelnetSettingsPanelColumn">
             <fieldset class="fTelnetSettingsPanelGroup">
-              <legend>Touch</legend>
+              <legend>${t('settings.touch', this.language)}</legend>
               <label class="fTelnetSettingsPanelOption">
-                📳 Vibrate duration:
+                ${t('settings.touch.vibrate', this.language)}
                 <input
                   type="number"
                   min="0"
@@ -256,10 +330,12 @@ export class FSettingsPanel extends LitElement {
                   @change=${this.handleVibrateChange}
                   class="fTelnetSettingsPanelNumber"
                 />
-                ms
+                ${t('settings.touch.ms', this.language)}
               </label>
             </fieldset>
+          </div>
 
+          <div class="fTelnetSettingsPanelColumn fTelnetSettingsPanelColumnWide">
             <fieldset
               class="fTelnetSettingsPanelGroup fTelnetSettingsPanelGroupReserved"
             ></fieldset>
@@ -267,7 +343,7 @@ export class FSettingsPanel extends LitElement {
         </div>
 
         <fieldset class="fTelnetSettingsPanelGroup fTelnetSettingsPanelGroupFullWidth">
-          <legend>About</legend>
+          <legend>${t('settings.about', this.language)}</legend>
           <div class="fTelnetSettingsPanelAbout">
             <div class="fTelnetSettingsPanelAboutColumns">
               <div class="fTelnetSettingsPanelAboutColumn">
@@ -327,7 +403,7 @@ export class FSettingsPanel extends LitElement {
             href="#"
             class="fTelnetSettingsPanelClose"
             @click=${this.handleCloseClick}
-            >Close</a
+            >${t('settings.close', this.language)}</a
           >
         </div>
       </div>
@@ -467,6 +543,28 @@ export class FSettingsPanel extends LitElement {
         'settings-default-protocol-change',
         {
           detail: { protocol: value },
+          bubbles: true,
+          composed: true,
+        },
+      ),
+    );
+  };
+
+  private handleLanguageChange = (e: Event): void => {
+    const value = (e.target as HTMLInputElement).value;
+    // Only functional languages have enabled radios that can fire
+    // this; the placeholder ('other') radios are disabled. Guard
+    // against anything unexpected by checking it's a known
+    // available language code before dispatching.
+    const known = LANGUAGES.find((l) => l.code === value && l.available);
+    if (known === undefined) {
+      return;
+    }
+    this.dispatchEvent(
+      new CustomEvent<SettingsLanguageChangeDetail>(
+        'settings-language-change',
+        {
+          detail: { language: known.code },
           bubbles: true,
           composed: true,
         },

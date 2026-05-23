@@ -20,6 +20,7 @@
 
 import { LitElement, html, type TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
+import { t, type Language } from '@i18n/index.js';
 
 /**
  * Names for actions dispatched via the `menu-action` event.
@@ -159,6 +160,15 @@ export class FMenuPopup extends LitElement {
   @property({ type: String, attribute: 'transfer-protocol' })
   transferProtocol: 'zmodem' | 'ymodem' = 'zmodem';
 
+  /**
+   * Active UI language. Drives all the button labels via `t()`.
+   * Mirrors `fTelnetOptions.Language`. When the host changes it
+   * (settings-language-change), Lit re-renders this popup in the
+   * new language. Phase 5 (beta.6).
+   */
+  @property({ type: String })
+  language: Language = 'en';
+
   // Default supportedScreenSizes if the parent never sets it.
   // Parent typically computes this (with the "current size if not
   // standard" prepended) at construction time and assigns once.
@@ -194,12 +204,12 @@ export class FMenuPopup extends LitElement {
           <tr>
             <td>
               <a href="#" @click=${(e: MouseEvent): void => this.handleAction(e, 'connect')}
-                >Connect</a
+                >${t('menu.connect', this.language)}</a
               >
             </td>
             <td>
               <a href="#" @click=${(e: MouseEvent): void => this.handleAction(e, 'disconnect')}
-                >Disconnect</a
+                >${t('menu.disconnect', this.language)}</a
               >
             </td>
           </tr>
@@ -208,12 +218,12 @@ export class FMenuPopup extends LitElement {
                 <tr>
                   <td>
                     <a href="#" @click=${(e: MouseEvent): void => this.handleAction(e, 'copy')}
-                      >Copy</a
+                      >${t('menu.copy', this.language)}</a
                     >
                   </td>
                   <td>
                     <a href="#" @click=${(e: MouseEvent): void => this.handleAction(e, 'paste')}
-                      >Paste</a
+                      >${t('menu.paste', this.language)}</a
                     >
                   </td>
                 </tr>
@@ -222,12 +232,12 @@ export class FMenuPopup extends LitElement {
           <tr>
             <td>
               <a href="#" @click=${(e: MouseEvent): void => this.handleAction(e, 'upload')}
-                >Upload (${this.transferProtocol === 'zmodem' ? 'ZMODEM' : 'YMODEM'})</a
+                >${t('menu.upload', this.language)} (${this.transferProtocol === 'zmodem' ? 'ZMODEM' : 'YMODEM'})</a
               >
             </td>
             <td>
               <a href="#" @click=${(e: MouseEvent): void => this.handleAction(e, 'download')}
-                >Download (${this.transferProtocol === 'zmodem' ? 'ZMODEM' : 'YMODEM'})</a
+                >${t('menu.download', this.language)} (${this.transferProtocol === 'zmodem' ? 'ZMODEM' : 'YMODEM'})</a
               >
             </td>
           </tr>
@@ -236,15 +246,15 @@ export class FMenuPopup extends LitElement {
               <a
                 href="#"
                 @click=${(e: MouseEvent): void => this.handleAction(e, 'keyboard-toggle')}
-                >Keyboard</a
+                >${t('menu.keyboard', this.language)}</a
               >
             </td>
             <td>
               <a
                 href="#"
                 @click=${(e: MouseEvent): void => this.handleAction(e, 'fullscreen')}
-                .innerHTML=${'Full&nbsp;Screen'}
-              ></a>
+                >${t('menu.fullscreen', this.language)}</a
+              >
             </td>
           </tr>
           ${this.showScrollback
@@ -255,7 +265,7 @@ export class FMenuPopup extends LitElement {
                       href="#"
                       @click=${(e: MouseEvent): void =>
                         this.handleAction(e, 'enter-scrollback')}
-                      >View Scrollback Buffer</a
+                      >${t('menu.scrollback', this.language)}</a
                     >
                   </td>
                 </tr>
@@ -266,7 +276,7 @@ export class FMenuPopup extends LitElement {
               <a
                 href="#"
                 @click=${(e: MouseEvent): void => this.handleAction(e, 'settings')}
-                >Settings</a
+                >${t('menu.settings', this.language)}</a
               >
             </td>
             <td>
@@ -274,7 +284,7 @@ export class FMenuPopup extends LitElement {
                 href="#"
                 @click=${(e: MouseEvent): void =>
                   this.handleAction(e, 'user-manual')}
-                >Manual</a
+                >${t('menu.manual', this.language)}</a
               >
             </td>
           </tr>

@@ -5,6 +5,76 @@ All notable changes to fTelnet-Modern are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.0.0-beta.6] — 2026-05-22
+
+The first step toward a multilingual fTelnet-Modern: a language
+system, with the main menu fully translatable and German as the
+first non-English language. International sysops run BBSes in their
+own languages; this lets their users navigate the client chrome in
+a language they read.
+
+### Added
+
+  - **Internationalization (i18n) system.** A new `src/i18n` module
+    holds one string catalog per language, keyed by stable IDs,
+    with English (`en.ts`) as the base. A `t(key, lang)` helper
+    returns the translation for the active language, falling back
+    to English for any key a translation hasn't filled in yet — so
+    a partially-translated language is still fully usable (German
+    where translated, English elsewhere). Adding a language later
+    is catalog-only: copy the English file, translate the values,
+    register it. No component changes needed.
+
+  - **Language picker in Settings.** A new Language fieldset with
+    English and German functional today, and French, Spanish, and
+    three "Other" slots shown as disabled "coming soon"
+    placeholders — advertising the feature and inviting translation
+    contributions. The choice persists per browser-tab session
+    (sessionStorage, like the other settings) and resets to the
+    default for a fresh visitor.
+
+  - **German translation of the main menu.** Selecting German
+    switches every main-menu button (Connect, Disconnect, Copy,
+    Paste, Upload, Download, Keyboard, Full Screen, View
+    Scrollback, Settings, Manual) to German live, without a
+    reconnect. The Settings panel's own labels (legends, header,
+    Close, Auto Detect) are wired to the system too. NOTE: the
+    German strings are a first-pass best effort pending native-
+    speaker review.
+
+### Changed
+
+  - **Settings panel: two-row grid + Language column.** Reshaped to
+    a 2×3 grid — Theme | Protocol | Language on top, Sound | Touch |
+    placeholder below — with the Language column wider to fit its
+    two internal sub-columns of radios. About spans full width
+    below as before.
+
+  - **Settings panel: icons removed.** The emoji icons on the
+    option labels (🎨 themes, 📡/📼 protocols, 🔍 auto-detect, 🔇
+    mute, 📳 vibrate) are gone; the panel is now clean text
+    throughout, matching the requested mockup.
+
+### Not yet translated (English for now, by design)
+
+The status bar (the "Menu" button and connection-status messages),
+the screen-size dropdown, the user manual, the virtual keyboard,
+and the transfer dialogs remain English in this release. They're
+slated for a later pass; the i18n keys for several already exist.
+
+### Tests
+
+1135 → 1168. New i18n-core suite (14: lookup, English fallback,
+placeholder-language fallback, registry availability); menu
+localization (4); settings language picker and panel localization
+(12); and the settings layout tests rewritten for the two-row grid
+(net +3).
+
+### Bundle
+
+~646 → ~657 KB raw / ~141 → ~143 KB gzipped. The increase is the
+i18n catalogs and the expanded settings panel.
+
 ## [2.0.0-beta.5] — 2026-05-22
 
 A performance fix, a privacy/sharing fix, and a settings-panel

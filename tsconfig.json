@@ -74,7 +74,8 @@
       "@crtcontrols/*": ["crtcontrols/*"],
       "@filetransfer/*": ["filetransfer/*"],
       "@graph/*": ["graph/*"],
-      "@ftelnetclient/*": ["ftelnetclient/*"]
+      "@ftelnetclient/*": ["ftelnetclient/*"],
+      "@i18n/*": ["i18n/*"]
     }
   },
   "include": ["src/**/*.ts"],

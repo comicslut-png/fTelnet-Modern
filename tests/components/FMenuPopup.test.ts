@@ -32,6 +32,51 @@ describe('<f-menu-popup>', () => {
     document.body.removeChild(container);
   });
 
+  describe('localization (language property)', () => {
+    it('defaults to English labels', () => {
+      const labels = Array.from(el.querySelectorAll('a')).map((a) =>
+        a.textContent?.trim(),
+      );
+      expect(labels).toContain('Connect');
+      expect(labels).toContain('Disconnect');
+    });
+
+    it('switches button labels to German when language="de"', async () => {
+      el.language = 'de';
+      await el.updateComplete;
+      const labels = Array.from(el.querySelectorAll('a')).map((a) =>
+        a.textContent?.trim(),
+      );
+      expect(labels).toContain('Verbinden'); // Connect
+      expect(labels).toContain('Trennen'); // Disconnect
+      expect(labels).toContain('Einstellungen'); // Settings
+      expect(labels).toContain('Handbuch'); // Manual
+      // English labels should be gone.
+      expect(labels).not.toContain('Connect');
+      expect(labels).not.toContain('Settings');
+    });
+
+    it('keeps the protocol name language-neutral in Upload/Download', async () => {
+      el.language = 'de';
+      await el.updateComplete;
+      const links = Array.from(el.querySelectorAll('a'));
+      const upload = links.find((a) =>
+        (a.textContent ?? '').trim().startsWith('Hochladen'),
+      );
+      // "Hochladen" is German for Upload; protocol stays "ZMODEM".
+      expect(upload?.textContent?.trim()).toBe('Hochladen (ZMODEM)');
+    });
+
+    it('falls back to English for an untranslated/placeholder language', async () => {
+      el.language = 'fr'; // placeholder, no catalog
+      await el.updateComplete;
+      const labels = Array.from(el.querySelectorAll('a')).map((a) =>
+        a.textContent?.trim(),
+      );
+      expect(labels).toContain('Connect');
+    });
+  });
+
   describe('default state', () => {
     it('registers as a custom element', () => {
       expect(customElements.get('f-menu-popup')).toBeDefined();
