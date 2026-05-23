@@ -591,8 +591,9 @@ export class FUserManual extends LitElement {
         <strong>Русский</strong> (Russian),
         <strong>Svenska</strong> (Swedish),
         <strong>Polski</strong> (Polish),
-        <strong>Українська</strong> (Ukrainian), and
-        <strong>Suomi</strong> (Finnish). More languages may be
+        <strong>Українська</strong> (Ukrainian),
+        <strong>Suomi</strong> (Finnish), and
+        <strong>Ελληνικά</strong> (Greek). More languages may be
         added in future releases.
       </p>
       <p>

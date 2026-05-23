@@ -115,6 +115,7 @@ export const en = {
   'settings.language.polish': 'Polish',
   'settings.language.ukrainian': 'Ukrainian',
   'settings.language.finnish': 'Finnish',
+  'settings.language.greek': 'Greek',
   'settings.language.other': 'Other',
 
   // ── Info dialogs ────────────────────────────────────────────

@@ -120,6 +120,7 @@ export const it: Catalog = {
   'settings.language.polish': 'Polski',
   'settings.language.ukrainian': 'Українська',
   'settings.language.finnish': 'Suomi',
+  'settings.language.greek': 'Ελληνικά',
   'settings.language.other': 'Altro',
 
   // ── Info dialogs (best-effort; review pending) ──────────────

@@ -67,7 +67,7 @@ describe('i18n core', () => {
 
     it('never returns undefined for any base key in any language', () => {
       const enKeys = Object.keys(en) as (keyof typeof en)[];
-      const langs: Language[] = ['en', 'de', 'fr', 'es', 'pt', 'nl', 'it', 'ru', 'sv', 'pl', 'uk', 'fi'];
+      const langs: Language[] = ['en', 'de', 'fr', 'es', 'pt', 'nl', 'it', 'ru', 'sv', 'pl', 'uk', 'fi', 'el'];
       for (const lang of langs) {
         for (const key of enKeys) {
           const val = t(key, lang);
@@ -85,7 +85,7 @@ describe('i18n core', () => {
       expect(isAvailable('fr')).toBe(true);
     });
 
-    it('lists all twelve languages as available', () => {
+    it('lists all thirteen languages as available', () => {
       expect(isAvailable('en')).toBe(true);
       expect(isAvailable('de')).toBe(true);
       expect(isAvailable('fr')).toBe(true);
@@ -98,6 +98,12 @@ describe('i18n core', () => {
       expect(isAvailable('pl')).toBe(true);
       expect(isAvailable('uk')).toBe(true);
       expect(isAvailable('fi')).toBe(true);
+      expect(isAvailable('el')).toBe(true);
+    });
+
+    it('returns the Greek string when translated', () => {
+      expect(t('menu.connect', 'el')).toBe('Σύνδεση');
+      expect(t('menu.settings', 'el')).toBe('Ρυθμίσεις');
     });
 
     it('returns the Finnish string when translated', () => {
@@ -158,7 +164,7 @@ describe('i18n core', () => {
       expect(isAvailable('')).toBe(false);
     });
 
-    it('exposes the twelve languages in display order with endonyms', () => {
+    it('exposes the thirteen languages in display order with endonyms', () => {
       expect(LANGUAGES.map((l) => l.code)).toEqual([
         'en',
         'de',
@@ -172,6 +178,7 @@ describe('i18n core', () => {
         'pl',
         'uk',
         'fi',
+        'el',
       ]);
       expect(LANGUAGES.map((l) => l.endonym)).toEqual([
         'English',
@@ -186,10 +193,11 @@ describe('i18n core', () => {
         'Polski',
         'Українська',
         'Suomi',
+        'Ελληνικά',
       ]);
     });
 
-    it('marks all twelve languages available', () => {
+    it('marks all thirteen languages available', () => {
       const available = LANGUAGES.filter((l) => l.available).map((l) => l.code);
       expect(available).toEqual([
         'en',
@@ -204,6 +212,7 @@ describe('i18n core', () => {
         'pl',
         'uk',
         'fi',
+        'el',
       ]);
     });
 
@@ -297,6 +306,12 @@ describe('i18n core', () => {
     it('interpolates into the Finnish template', () => {
       expect(tf('status.connected', 'fi', { host: 'bbs:23' })).toBe(
         'Yhdistetty kohteeseen bbs:23',
+      );
+    });
+
+    it('interpolates into the Greek template', () => {
+      expect(tf('status.connected', 'el', { host: 'bbs:23' })).toBe(
+        'Συνδέθηκε με bbs:23',
       );
     });
 

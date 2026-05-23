@@ -5,6 +5,51 @@ All notable changes to fTelnet-Modern are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.0.0-beta.19] — 2026-05-23
+
+Greek (Ελληνικά) joins the language list — the thirteenth language
+and fTelnet-Modern's **third script** (after Latin and Cyrillic).
+
+### Added
+
+  - **Greek translation.** A new `el.ts` catalog (Greek alphabet,
+    with monotonic accents) covering the main menu, status bar (with
+    `{host}`/`{proxy}` interpolation), screen-size dropdown, and
+    Settings panel labels. Greek is now selectable in the Settings
+    language picker, appearing in the third language column after
+    Finnish. The ISO 639-1 code `el` is used (not the country code
+    "gr"). (Best-effort translation, native review pending;
+    corrections are catalog-only.)
+
+  - A `settings.language.greek` endonym key was added to every
+    catalog (the picker label "Ελληνικά" comes from the `LANGUAGES`
+    registry's endonym field).
+
+  - As with the other languages, this was a catalog-plus-registry
+    change — the new `el.ts`, its registration in `index.ts`, and
+    the endonym key. The Settings picker renders the new radio
+    automatically; no layout or CSS change. The User Manual's
+    language list was updated to mention Greek.
+
+### Notes on the third script
+
+  - Greek sits in the 2-byte UTF-8 range (like Cyrillic) and is
+    covered by essentially all system fonts, so no font pack was
+    needed. UTF-8 verified end to end: the Greek (with accents)
+    round-trips intact through source → build → production bundle,
+    and all three scripts (Latin, Cyrillic, Greek) coexist cleanly.
+
+### Tests
+
+1221 → 1225. Greek lookup, interpolation, and picker-dispatch tests;
+a test asserting the Greek radio sits directly below Finnish;
+language-count assertions twelve → thirteen; the column-chunking
+test updated for the 5/5/3 split.
+
+### Bundle
+
+~698 → ~702 KB raw / ~153 KB gzipped.
+
 ## [2.0.0-beta.18] — 2026-05-23
 
 Finnish (Suomi) joins the language list — the twelfth language.

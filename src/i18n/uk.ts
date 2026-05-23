@@ -121,6 +121,7 @@ export const uk: Catalog = {
   'settings.language.polish': 'Polski',
   'settings.language.ukrainian': 'Українська',
   'settings.language.finnish': 'Suomi',
+  'settings.language.greek': 'Ελληνικά',
   'settings.language.other': 'Інша',
 
   // ── Info dialogs (best-effort; review pending) ──────────────

@@ -30,6 +30,7 @@ import { sv } from './sv.js';
 import { pl } from './pl.js';
 import { uk } from './uk.js';
 import { fi } from './fi.js';
+import { el } from './el.js';
 
 /**
  * fTelnet-Modern internationalization (i18n) core. Phase 5 (beta.6).
@@ -51,18 +52,19 @@ import { fi } from './fi.js';
  * The `available: false` mechanism remains for "coming soon"
  * languages: a future language can be listed in `LANGUAGES` (and
  * shown disabled in the picker to invite contributions) before its
- * catalog exists. As of beta.18 all twelve registered languages
- * (en/de/fr/es/pt/nl/it/ru/sv/pl/uk/fi) are functional, so nothing
- * currently uses the disabled state — but the mechanism is intact
- * for the next one. Russian (beta.14) is the first non-Latin-script
- * catalog; Ukrainian (beta.17) is the second Cyrillic language but
- * a distinct alphabet (і/ї/є/ґ). The
+ * catalog exists. As of beta.19 all thirteen registered languages
+ * (en/de/fr/es/pt/nl/it/ru/sv/pl/uk/fi/el) are functional, so
+ * nothing currently uses the disabled state — but the mechanism is
+ * intact for the next one. Russian (beta.14) is the first
+ * non-Latin-script catalog; Ukrainian (beta.17) is a second
+ * Cyrillic alphabet (і/ї/є/ґ); Greek (beta.19) is the third script
+ * entirely. The
  * lookup/fallback machinery is script-agnostic (plain UTF-8
  * strings), so no special handling is needed here.
  */
 
 /** Supported language codes. 'en' is the base and always complete. */
-export type Language = 'en' | 'de' | 'fr' | 'es' | 'pt' | 'nl' | 'it' | 'ru' | 'sv' | 'pl' | 'uk' | 'fi';
+export type Language = 'en' | 'de' | 'fr' | 'es' | 'pt' | 'nl' | 'it' | 'ru' | 'sv' | 'pl' | 'uk' | 'fi' | 'el';
 
 /**
  * Catalogs for languages that have (at least partial) translations.
@@ -86,6 +88,7 @@ const CATALOGS: Partial<Record<Language, Catalog>> = {
   pl,
   uk,
   fi,
+  el,
 };
 
 /**
@@ -103,14 +106,15 @@ export interface LanguageInfo {
 
 /**
  * The languages the picker knows about, in display order. As of
- * beta.18 all twelve — English, German, French, Spanish,
+ * beta.19 all thirteen — English, German, French, Spanish,
  * Portuguese, Dutch, Italian, Russian, Swedish, Polish, Ukrainian,
- * Finnish — are functional (Russian/Ukrainian being non-Latin
- * Cyrillic). With twelve languages the 5-per-column chunking
- * produces three language columns (5 + 5 + 2). To advertise a
- * future language before its catalog is ready, add it here with
- * `available: false`; it renders disabled ("coming soon") in the
- * picker until you register its catalog and flip the flag.
+ * Finnish, Greek — are functional (Russian/Ukrainian being
+ * Cyrillic, Greek a third script). With thirteen languages the
+ * 5-per-column chunking produces three language columns
+ * (5 + 5 + 3). To advertise a future language before its catalog is
+ * ready, add it here with `available: false`; it renders disabled
+ * ("coming soon") in the picker until you register its catalog and
+ * flip the flag.
  */
 export const LANGUAGES: readonly LanguageInfo[] = [
   { code: 'en', endonym: 'English', available: true },
@@ -125,6 +129,7 @@ export const LANGUAGES: readonly LanguageInfo[] = [
   { code: 'pl', endonym: 'Polski', available: true },
   { code: 'uk', endonym: 'Українська', available: true },
   { code: 'fi', endonym: 'Suomi', available: true },
+  { code: 'el', endonym: 'Ελληνικά', available: true },
 ];
 
 /** True if `lang` is a real, selectable (functional) language. */
