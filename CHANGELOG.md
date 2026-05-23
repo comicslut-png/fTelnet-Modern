@@ -5,6 +5,50 @@ All notable changes to fTelnet-Modern are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.0.0-beta.18] — 2026-05-23
+
+Finnish (Suomi) joins the language list — the twelfth language.
+Finland is a Nordic demoscene and BBS heartland (Assembly, the
+sce.org culture), reaching a concentrated pocket of fTelnet's
+natural audience and pairing naturally with the Swedish catalog.
+
+### Added
+
+  - **Finnish translation.** A new `fi.ts` catalog covering the main
+    menu, status bar (with `{host}`/`{proxy}` interpolation),
+    screen-size dropdown, and Settings panel labels. Finnish is now
+    selectable in the Settings language picker, appearing in the
+    third language column after Ukrainian (the third column now
+    holds two: Ukrainian, Finnish). (Best-effort translation, native
+    review pending; corrections are catalog-only.)
+
+  - A `settings.language.finnish` endonym key was added to every
+    catalog (the picker label "Suomi" comes from the `LANGUAGES`
+    registry's endonym field).
+
+  - As with the other languages, this was a catalog-plus-registry
+    change — the new `fi.ts`, its registration in `index.ts`, and
+    the endonym key. The Settings picker renders the new radio
+    automatically; no layout or CSS change. The User Manual's
+    language list was updated to mention Finnish.
+
+### Fixed
+
+  - The User Manual's Language section no longer references the
+    grayed-out "Other" placeholder slots, which were removed from
+    the picker in beta.17.
+
+### Tests
+
+1217 → 1221. Finnish lookup, interpolation, and picker-dispatch
+tests; a test asserting the Finnish radio sits directly below
+Ukrainian; language-count assertions eleven → twelve; the
+column-chunking test updated for the 5/5/2 split.
+
+### Bundle
+
+~695 → ~698 KB raw / ~152 KB gzipped.
+
 ## [2.0.0-beta.17] — 2026-05-23
 
 Two changes: the status-bar **Connect button is hidden on first

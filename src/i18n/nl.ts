@@ -123,6 +123,7 @@ export const nl: Catalog = {
   'settings.language.swedish': 'Svenska',
   'settings.language.polish': 'Polski',
   'settings.language.ukrainian': 'Українська',
+  'settings.language.finnish': 'Suomi',
   'settings.language.other': 'Andere',
 
   // ── Info dialogs (best-effort; review pending) ──────────────

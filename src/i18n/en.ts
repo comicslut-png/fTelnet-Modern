@@ -114,6 +114,7 @@ export const en = {
   'settings.language.swedish': 'Swedish',
   'settings.language.polish': 'Polish',
   'settings.language.ukrainian': 'Ukrainian',
+  'settings.language.finnish': 'Finnish',
   'settings.language.other': 'Other',
 
   // ── Info dialogs ────────────────────────────────────────────
