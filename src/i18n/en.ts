@@ -110,6 +110,7 @@ export const en = {
   'settings.language.portuguese': 'Portuguese',
   'settings.language.dutch': 'Dutch',
   'settings.language.italian': 'Italian',
+  'settings.language.russian': 'Russian',
   'settings.language.other': 'Other',
 
   // ── Info dialogs ────────────────────────────────────────────

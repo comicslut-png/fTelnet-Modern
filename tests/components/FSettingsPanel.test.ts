@@ -510,10 +510,10 @@ describe('<f-settings-panel>', () => {
       expect(langFieldset).toBeDefined();
     });
 
-    it('renders the seven known languages with endonyms', () => {
+    it('renders the eight known languages with endonyms', () => {
       const radios = getLanguageRadios();
       const values = radios.map((r) => r.value);
-      expect(values).toEqual(['en', 'de', 'fr', 'es', 'pt', 'nl', 'it']);
+      expect(values).toEqual(['en', 'de', 'fr', 'es', 'pt', 'nl', 'it', 'ru']);
     });
 
     it('Portuguese radio appears directly below Spanish', () => {
@@ -540,7 +540,15 @@ describe('<f-settings-panel>', () => {
       expect(itIndex).toBe(nlIndex + 1);
     });
 
-    it('all seven languages are enabled (none disabled)', () => {
+    it('Russian radio appears directly below Italian', () => {
+      const radios = getLanguageRadios();
+      const values = radios.map((r) => r.value);
+      const itIndex = values.indexOf('it');
+      const ruIndex = values.indexOf('ru');
+      expect(ruIndex).toBe(itIndex + 1);
+    });
+
+    it('all eight languages are enabled (none disabled)', () => {
       const radios = getLanguageRadios();
       const byValue = (v: string): HTMLInputElement =>
         radios.find((r) => r.value === v)!;
@@ -551,6 +559,7 @@ describe('<f-settings-panel>', () => {
       expect(byValue('pt').disabled).toBe(false);
       expect(byValue('nl').disabled).toBe(false);
       expect(byValue('it').disabled).toBe(false);
+      expect(byValue('ru').disabled).toBe(false);
     });
 
     it('reflects the language property in the checked radio', async () => {
@@ -663,12 +672,27 @@ describe('<f-settings-panel>', () => {
       expect(captured).toEqual({ language: 'it' });
     });
 
+    it('selecting Russian dispatches settings-language-change with language=ru', () => {
+      const radios = getLanguageRadios();
+      const ru = radios.find((r) => r.value === 'ru')!;
+
+      let captured: { language: string } | undefined;
+      el.addEventListener('settings-language-change', (e): void => {
+        captured = (e as CustomEvent<{ language: string }>).detail;
+      });
+
+      ru.checked = true;
+      ru.dispatchEvent(new Event('change', { bubbles: true }));
+
+      expect(captured).toEqual({ language: 'ru' });
+    });
+
     it('splits languages into columns of at most 5, plus an Other column', () => {
       const langCols = el.querySelectorAll(
         '.fTelnetSettingsPanelLanguageColumn',
       );
-      // 7 functional languages chunked 5-per-column = 2 language
-      // columns, plus 1 dedicated "Other" column = 3 total.
+      // 8 functional languages chunked 5-per-column = 2 language
+      // columns (5 + 3), plus 1 dedicated "Other" column = 3 total.
       expect(langCols.length).toBe(3);
     });
 
@@ -682,7 +706,7 @@ describe('<f-settings-panel>', () => {
             'input[type="radio"][name="language"]',
           ),
         );
-      // Column 1: en/de/fr/es/pt (5). Column 2: nl/it (2).
+      // Column 1: en/de/fr/es/pt (5). Column 2: nl/it/ru (3).
       expect(realRadios(cols[0]!).map((r) => r.value)).toEqual([
         'en',
         'de',
@@ -690,7 +714,11 @@ describe('<f-settings-panel>', () => {
         'es',
         'pt',
       ]);
-      expect(realRadios(cols[1]!).map((r) => r.value)).toEqual(['nl', 'it']);
+      expect(realRadios(cols[1]!).map((r) => r.value)).toEqual([
+        'nl',
+        'it',
+        'ru',
+      ]);
     });
 
     it('no language column exceeds 5 entries', () => {
@@ -764,6 +792,7 @@ describe('<f-settings-panel>', () => {
       expect(labels).toContain('Português');
       expect(labels).toContain('Nederlands');
       expect(labels).toContain('Italiano');
+      expect(labels).toContain('Русский');
     });
 
     it('removes the emoji icons from option labels', () => {

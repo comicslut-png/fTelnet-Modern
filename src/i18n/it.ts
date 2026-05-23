@@ -115,6 +115,7 @@ export const it: Catalog = {
   'settings.language.portuguese': 'Português',
   'settings.language.dutch': 'Nederlands',
   'settings.language.italian': 'Italiano',
+  'settings.language.russian': 'Русский',
   'settings.language.other': 'Altro',
 
   // ── Info dialogs (best-effort; review pending) ──────────────

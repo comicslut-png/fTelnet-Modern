@@ -67,7 +67,7 @@ describe('i18n core', () => {
 
     it('never returns undefined for any base key in any language', () => {
       const enKeys = Object.keys(en) as (keyof typeof en)[];
-      const langs: Language[] = ['en', 'de', 'fr', 'es', 'pt', 'nl', 'it'];
+      const langs: Language[] = ['en', 'de', 'fr', 'es', 'pt', 'nl', 'it', 'ru'];
       for (const lang of langs) {
         for (const key of enKeys) {
           const val = t(key, lang);
@@ -85,7 +85,7 @@ describe('i18n core', () => {
       expect(isAvailable('fr')).toBe(true);
     });
 
-    it('lists all seven languages as available', () => {
+    it('lists all eight languages as available', () => {
       expect(isAvailable('en')).toBe(true);
       expect(isAvailable('de')).toBe(true);
       expect(isAvailable('fr')).toBe(true);
@@ -93,6 +93,7 @@ describe('i18n core', () => {
       expect(isAvailable('pt')).toBe(true);
       expect(isAvailable('nl')).toBe(true);
       expect(isAvailable('it')).toBe(true);
+      expect(isAvailable('ru')).toBe(true);
     });
 
     it('returns the Spanish string when translated', () => {
@@ -115,12 +116,25 @@ describe('i18n core', () => {
       expect(t('menu.settings', 'it')).toBe('Impostazioni');
     });
 
+    it('returns the Russian (Cyrillic) string when translated', () => {
+      expect(t('menu.connect', 'ru')).toBe('Подключиться');
+      expect(t('menu.settings', 'ru')).toBe('Настройки');
+    });
+
+    it('handles Cyrillic round-trip without corruption', () => {
+      // The first non-Latin script — confirm UTF-8 strings survive
+      // intact through import and lookup (length + exact match).
+      const about = t('settings.about', 'ru');
+      expect(about).toBe('О программе');
+      expect([...about].length).toBe(11); // code-point count, not bytes
+    });
+
     it('rejects unknown language codes', () => {
       expect(isAvailable('klingon')).toBe(false);
       expect(isAvailable('')).toBe(false);
     });
 
-    it('exposes the seven languages in display order with endonyms', () => {
+    it('exposes the eight languages in display order with endonyms', () => {
       expect(LANGUAGES.map((l) => l.code)).toEqual([
         'en',
         'de',
@@ -129,6 +143,7 @@ describe('i18n core', () => {
         'pt',
         'nl',
         'it',
+        'ru',
       ]);
       expect(LANGUAGES.map((l) => l.endonym)).toEqual([
         'English',
@@ -138,12 +153,22 @@ describe('i18n core', () => {
         'Português',
         'Nederlands',
         'Italiano',
+        'Русский',
       ]);
     });
 
-    it('marks all seven languages available', () => {
+    it('marks all eight languages available', () => {
       const available = LANGUAGES.filter((l) => l.available).map((l) => l.code);
-      expect(available).toEqual(['en', 'de', 'fr', 'es', 'pt', 'nl', 'it']);
+      expect(available).toEqual([
+        'en',
+        'de',
+        'fr',
+        'es',
+        'pt',
+        'nl',
+        'it',
+        'ru',
+      ]);
     });
 
     it('default language is English', () => {
@@ -206,6 +231,12 @@ describe('i18n core', () => {
     it('interpolates into the Italian template', () => {
       expect(tf('status.connected', 'it', { host: 'bbs:23' })).toBe(
         'Connesso a bbs:23',
+      );
+    });
+
+    it('interpolates into the Russian (Cyrillic) template, host stays Latin', () => {
+      expect(tf('status.connected', 'ru', { host: 'bbs:23' })).toBe(
+        'Подключено к bbs:23',
       );
     });
 

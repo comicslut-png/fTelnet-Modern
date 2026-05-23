@@ -5,6 +5,57 @@ All notable changes to fTelnet-Modern are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.0.0-beta.14] — 2026-05-23
+
+Russian (Русский) joins the language list — the eighth language and
+fTelnet-Modern's **first non-Latin script**. Beyond reaching the
+large historical Russian BBS/FidoNet community, this validates that
+the i18n system handles non-Latin text cleanly end to end.
+
+### Added
+
+  - **Russian translation.** A new `ru.ts` catalog (Cyrillic)
+    covering the main menu, status bar (with `{host}`/`{proxy}`
+    interpolation — the hostname stays Latin/neutral), screen-size
+    dropdown, and Settings panel labels. Russian is now selectable
+    in the Settings language picker, appearing in the second
+    language column after Italian. (Best-effort translation, native
+    review pending; corrections are catalog-only.)
+
+  - The picker now shows its first non-Latin endonym, "Русский".
+
+  - As with the other languages, this was a catalog-plus-registry
+    change — the new `ru.ts`, its registration in `index.ts`, and
+    the `settings.language.russian` endonym key in every catalog. No
+    component, client, or CSS changes; the picker renders the new
+    radio automatically. The User Manual's language list was updated.
+
+### Notes on the first non-Latin script
+
+  - **UTF-8 end to end verified.** The Cyrillic strings round-trip
+    intact through source → build → production bundle; the lookup
+    and interpolation machinery is plain-string and script-agnostic,
+    so no special handling was required.
+
+  - **Theme fonts.** The six themes use various fonts; where a
+    theme's font lacks Cyrillic glyphs, the browser substitutes a
+    fallback font for those characters. This is purely visual and
+    works correctly — worth an eyeball per theme.
+
+  - **Keyboard** remains English by design (keymaps/IME are out of
+    scope), unchanged by this release.
+
+### Tests
+
+1199 → 1204. Russian lookup, a dedicated Cyrillic round-trip test,
+interpolation, picker-dispatch, and Russian-below-Italian ordering;
+language-count assertions seven → eight; the column-chunking test
+updated for the 5 + 3 split.
+
+### Bundle
+
+~680 → ~684 KB raw / ~149 KB gzipped.
+
 ## [2.0.0-beta.13] — 2026-05-23
 
 Italian (Italiano) joins the language list — the seventh language.
