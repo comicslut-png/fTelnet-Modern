@@ -139,4 +139,60 @@ export const uk: Catalog = {
   'dialog.copy.body':
     'Натисніть і проведіть мишею по тексту, який хочете ' +
     'скопіювати.',
+
+  // ── Upload confirmation dialog (FUploadConfirm) ─────────────
+  'upload.title': 'Підтвердження надсилання',
+  'upload.title.batch': 'Підтвердження надсилання (пакет)',
+  'upload.label.file': 'Файл:',
+  'upload.label.size': 'Розмір:',
+  'upload.label.modified': 'Змінено:',
+  'upload.label.protocol': 'Протокол:',
+  'upload.label.files': 'Файли:',
+  'upload.label.totalSize': 'Загальний розмір:',
+  'upload.value.fileCount': 'Файли: {count}',
+  'upload.value.unknown': 'Невідомо',
+  'upload.details.show': '▸ Показати деталі',
+  'upload.details.hide': '▾ Приховати деталі',
+  'upload.warning':
+    '⚠️ Переконайтеся, що ваш BBS перебуває в режимі приймання ' +
+    'файлу, перш ніж натискати «Надіслати».',
+  'upload.button.cancel': 'Скасувати',
+  'upload.button.send': 'Надіслати',
+  'upload.button.sendCount': 'Надіслати файли: {count}',
+
+  // ── Drag-and-drop overlay (FDropOverlay) ────────────────────
+  'drop.title': 'Перетягніть файл сюди',
+  'drop.subtitle': 'для надсилання через {protocol}',
+
+  // ── Focus warning (FFocusWarning) ───────────────────────────
+  'focus.message': '*** НАТИСНІТЬ ТУТ, ЩОБ УВІМКНУТИ ВВЕДЕННЯ З КЛАВІАТУРИ ***',
+
+  // ── Open-URL confirmation (Crt single-click on a link) ──────
+  'url.confirm.title': 'Відкрити посилання',
+  'url.confirm.body':
+    'Відкрити цю URL-адресу в новому вікні?\n\n{url}',
+
+  // ── Scrollback bar (FScrollbackBar) ─────────────────────────
+  'scrollback.label': 'ПРОКРУТКА:',
+  'scrollback.modern.hint':
+    'ПРОКРУТКА: Прокрутіть назад донизу, щоб вийти з режиму ' +
+    'прокрутки',
+  'scrollback.lineUp': 'Рядок угору',
+  'scrollback.lineDown': 'Рядок униз',
+  'scrollback.pageUp': 'Сторінка вгору',
+  'scrollback.pageDown': 'Сторінка вниз',
+  'scrollback.exit': 'Вийти',
+
+  // ── Disconnect confirmation (themed confirm dialog) ─────────
+  'disconnect.confirm.title': 'Відключитися',
+  'disconnect.confirm.body':
+    'Ви дійсно хочете відключитися?',
+
+  // ── Settings: tooltip on not-yet-translated language options ─
+  'settings.language.comingSoon':
+    'Незабаром — допомога з перекладом вітається',
+
+  // ── Shared dialog buttons (FInfoDialog / FConfirmDialog) ────
+  'dialog.button.ok': 'OK',
+  'dialog.button.cancel': 'Скасувати',
 };

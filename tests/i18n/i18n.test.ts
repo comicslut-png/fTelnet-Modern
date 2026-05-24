@@ -9,7 +9,7 @@ import {
 } from '@i18n/index.js';
 import { en } from '@i18n/en.js';
 import { de } from '@i18n/de.js';
-import { uk as ukCatalog } from '@i18n/uk.js';
+import { fi as fiCatalog } from '@i18n/fi.js';
 
 /*
   Tests for the i18n core (Phase 5 beta.6).
@@ -72,20 +72,20 @@ describe('i18n core', () => {
 
   describe('fallback behavior', () => {
     it('falls back to English for a key a partial catalog omits', () => {
-      // The completed catalogs (de/fr/es/pt/it/ru/sv/pl) no longer
-      // exercise the fallback path. Use Ukrainian, which still has the
+      // The completed catalogs (de/fr/es/pt/it/ru/sv/pl/uk) no longer
+      // exercise the fallback path. Use Finnish, which still has the
       // older menu/status keys but not yet the post-beta.22 message
       // keys — any key it lacks must return exactly the English value.
       const enKeys = Object.keys(en) as (keyof typeof en)[];
       let exercisedAtLeastOne = false;
       for (const key of enKeys) {
-        const ukHas = Object.prototype.hasOwnProperty.call(ukCatalog, key);
-        if (!ukHas) {
+        const fiHas = Object.prototype.hasOwnProperty.call(fiCatalog, key);
+        if (!fiHas) {
           exercisedAtLeastOne = true;
-          expect(t(key, 'uk')).toBe(en[key]);
+          expect(t(key, 'fi')).toBe(en[key]);
         }
       }
-      // Guard: if Ukrainian ever gets completed too, this test would
+      // Guard: if Finnish ever gets completed too, this test would
       // silently stop testing anything — fail loudly so we repoint it.
       expect(exercisedAtLeastOne).toBe(true);
     });
@@ -227,6 +227,34 @@ describe('i18n core', () => {
     it('returns the Ukrainian (Cyrillic) string when translated', () => {
       expect(t('menu.connect', 'uk')).toBe('Підключитися');
       expect(t('menu.settings', 'uk')).toBe('Налаштування');
+    });
+
+    it('translates the Ukrainian popup/message strings (beta.36)', () => {
+      expect(t('upload.title', 'uk')).toBe('Підтвердження надсилання');
+      expect(t('upload.button.send', 'uk')).toBe('Надіслати');
+      expect(t('upload.button.cancel', 'uk')).toBe('Скасувати');
+      expect(t('upload.value.unknown', 'uk')).toBe('Невідомо');
+      expect(t('drop.title', 'uk')).toBe('Перетягніть файл сюди');
+      expect(t('url.confirm.title', 'uk')).toBe('Відкрити посилання');
+      expect(t('focus.message', 'uk')).toContain('НАТИСНІТЬ ТУТ');
+      expect(t('scrollback.exit', 'uk')).toBe('Вийти');
+      expect(t('disconnect.confirm.title', 'uk')).toBe('Відключитися');
+      expect(t('dialog.button.cancel', 'uk')).toBe('Скасувати');
+    });
+
+    it('interpolates the Ukrainian popup strings (beta.36)', () => {
+      expect(tf('upload.value.fileCount', 'uk', { count: '3' })).toBe(
+        'Файли: 3',
+      );
+      expect(tf('upload.button.sendCount', 'uk', { count: '5' })).toBe(
+        'Надіслати файли: 5',
+      );
+      expect(tf('drop.subtitle', 'uk', { protocol: 'ZMODEM' })).toBe(
+        'для надсилання через ZMODEM',
+      );
+      const body = tf('url.confirm.body', 'uk', { url: 'http://x' });
+      expect(body).toContain('http://x');
+      expect(body).toContain('\n');
     });
 
     it('returns the Swedish string when translated', () => {
