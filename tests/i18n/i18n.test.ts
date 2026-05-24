@@ -9,7 +9,7 @@ import {
 } from '@i18n/index.js';
 import { en } from '@i18n/en.js';
 import { de } from '@i18n/de.js';
-import { ru as ruCatalog } from '@i18n/ru.js';
+import { sv as svCatalog } from '@i18n/sv.js';
 
 /*
   Tests for the i18n core (Phase 5 beta.6).
@@ -72,21 +72,20 @@ describe('i18n core', () => {
 
   describe('fallback behavior', () => {
     it('falls back to English for a key a partial catalog omits', () => {
-      // German, French, Spanish, Portuguese, and Italian are now
-      // complete catalogs, so they no longer exercise the fallback
-      // path. Use Russian, which still has the older menu/status keys
-      // but not yet the post-beta.22 message keys — any key it lacks
-      // must return exactly the English value.
+      // The completed catalogs (de/fr/es/pt/it/ru) no longer exercise
+      // the fallback path. Use Swedish, which still has the older
+      // menu/status keys but not yet the post-beta.22 message keys —
+      // any key it lacks must return exactly the English value.
       const enKeys = Object.keys(en) as (keyof typeof en)[];
       let exercisedAtLeastOne = false;
       for (const key of enKeys) {
-        const ruHas = Object.prototype.hasOwnProperty.call(ruCatalog, key);
-        if (!ruHas) {
+        const svHas = Object.prototype.hasOwnProperty.call(svCatalog, key);
+        if (!svHas) {
           exercisedAtLeastOne = true;
-          expect(t(key, 'ru')).toBe(en[key]);
+          expect(t(key, 'sv')).toBe(en[key]);
         }
       }
-      // Guard: if Russian ever gets completed too, this test would
+      // Guard: if Swedish ever gets completed too, this test would
       // silently stop testing anything — fail loudly so we repoint it.
       expect(exercisedAtLeastOne).toBe(true);
     });
@@ -373,6 +372,34 @@ describe('i18n core', () => {
     it('returns the Russian (Cyrillic) string when translated', () => {
       expect(t('menu.connect', 'ru')).toBe('Подключиться');
       expect(t('menu.settings', 'ru')).toBe('Настройки');
+    });
+
+    it('translates the Russian popup/message strings (beta.33)', () => {
+      expect(t('upload.title', 'ru')).toBe('Подтверждение отправки');
+      expect(t('upload.button.send', 'ru')).toBe('Отправить');
+      expect(t('upload.button.cancel', 'ru')).toBe('Отмена');
+      expect(t('upload.value.unknown', 'ru')).toBe('Неизвестно');
+      expect(t('drop.title', 'ru')).toBe('Перетащите файл сюда');
+      expect(t('url.confirm.title', 'ru')).toBe('Открыть ссылку');
+      expect(t('focus.message', 'ru')).toContain('НАЖМИТЕ ЗДЕСЬ');
+      expect(t('scrollback.exit', 'ru')).toBe('Выход');
+      expect(t('disconnect.confirm.title', 'ru')).toBe('Отключиться');
+      expect(t('dialog.button.cancel', 'ru')).toBe('Отмена');
+    });
+
+    it('interpolates the Russian popup strings (beta.33)', () => {
+      expect(tf('upload.value.fileCount', 'ru', { count: '3' })).toBe(
+        '3 файлов',
+      );
+      expect(tf('upload.button.sendCount', 'ru', { count: '5' })).toBe(
+        'Отправить 5 файлов',
+      );
+      expect(tf('drop.subtitle', 'ru', { protocol: 'ZMODEM' })).toBe(
+        'для отправки через ZMODEM',
+      );
+      const body = tf('url.confirm.body', 'ru', { url: 'http://x' });
+      expect(body).toContain('http://x');
+      expect(body).toContain('\n');
     });
 
     it('handles Cyrillic round-trip without corruption', () => {

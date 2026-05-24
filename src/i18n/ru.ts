@@ -146,4 +146,60 @@ export const ru: Catalog = {
   'dialog.copy.body':
     'Нажмите и проведите мышью по тексту, который хотите ' +
     'скопировать.',
+
+  // ── Upload confirmation dialog (FUploadConfirm) ─────────────
+  'upload.title': 'Подтверждение отправки',
+  'upload.title.batch': 'Подтверждение отправки (пакет)',
+  'upload.label.file': 'Файл:',
+  'upload.label.size': 'Размер:',
+  'upload.label.modified': 'Изменён:',
+  'upload.label.protocol': 'Протокол:',
+  'upload.label.files': 'Файлы:',
+  'upload.label.totalSize': 'Общий размер:',
+  'upload.value.fileCount': '{count} файлов',
+  'upload.value.unknown': 'Неизвестно',
+  'upload.details.show': '▸ Показать подробности',
+  'upload.details.hide': '▾ Скрыть подробности',
+  'upload.warning':
+    '⚠️ Убедитесь, что ваш BBS находится в режиме приёма файла, ' +
+    'прежде чем нажать «Отправить».',
+  'upload.button.cancel': 'Отмена',
+  'upload.button.send': 'Отправить',
+  'upload.button.sendCount': 'Отправить {count} файлов',
+
+  // ── Drag-and-drop overlay (FDropOverlay) ────────────────────
+  'drop.title': 'Перетащите файл сюда',
+  'drop.subtitle': 'для отправки через {protocol}',
+
+  // ── Focus warning (FFocusWarning) ───────────────────────────
+  'focus.message': '*** НАЖМИТЕ ЗДЕСЬ, ЧТОБЫ ВКЛЮЧИТЬ ВВОД С КЛАВИАТУРЫ ***',
+
+  // ── Open-URL confirmation (Crt single-click on a link) ──────
+  'url.confirm.title': 'Открыть ссылку',
+  'url.confirm.body':
+    'Открыть этот URL-адрес в новом окне?\n\n{url}',
+
+  // ── Scrollback bar (FScrollbackBar) ─────────────────────────
+  'scrollback.label': 'ПРОКРУТКА:',
+  'scrollback.modern.hint':
+    'ПРОКРУТКА: Прокрутите вниз до конца, чтобы выйти из ' +
+    'режима прокрутки',
+  'scrollback.lineUp': 'Строка вверх',
+  'scrollback.lineDown': 'Строка вниз',
+  'scrollback.pageUp': 'Страница вверх',
+  'scrollback.pageDown': 'Страница вниз',
+  'scrollback.exit': 'Выход',
+
+  // ── Disconnect confirmation (themed confirm dialog) ─────────
+  'disconnect.confirm.title': 'Отключиться',
+  'disconnect.confirm.body':
+    'Вы действительно хотите отключиться?',
+
+  // ── Settings: tooltip on not-yet-translated language options ─
+  'settings.language.comingSoon':
+    'Скоро будет — помощь с переводом приветствуется',
+
+  // ── Shared dialog buttons (FInfoDialog / FConfirmDialog) ────
+  'dialog.button.ok': 'OK',
+  'dialog.button.cancel': 'Отмена',
 };

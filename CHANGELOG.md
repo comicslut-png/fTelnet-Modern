@@ -5,6 +5,39 @@ All notable changes to fTelnet-Modern are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.0.0-beta.33] — 2026-05-23
+
+Seventh language pass over the post-beta.22 message strings:
+**Russian (Русский)** — the first Cyrillic-script language in this
+batch.
+
+### Added
+
+  - **Russian translations** for the complete set of message strings:
+    the upload-confirm dialog, drag-and-drop overlay, focus warning,
+    open-link prompt, scrollback bar, disconnect confirm, language-
+    picker tooltip, and the shared OK/Cancel dialog buttons.
+
+  - Verified by en/ru key diff: Russian now has all 94 base keys
+    (was 61), zero missing. Cyrillic confirmed intact through the
+    build (no mojibake / replacement characters). (Best-effort,
+    native review welcome — corrections are catalog-only.)
+
+### Changed
+
+  - The i18n fallback test was repointed from Russian (now complete)
+    to Swedish (still partial), keeping the English-fallback path
+    genuinely exercised.
+
+### Tests
+
+1283 → 1285. Russian popup/message + interpolation tests; fallback
+test repointed.
+
+### Bundle
+
+~739 → ~741 KB raw / ~160 KB gzipped.
+
 ## [2.0.0-beta.32] — 2026-05-23
 
 Sixth language pass over the post-beta.22 message strings:
