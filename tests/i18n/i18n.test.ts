@@ -9,7 +9,7 @@ import {
 } from '@i18n/index.js';
 import { en } from '@i18n/en.js';
 import { de } from '@i18n/de.js';
-import { sv as svCatalog } from '@i18n/sv.js';
+import { pl as plCatalog } from '@i18n/pl.js';
 
 /*
   Tests for the i18n core (Phase 5 beta.6).
@@ -72,20 +72,20 @@ describe('i18n core', () => {
 
   describe('fallback behavior', () => {
     it('falls back to English for a key a partial catalog omits', () => {
-      // The completed catalogs (de/fr/es/pt/it/ru) no longer exercise
-      // the fallback path. Use Swedish, which still has the older
-      // menu/status keys but not yet the post-beta.22 message keys —
-      // any key it lacks must return exactly the English value.
+      // The completed catalogs (de/fr/es/pt/it/ru/sv) no longer
+      // exercise the fallback path. Use Polish, which still has the
+      // older menu/status keys but not yet the post-beta.22 message
+      // keys — any key it lacks must return exactly the English value.
       const enKeys = Object.keys(en) as (keyof typeof en)[];
       let exercisedAtLeastOne = false;
       for (const key of enKeys) {
-        const svHas = Object.prototype.hasOwnProperty.call(svCatalog, key);
-        if (!svHas) {
+        const plHas = Object.prototype.hasOwnProperty.call(plCatalog, key);
+        if (!plHas) {
           exercisedAtLeastOne = true;
-          expect(t(key, 'sv')).toBe(en[key]);
+          expect(t(key, 'pl')).toBe(en[key]);
         }
       }
-      // Guard: if Swedish ever gets completed too, this test would
+      // Guard: if Polish ever gets completed too, this test would
       // silently stop testing anything — fail loudly so we repoint it.
       expect(exercisedAtLeastOne).toBe(true);
     });
@@ -204,6 +204,34 @@ describe('i18n core', () => {
     it('returns the Swedish string when translated', () => {
       expect(t('menu.connect', 'sv')).toBe('Anslut');
       expect(t('menu.settings', 'sv')).toBe('Inställningar');
+    });
+
+    it('translates the Swedish popup/message strings (beta.34)', () => {
+      expect(t('upload.title', 'sv')).toBe('Bekräfta uppladdning');
+      expect(t('upload.button.send', 'sv')).toBe('Skicka');
+      expect(t('upload.button.cancel', 'sv')).toBe('Avbryt');
+      expect(t('upload.value.unknown', 'sv')).toBe('Okänd');
+      expect(t('drop.title', 'sv')).toBe('Släpp filen här');
+      expect(t('url.confirm.title', 'sv')).toBe('Öppna länk');
+      expect(t('focus.message', 'sv')).toContain('KLICKA HÄR');
+      expect(t('scrollback.exit', 'sv')).toBe('Avsluta');
+      expect(t('disconnect.confirm.title', 'sv')).toBe('Koppla från');
+      expect(t('dialog.button.cancel', 'sv')).toBe('Avbryt');
+    });
+
+    it('interpolates the Swedish popup strings (beta.34)', () => {
+      expect(tf('upload.value.fileCount', 'sv', { count: '3' })).toBe(
+        '3 filer',
+      );
+      expect(tf('upload.button.sendCount', 'sv', { count: '5' })).toBe(
+        'Skicka 5 filer',
+      );
+      expect(tf('drop.subtitle', 'sv', { protocol: 'ZMODEM' })).toBe(
+        'för att ladda upp via ZMODEM',
+      );
+      const body = tf('url.confirm.body', 'sv', { url: 'http://x' });
+      expect(body).toContain('http://x');
+      expect(body).toContain('\n');
     });
 
     it('returns the Spanish string when translated', () => {

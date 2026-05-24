@@ -5,6 +5,36 @@ All notable changes to fTelnet-Modern are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.0.0-beta.34] — 2026-05-23
+
+Eighth language pass over the post-beta.22 message strings:
+**Swedish (Svenska)**.
+
+### Added
+
+  - **Swedish translations** for the complete set of message strings:
+    the upload-confirm dialog, drag-and-drop overlay, focus warning,
+    open-link prompt, scrollback bar, disconnect confirm, language-
+    picker tooltip, and the shared OK/Cancel dialog buttons.
+
+  - Verified by en/sv key diff: Swedish now has all 94 base keys
+    (was 61), zero missing. (Best-effort, native review welcome —
+    corrections are catalog-only.)
+
+### Changed
+
+  - The i18n fallback test was repointed from Swedish (now complete)
+    to Polish (still partial).
+
+### Tests
+
+1285 → 1287. Swedish popup/message + interpolation tests; fallback
+test repointed.
+
+### Bundle
+
+~741 → ~743 KB raw / ~160 KB gzipped.
+
 ## [2.0.0-beta.33] — 2026-05-23
 
 Seventh language pass over the post-beta.22 message strings:

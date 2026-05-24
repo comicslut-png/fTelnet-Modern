@@ -136,4 +136,60 @@ export const sv: Catalog = {
   'dialog.copy.title': 'Kopiera text',
   'dialog.copy.body':
     'Klicka och dra musen över texten du vill kopiera.',
+
+  // ── Upload confirmation dialog (FUploadConfirm) ─────────────
+  'upload.title': 'Bekräfta uppladdning',
+  'upload.title.batch': 'Bekräfta uppladdning (batch)',
+  'upload.label.file': 'Fil:',
+  'upload.label.size': 'Storlek:',
+  'upload.label.modified': 'Ändrad:',
+  'upload.label.protocol': 'Protokoll:',
+  'upload.label.files': 'Filer:',
+  'upload.label.totalSize': 'Total storlek:',
+  'upload.value.fileCount': '{count} filer',
+  'upload.value.unknown': 'Okänd',
+  'upload.details.show': '▸ Visa detaljer',
+  'upload.details.hide': '▾ Dölj detaljer',
+  'upload.warning':
+    '⚠️ Se till att ditt BBS är vid en uppladdningsprompt innan ' +
+    'du klickar på Skicka.',
+  'upload.button.cancel': 'Avbryt',
+  'upload.button.send': 'Skicka',
+  'upload.button.sendCount': 'Skicka {count} filer',
+
+  // ── Drag-and-drop overlay (FDropOverlay) ────────────────────
+  'drop.title': 'Släpp filen här',
+  'drop.subtitle': 'för att ladda upp via {protocol}',
+
+  // ── Focus warning (FFocusWarning) ───────────────────────────
+  'focus.message': '*** KLICKA HÄR FÖR ATT AKTIVERA TANGENTBORDSINMATNING ***',
+
+  // ── Open-URL confirmation (Crt single-click on a link) ──────
+  'url.confirm.title': 'Öppna länk',
+  'url.confirm.body':
+    'Vill du öppna denna URL i ett nytt fönster?\n\n{url}',
+
+  // ── Scrollback bar (FScrollbackBar) ─────────────────────────
+  'scrollback.label': 'BLÄDDRA:',
+  'scrollback.modern.hint':
+    'BLÄDDRA: Bläddra tillbaka ner till botten för att lämna ' +
+    'bläddringsläget',
+  'scrollback.lineUp': 'Rad upp',
+  'scrollback.lineDown': 'Rad ner',
+  'scrollback.pageUp': 'Sida upp',
+  'scrollback.pageDown': 'Sida ner',
+  'scrollback.exit': 'Avsluta',
+
+  // ── Disconnect confirmation (themed confirm dialog) ─────────
+  'disconnect.confirm.title': 'Koppla från',
+  'disconnect.confirm.body':
+    'Är du säker på att du vill koppla från?',
+
+  // ── Settings: tooltip on not-yet-translated language options ─
+  'settings.language.comingSoon':
+    'Kommer snart — hjälp med översättning välkomnas',
+
+  // ── Shared dialog buttons (FInfoDialog / FConfirmDialog) ────
+  'dialog.button.ok': 'OK',
+  'dialog.button.cancel': 'Avbryt',
 };
