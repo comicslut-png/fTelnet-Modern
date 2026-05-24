@@ -9,7 +9,7 @@ import {
 } from '@i18n/index.js';
 import { en } from '@i18n/en.js';
 import { de } from '@i18n/de.js';
-import { pl as plCatalog } from '@i18n/pl.js';
+import { uk as ukCatalog } from '@i18n/uk.js';
 
 /*
   Tests for the i18n core (Phase 5 beta.6).
@@ -72,20 +72,20 @@ describe('i18n core', () => {
 
   describe('fallback behavior', () => {
     it('falls back to English for a key a partial catalog omits', () => {
-      // The completed catalogs (de/fr/es/pt/it/ru/sv) no longer
-      // exercise the fallback path. Use Polish, which still has the
+      // The completed catalogs (de/fr/es/pt/it/ru/sv/pl) no longer
+      // exercise the fallback path. Use Ukrainian, which still has the
       // older menu/status keys but not yet the post-beta.22 message
       // keys — any key it lacks must return exactly the English value.
       const enKeys = Object.keys(en) as (keyof typeof en)[];
       let exercisedAtLeastOne = false;
       for (const key of enKeys) {
-        const plHas = Object.prototype.hasOwnProperty.call(plCatalog, key);
-        if (!plHas) {
+        const ukHas = Object.prototype.hasOwnProperty.call(ukCatalog, key);
+        if (!ukHas) {
           exercisedAtLeastOne = true;
-          expect(t(key, 'pl')).toBe(en[key]);
+          expect(t(key, 'uk')).toBe(en[key]);
         }
       }
-      // Guard: if Polish ever gets completed too, this test would
+      // Guard: if Ukrainian ever gets completed too, this test would
       // silently stop testing anything — fail loudly so we repoint it.
       expect(exercisedAtLeastOne).toBe(true);
     });
@@ -194,6 +194,34 @@ describe('i18n core', () => {
     it('returns the Polish string when translated', () => {
       expect(t('menu.connect', 'pl')).toBe('Połącz');
       expect(t('menu.settings', 'pl')).toBe('Ustawienia');
+    });
+
+    it('translates the Polish popup/message strings (beta.35)', () => {
+      expect(t('upload.title', 'pl')).toBe('Potwierdź wysyłanie');
+      expect(t('upload.button.send', 'pl')).toBe('Wyślij');
+      expect(t('upload.button.cancel', 'pl')).toBe('Anuluj');
+      expect(t('upload.value.unknown', 'pl')).toBe('Nieznany');
+      expect(t('drop.title', 'pl')).toBe('Upuść plik tutaj');
+      expect(t('url.confirm.title', 'pl')).toBe('Otwórz link');
+      expect(t('focus.message', 'pl')).toContain('KLIKNIJ TUTAJ');
+      expect(t('scrollback.exit', 'pl')).toBe('Wyjdź');
+      expect(t('disconnect.confirm.title', 'pl')).toBe('Rozłącz');
+      expect(t('dialog.button.cancel', 'pl')).toBe('Anuluj');
+    });
+
+    it('interpolates the Polish popup strings (beta.35)', () => {
+      expect(tf('upload.value.fileCount', 'pl', { count: '3' })).toBe(
+        'Pliki: 3',
+      );
+      expect(tf('upload.button.sendCount', 'pl', { count: '5' })).toBe(
+        'Wyślij pliki: 5',
+      );
+      expect(tf('drop.subtitle', 'pl', { protocol: 'ZMODEM' })).toBe(
+        'aby wysłać przez ZMODEM',
+      );
+      const body = tf('url.confirm.body', 'pl', { url: 'http://x' });
+      expect(body).toContain('http://x');
+      expect(body).toContain('\n');
     });
 
     it('returns the Ukrainian (Cyrillic) string when translated', () => {

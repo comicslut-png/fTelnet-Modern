@@ -5,6 +5,44 @@ All notable changes to fTelnet-Modern are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.0.0-beta.35] — 2026-05-23
+
+Ninth language pass over the post-beta.22 message strings:
+**Polish (Polski)**.
+
+### Added
+
+  - **Polish translations** for the complete set of message strings:
+    the upload-confirm dialog, drag-and-drop overlay, focus warning,
+    open-link prompt, scrollback bar, disconnect confirm, language-
+    picker tooltip, and the shared OK/Cancel dialog buttons.
+
+  - Verified by en/pl key diff: Polish now has all 94 base keys
+    (was 61), zero missing. Polish diacritics confirmed intact
+    through the build. (Best-effort, native review welcome —
+    corrections are catalog-only.)
+
+  - Note on plurals: Polish has complex plural grammar (1 / 2–4 /
+    5+ forms) that a single `{count}` template can't select. The
+    count strings are phrased label-style ("Pliki: {count}",
+    "Wyślij pliki: {count}") so they read correctly for any number;
+    a native reviewer may prefer full plural handling, which would
+    be a code change beyond catalog scope.
+
+### Changed
+
+  - The i18n fallback test was repointed from Polish (now complete)
+    to Ukrainian (still partial).
+
+### Tests
+
+1287 → 1289. Polish popup/message + interpolation tests; fallback
+test repointed.
+
+### Bundle
+
+~743 → ~746 KB raw / ~161 KB gzipped.
+
 ## [2.0.0-beta.34] — 2026-05-23
 
 Eighth language pass over the post-beta.22 message strings:

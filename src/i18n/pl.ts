@@ -139,4 +139,60 @@ export const pl: Catalog = {
   'dialog.copy.body':
     'Kliknij i przeciągnij myszą po tekście, który chcesz ' +
     'skopiować.',
+
+  // ── Upload confirmation dialog (FUploadConfirm) ─────────────
+  'upload.title': 'Potwierdź wysyłanie',
+  'upload.title.batch': 'Potwierdź wysyłanie (wsadowe)',
+  'upload.label.file': 'Plik:',
+  'upload.label.size': 'Rozmiar:',
+  'upload.label.modified': 'Zmodyfikowano:',
+  'upload.label.protocol': 'Protokół:',
+  'upload.label.files': 'Pliki:',
+  'upload.label.totalSize': 'Rozmiar całkowity:',
+  'upload.value.fileCount': 'Pliki: {count}',
+  'upload.value.unknown': 'Nieznany',
+  'upload.details.show': '▸ Pokaż szczegóły',
+  'upload.details.hide': '▾ Ukryj szczegóły',
+  'upload.warning':
+    '⚠️ Upewnij się, że Twój BBS jest w trybie odbioru pliku ' +
+    'przed kliknięciem Wyślij.',
+  'upload.button.cancel': 'Anuluj',
+  'upload.button.send': 'Wyślij',
+  'upload.button.sendCount': 'Wyślij pliki: {count}',
+
+  // ── Drag-and-drop overlay (FDropOverlay) ────────────────────
+  'drop.title': 'Upuść plik tutaj',
+  'drop.subtitle': 'aby wysłać przez {protocol}',
+
+  // ── Focus warning (FFocusWarning) ───────────────────────────
+  'focus.message': '*** KLIKNIJ TUTAJ, ABY WŁĄCZYĆ WPROWADZANIE Z KLAWIATURY ***',
+
+  // ── Open-URL confirmation (Crt single-click on a link) ──────
+  'url.confirm.title': 'Otwórz link',
+  'url.confirm.body':
+    'Czy chcesz otworzyć ten adres URL w nowym oknie?\n\n{url}',
+
+  // ── Scrollback bar (FScrollbackBar) ─────────────────────────
+  'scrollback.label': 'PRZEWIJANIE:',
+  'scrollback.modern.hint':
+    'PRZEWIJANIE: Przewiń z powrotem na dół, aby wyjść z trybu ' +
+    'przewijania',
+  'scrollback.lineUp': 'Wiersz w górę',
+  'scrollback.lineDown': 'Wiersz w dół',
+  'scrollback.pageUp': 'Strona w górę',
+  'scrollback.pageDown': 'Strona w dół',
+  'scrollback.exit': 'Wyjdź',
+
+  // ── Disconnect confirmation (themed confirm dialog) ─────────
+  'disconnect.confirm.title': 'Rozłącz',
+  'disconnect.confirm.body':
+    'Czy na pewno chcesz się rozłączyć?',
+
+  // ── Settings: tooltip on not-yet-translated language options ─
+  'settings.language.comingSoon':
+    'Wkrótce dostępne — pomoc w tłumaczeniu mile widziana',
+
+  // ── Shared dialog buttons (FInfoDialog / FConfirmDialog) ────
+  'dialog.button.ok': 'OK',
+  'dialog.button.cancel': 'Anuluj',
 };
