@@ -131,4 +131,60 @@ export const fr: Catalog = {
   'dialog.copy.body':
     'Cliquez et faites glisser la souris sur le texte que vous ' +
     'souhaitez copier.',
+
+  // ── Upload confirmation dialog (FUploadConfirm) ─────────────
+  'upload.title': 'Confirmer l\'envoi',
+  'upload.title.batch': 'Confirmer l\'envoi (lot)',
+  'upload.label.file': 'Fichier :',
+  'upload.label.size': 'Taille :',
+  'upload.label.modified': 'Modifié :',
+  'upload.label.protocol': 'Protocole :',
+  'upload.label.files': 'Fichiers :',
+  'upload.label.totalSize': 'Taille totale :',
+  'upload.value.fileCount': '{count} fichiers',
+  'upload.value.unknown': 'Inconnu',
+  'upload.details.show': '▸ Afficher les détails',
+  'upload.details.hide': '▾ Masquer les détails',
+  'upload.warning':
+    '⚠️ Assurez-vous que votre BBS est à une invite d\'envoi ' +
+    'avant de cliquer sur Envoyer.',
+  'upload.button.cancel': 'Annuler',
+  'upload.button.send': 'Envoyer',
+  'upload.button.sendCount': 'Envoyer {count} fichiers',
+
+  // ── Drag-and-drop overlay (FDropOverlay) ────────────────────
+  'drop.title': 'Déposez le fichier ici',
+  'drop.subtitle': 'pour l\'envoyer via {protocol}',
+
+  // ── Focus warning (FFocusWarning) ───────────────────────────
+  'focus.message': '*** CLIQUEZ ICI POUR ACTIVER LA SAISIE CLAVIER ***',
+
+  // ── Open-URL confirmation (Crt single-click on a link) ──────
+  'url.confirm.title': 'Ouvrir le lien',
+  'url.confirm.body':
+    'Voulez-vous ouvrir cette URL dans une nouvelle fenêtre ?\n\n{url}',
+
+  // ── Scrollback bar (FScrollbackBar) ─────────────────────────
+  'scrollback.label': 'HISTORIQUE :',
+  'scrollback.modern.hint':
+    'HISTORIQUE : Faites défiler vers le bas pour quitter le ' +
+    'mode historique',
+  'scrollback.lineUp': 'Ligne préc.',
+  'scrollback.lineDown': 'Ligne suiv.',
+  'scrollback.pageUp': 'Page préc.',
+  'scrollback.pageDown': 'Page suiv.',
+  'scrollback.exit': 'Quitter',
+
+  // ── Disconnect confirmation (themed confirm dialog) ─────────
+  'disconnect.confirm.title': 'Se déconnecter',
+  'disconnect.confirm.body':
+    'Voulez-vous vraiment vous déconnecter ?',
+
+  // ── Settings: tooltip on not-yet-translated language options ─
+  'settings.language.comingSoon':
+    'Bientôt disponible — aide à la traduction bienvenue',
+
+  // ── Shared dialog buttons (FInfoDialog / FConfirmDialog) ────
+  'dialog.button.ok': 'OK',
+  'dialog.button.cancel': 'Annuler',
 };

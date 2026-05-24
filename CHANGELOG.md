@@ -5,6 +5,31 @@ All notable changes to fTelnet-Modern are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.0.0-beta.29] — 2026-05-23
+
+Third language pass over the post-beta.22 message strings:
+**French (Français)**.
+
+### Added
+
+  - **French translations** for the complete set of message strings:
+    the upload-confirm dialog, drag-and-drop overlay, focus warning,
+    open-link prompt, scrollback bar, disconnect confirm, language-
+    picker tooltip, and the shared OK/Cancel dialog buttons. Formal
+    "vous" register, matching the existing French.
+
+  - Verified by en/fr key diff: French now has all 94 base keys
+    (was 61), zero missing. (Best-effort, native review welcome —
+    corrections are catalog-only.)
+
+### Tests
+
+1275 → 1277. French popup/message + interpolation tests.
+
+### Bundle
+
+~730 → ~732 KB raw / ~158 KB gzipped.
+
 ## [2.0.0-beta.28] — 2026-05-23
 
 Second language pass over the post-beta.22 message strings:

@@ -105,6 +105,34 @@ describe('i18n core', () => {
       expect(t('menu.settings', 'fr')).toBe('Paramètres');
     });
 
+    it('translates the French popup/message strings (beta.29)', () => {
+      expect(t('upload.title', 'fr')).toBe('Confirmer l\'envoi');
+      expect(t('upload.button.send', 'fr')).toBe('Envoyer');
+      expect(t('upload.button.cancel', 'fr')).toBe('Annuler');
+      expect(t('upload.value.unknown', 'fr')).toBe('Inconnu');
+      expect(t('drop.title', 'fr')).toBe('Déposez le fichier ici');
+      expect(t('url.confirm.title', 'fr')).toBe('Ouvrir le lien');
+      expect(t('focus.message', 'fr')).toContain('CLIQUEZ ICI');
+      expect(t('scrollback.exit', 'fr')).toBe('Quitter');
+      expect(t('disconnect.confirm.title', 'fr')).toBe('Se déconnecter');
+      expect(t('dialog.button.cancel', 'fr')).toBe('Annuler');
+    });
+
+    it('interpolates the French popup strings (beta.29)', () => {
+      expect(tf('upload.value.fileCount', 'fr', { count: '3' })).toBe(
+        '3 fichiers',
+      );
+      expect(tf('upload.button.sendCount', 'fr', { count: '5' })).toBe(
+        'Envoyer 5 fichiers',
+      );
+      expect(tf('drop.subtitle', 'fr', { protocol: 'ZMODEM' })).toBe(
+        'pour l\'envoyer via ZMODEM',
+      );
+      const body = tf('url.confirm.body', 'fr', { url: 'http://x' });
+      expect(body).toContain('http://x');
+      expect(body).toContain('\n');
+    });
+
     it('never returns undefined for any base key in any language', () => {
       const enKeys = Object.keys(en) as (keyof typeof en)[];
       const langs: Language[] = ['en', 'de', 'fr', 'es', 'pt', 'nl', 'it', 'ru', 'sv', 'pl', 'uk', 'fi', 'el', 'cs', 'ja'];
