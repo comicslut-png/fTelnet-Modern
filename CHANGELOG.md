@@ -5,6 +5,39 @@ All notable changes to fTelnet-Modern are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.0.0-beta.32] — 2026-05-23
+
+Sixth language pass over the post-beta.22 message strings:
+**Italian (Italiano)**.
+
+### Added
+
+  - **Italian translations** for the complete set of message strings:
+    the upload-confirm dialog, drag-and-drop overlay, focus warning,
+    open-link prompt, scrollback bar, disconnect confirm, language-
+    picker tooltip, and the shared OK/Cancel dialog buttons. Informal
+    "tu" register, matching the existing Italian.
+
+  - Verified by en/it key diff: Italian now has all 94 base keys
+    (was 61), zero missing. (Best-effort, native review welcome —
+    corrections are catalog-only.)
+
+### Changed
+
+  - The i18n fallback test was repointed from Italian (now complete)
+    to Russian (still partial), so it keeps genuinely exercising the
+    English-fallback path. Its guard fired exactly as designed when
+    Italian was completed, prompting the repoint.
+
+### Tests
+
+1281 → 1283. Italian popup/message + interpolation tests; fallback
+test repointed.
+
+### Bundle
+
+~737 → ~739 KB raw / ~159 KB gzipped.
+
 ## [2.0.0-beta.31] — 2026-05-23
 
 Fifth language pass over the post-beta.22 message strings:
