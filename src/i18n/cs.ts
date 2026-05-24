@@ -192,4 +192,13 @@ export const cs: Catalog = {
   // ── Shared dialog buttons (FInfoDialog / FConfirmDialog) ────
   'dialog.button.ok': 'OK',
   'dialog.button.cancel': 'Zrušit',
+
+  // ── Terminal settings (Local Echo) ───────────────────
+  'settings.terminal': 'Terminál',
+  'settings.terminal.localecho': 'Místní echo',
+
+  // ── Auto-reconnect popup ─────────────────────────
+  'reconnect.title': 'Připojení ztraceno',
+  'reconnect.body': 'Opětovné připojení za {seconds} s…',
+  'reconnect.cancel': 'Zrušit',
 };

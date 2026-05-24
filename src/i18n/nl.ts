@@ -198,4 +198,13 @@ export const nl: Catalog = {
   // ── Shared dialog buttons (FInfoDialog / FConfirmDialog) ────
   'dialog.button.ok': 'OK',
   'dialog.button.cancel': 'Annuleren',
+
+  // ── Terminal settings (Local Echo) ───────────────────
+  'settings.terminal': 'Terminal',
+  'settings.terminal.localecho': 'Lokale echo',
+
+  // ── Auto-reconnect popup ─────────────────────────
+  'reconnect.title': 'Verbinding verbroken',
+  'reconnect.body': 'Opnieuw verbinden over {seconds} seconden…',
+  'reconnect.cancel': 'Annuleren',
 };

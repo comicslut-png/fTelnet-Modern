@@ -4,6 +4,7 @@ import type {
   FSettingsPanel,
   SettingsDefaultProtocolChangeDetail,
   SettingsMuteChangeDetail,
+  SettingsLocalEchoChangeDetail,
   SettingsThemeChangeDetail,
   SettingsVibrateChangeDetail,
   SettingsZModemAutoDetectChangeDetail,
@@ -256,6 +257,46 @@ describe('<f-settings-panel>', () => {
       checkbox.dispatchEvent(new Event('change', { bubbles: true }));
 
       expect(events).toEqual([{ muted: true }, { muted: false }]);
+    });
+  });
+
+  describe('local echo reactivity (beta.41)', () => {
+    function getLocalEchoCheckbox(): HTMLInputElement {
+      const fieldset = Array.from(
+        el.querySelectorAll<HTMLFieldSetElement>('fieldset'),
+      ).find((f) => f.querySelector('legend')?.textContent === 'Terminal');
+      return fieldset!.querySelector<HTMLInputElement>(
+        'input[type="checkbox"]',
+      )!;
+    }
+
+    it('renders a Terminal group with a Local Echo checkbox, off by default', () => {
+      const checkbox = getLocalEchoCheckbox();
+      expect(checkbox).toBeTruthy();
+      expect(checkbox.checked).toBe(false);
+    });
+
+    it('changing localEcho updates the checkbox', async () => {
+      el.localEcho = true;
+      await el.updateComplete;
+      expect(getLocalEchoCheckbox().checked).toBe(true);
+    });
+
+    it('toggling the checkbox dispatches settings-localecho-change', () => {
+      const checkbox = getLocalEchoCheckbox();
+      const events: SettingsLocalEchoChangeDetail[] = [];
+      el.addEventListener('settings-localecho-change', (e): void => {
+        events.push(
+          (e as CustomEvent<SettingsLocalEchoChangeDetail>).detail,
+        );
+      });
+
+      checkbox.checked = true;
+      checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+      checkbox.checked = false;
+      checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+
+      expect(events).toEqual([{ enabled: true }, { enabled: false }]);
     });
   });
 
@@ -1008,10 +1049,11 @@ describe('<f-settings-panel>', () => {
 
   describe('two-row grid layout', () => {
     /**
-     * Phase 5 (beta.6): panel is a two-row grid, three columns per
-     * row:
-     *   Row 1:  Theme | Protocol | Language (wide)
-     *   Row 2:  Sound | Touch    | placeholder (wide)
+     * Phase 5: panel is a two-row grid.
+     *   Row 1:  Theme | Protocol | Language (wide)   — 3 columns
+     *   Row 2:  Sound | Touch | Terminal | placeholder — 4 columns
+     * (beta.41 added the Terminal/Local-Echo group, splitting the
+     * old wide row-2 placeholder into Terminal + a final placeholder.)
      * About spans full width below. Tests verify the row/column
      * structure, the column order, and the placeholder in row 2.
      */
@@ -1020,9 +1062,9 @@ describe('<f-settings-panel>', () => {
       expect(rows.length).toBe(2);
     });
 
-    it('renders six columns total (three per row)', () => {
+    it('renders seven columns total (three in row 1, four in row 2)', () => {
       const cols = el.querySelectorAll('.fTelnetSettingsPanelColumn');
-      expect(cols.length).toBe(6);
+      expect(cols.length).toBe(7);
     });
 
     it('row 1 order is Theme | Protocol | Language', () => {
@@ -1038,7 +1080,7 @@ describe('<f-settings-panel>', () => {
       expect(legends).toEqual(['Theme', 'Protocol', 'Language']);
     });
 
-    it('row 2 order is Sound | Touch | (placeholder)', () => {
+    it('row 2 order is Sound | Touch | Terminal | (placeholder)', () => {
       const rows = Array.from(
         el.querySelectorAll('.fTelnetSettingsPanelColumns'),
       );
@@ -1047,11 +1089,13 @@ describe('<f-settings-panel>', () => {
       );
       const soundLegend = row2Cols[0]!.querySelector('legend')?.textContent?.trim();
       const touchLegend = row2Cols[1]!.querySelector('legend')?.textContent?.trim();
-      // Third column is the placeholder fieldset — no legend.
-      const placeholder = row2Cols[2]!.querySelector('fieldset');
+      const terminalLegend = row2Cols[2]!.querySelector('legend')?.textContent?.trim();
+      // Fourth column is the placeholder fieldset — no legend.
+      const placeholder = row2Cols[3]!.querySelector('fieldset');
 
       expect(soundLegend).toBe('Sound');
       expect(touchLegend).toBe('Touch');
+      expect(terminalLegend).toBe('Terminal');
       expect(placeholder?.querySelector('legend')).toBeNull();
       expect(
         placeholder?.classList.contains('fTelnetSettingsPanelGroupReserved'),
@@ -1078,7 +1122,7 @@ describe('<f-settings-panel>', () => {
       const row2Cols = Array.from(
         rows[1]!.querySelectorAll('.fTelnetSettingsPanelColumn'),
       );
-      const placeholder = row2Cols[2]!.querySelector('fieldset')!;
+      const placeholder = row2Cols[3]!.querySelector('fieldset')!;
       expect(placeholder.children.length).toBe(0);
       expect(
         placeholder.classList.contains('fTelnetSettingsPanelGroupReserved'),

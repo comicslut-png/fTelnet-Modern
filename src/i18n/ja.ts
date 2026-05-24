@@ -200,4 +200,13 @@ export const ja: Catalog = {
   // ── Shared dialog buttons (FInfoDialog / FConfirmDialog) ────
   'dialog.button.ok': 'OK',
   'dialog.button.cancel': 'キャンセル',
+
+  // ── Terminal settings (Local Echo) ───────────────────
+  'settings.terminal': 'ターミナル',
+  'settings.terminal.localecho': 'ローカルエコー',
+
+  // ── Auto-reconnect popup ─────────────────────────
+  'reconnect.title': '接続が切断されました',
+  'reconnect.body': '{seconds} 秒後に再接続します…',
+  'reconnect.cancel': 'キャンセル',
 };

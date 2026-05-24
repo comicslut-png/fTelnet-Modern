@@ -195,4 +195,13 @@ export const uk: Catalog = {
   // ── Shared dialog buttons (FInfoDialog / FConfirmDialog) ────
   'dialog.button.ok': 'OK',
   'dialog.button.cancel': 'Скасувати',
+
+  // ── Terminal settings (Local Echo) ───────────────────
+  'settings.terminal': 'Термінал',
+  'settings.terminal.localecho': 'Локальне відлуння',
+
+  // ── Auto-reconnect popup ─────────────────────────
+  'reconnect.title': 'З\'єднання втрачено',
+  'reconnect.body': 'Повторне підключення через {seconds} с…',
+  'reconnect.cancel': 'Скасувати',
 };

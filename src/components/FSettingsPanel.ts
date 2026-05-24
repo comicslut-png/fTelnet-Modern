@@ -38,6 +38,11 @@ export interface SettingsMuteChangeDetail {
   muted: boolean;
 }
 
+/** Payload for the `settings-localecho-change` event. */
+export interface SettingsLocalEchoChangeDetail {
+  enabled: boolean;
+}
+
 /** Payload for the `settings-vibrate-change` event. */
 export interface SettingsVibrateChangeDetail {
   duration: number;
@@ -107,7 +112,7 @@ export class FSettingsPanel extends LitElement {
    * tests and the panel can read the same value without needing
    * a build-time injection mechanism.
    */
-  public static readonly VERSION = '2.0.0-beta.40';
+  public static readonly VERSION = '2.0.0-beta.41';
 
   @property({ type: Boolean })
   open = false;
@@ -133,6 +138,16 @@ export class FSettingsPanel extends LitElement {
 
   @property({ type: Boolean })
   muted = false;
+
+  /**
+   * Local echo: when true, characters the user types are also drawn
+   * to the local screen. Off by default and intentionally NOT
+   * persisted — it's a per-session troubleshooting toggle for BBSes
+   * or prompts that don't echo input server-side, so it always
+   * starts off on a fresh load.
+   */
+  @property({ type: Boolean, attribute: 'local-echo' })
+  localEcho = false;
 
   @property({ type: Number, attribute: 'vibrate-duration' })
   vibrateDuration = 25;
@@ -286,7 +301,7 @@ export class FSettingsPanel extends LitElement {
           </div>
         </div>
 
-        <!-- Row 2: Sound | Touch | (empty placeholder) -->
+        <!-- Row 2: Sound | Touch | Terminal | (empty placeholder) -->
         <div class="fTelnetSettingsPanelColumns">
           <div class="fTelnetSettingsPanelColumn">
             <fieldset class="fTelnetSettingsPanelGroup">
@@ -321,7 +336,21 @@ export class FSettingsPanel extends LitElement {
             </fieldset>
           </div>
 
-          <div class="fTelnetSettingsPanelColumn fTelnetSettingsPanelColumnWide">
+          <div class="fTelnetSettingsPanelColumn">
+            <fieldset class="fTelnetSettingsPanelGroup">
+              <legend>${t('settings.terminal', this.language)}</legend>
+              <label class="fTelnetSettingsPanelOption">
+                <input
+                  type="checkbox"
+                  ?checked=${this.localEcho}
+                  @change=${this.handleLocalEchoChange}
+                />
+                ${t('settings.terminal.localecho', this.language)}
+              </label>
+            </fieldset>
+          </div>
+
+          <div class="fTelnetSettingsPanelColumn">
             <fieldset
               class="fTelnetSettingsPanelGroup fTelnetSettingsPanelGroupReserved"
             ></fieldset>
@@ -485,6 +514,21 @@ export class FSettingsPanel extends LitElement {
         bubbles: true,
         composed: true,
       })
+    );
+  };
+
+  private handleLocalEchoChange = (e: Event): void => {
+    const checked = (e.target as HTMLInputElement).checked;
+    this.localEcho = checked;
+    this.dispatchEvent(
+      new CustomEvent<SettingsLocalEchoChangeDetail>(
+        'settings-localecho-change',
+        {
+          detail: { enabled: checked },
+          bubbles: true,
+          composed: true,
+        }
+      )
     );
   };
 

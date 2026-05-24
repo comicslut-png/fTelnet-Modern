@@ -5,6 +5,58 @@ All notable changes to fTelnet-Modern are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.0.0-beta.41] — 2026-05-23
+
+Two new capabilities: a **Local Echo** setting and an **Auto
+Reconnect** popup. Both fully translated across all 15 languages.
+
+### Added
+
+  - **Local Echo** toggle (Settings → Terminal). When on, characters
+    you type are also drawn to the local screen — useful for BBSes,
+    door games, or login prompts that don't echo input server-side,
+    so you'd otherwise be typing blind. It drives the existing
+    `Crt.LocalEcho` mechanism. **Off by default and intentionally NOT
+    persisted** — it always starts off on a fresh load, since it's a
+    per-session troubleshooting toggle. New `Terminal` group box in
+    the Settings second row, which is now laid out as Sound | Touch |
+    Terminal | (placeholder), four equal-height columns.
+
+  - **Auto Reconnect.** When the connection drops *unexpectedly*, a
+    themed popup announces "Connection lost", counts down from 5
+    seconds, and reconnects automatically at zero. A single Cancel
+    button (or Escape) stops it and leaves the normal disconnected
+    state in place (with the Reconnect button available). It fires
+    *only* on unexpected drops — never after a user-initiated
+    Disconnect, distinguished by a flag set in performDisconnect().
+    An accidental click outside the popup does nothing, so a misclick
+    can't kill an in-progress reconnect. Always on for now (every
+    unexpected drop); a retry cap can be layered on later via a
+    counter at the call site without touching the popup. This is a
+    feature, not a setting — there's no toggle for it.
+
+  - New `FReconnectDialog` component (themed countdown modal, reuses
+    FInfoDialog's CSS classes like FConfirmDialog does).
+
+### i18n
+
+  - 5 new keys, translated in all 15 languages: `settings.terminal`,
+    `settings.terminal.localecho`, `reconnect.title`,
+    `reconnect.body` ({seconds} interpolation), `reconnect.cancel`.
+    en.ts: 94 → 99 keys.
+
+### Tests
+
+1299 → 1314. FReconnectDialog (countdown ticking, expiry →
+reconnect, Cancel/Escape → stay disconnected, outside-click is a
+no-op, timer stops after Cancel, translation); Settings Local-Echo
+checkbox (default off, reactivity, change event); i18n for the new
+keys; updated the row-2 layout tests for the new four-column row.
+
+### Bundle
+
+~757 → ~769 KB raw / ~165 KB gzipped.
+
 ## [2.0.0-beta.40] — 2026-05-23
 
 Fourteenth and **final** language pass over the post-beta.22 message

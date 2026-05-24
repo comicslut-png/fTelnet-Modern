@@ -63,6 +63,7 @@ import {
   FDropOverlay,
   FInfoDialog,
   FConfirmDialog,
+  FReconnectDialog,
   FMenuPopup,
   FScrollbackBar,
   FSettingsPanel,
@@ -76,6 +77,7 @@ import {
   type MenuClickDetail,
   type ScreenSizeChangeDetail,
   type SettingsMuteChangeDetail,
+  type SettingsLocalEchoChangeDetail,
   type SettingsThemeChangeDetail,
   type SettingsVibrateChangeDetail,
   type SettingsZModemAutoDetectChangeDetail,
@@ -226,6 +228,22 @@ export class fTelnetClient {
    * floating popups. See showConfirmDialog().
    */
   private _ConfirmDialog?: FConfirmDialog;
+  /**
+   * Phase 5 (beta.41): themed auto-reconnect countdown popup, shown
+   * after an UNEXPECTED disconnect (never a user-initiated one).
+   * Created lazily on first use; lives on document.body. See
+   * showReconnectDialog().
+   */
+  private _ReconnectDialog?: FReconnectDialog;
+  /**
+   * True while a disconnect is user-initiated (via Disconnect() ->
+   * performDisconnect()). OnConnectionClose() reads it to decide
+   * whether the close was expected (no auto-reconnect) or an
+   * unexpected drop (show the reconnect countdown). Reset each time
+   * it's consumed. Auto-reconnect is otherwise always on; a retry
+   * cap can be layered on later via a counter without touching this.
+   */
+  private _userInitiatedDisconnect = false;
   /**
    * Phase 5 (beta.3): user manual popup. Created lazily on first
    * open. Stays in the DOM after that; its `open` property gates
@@ -946,6 +964,7 @@ export class fTelnetClient {
     this._SettingsPanel = document.createElement('f-settings-panel') as FSettingsPanel;
     this._SettingsPanel.currentTheme = this._Options.Theme;
     this._SettingsPanel.muted = this._Options.MuteSounds;
+    this._SettingsPanel.localEcho = this._Options.LocalEcho;
     this._SettingsPanel.vibrateDuration = this._Options.VirtualKeyboardVibrateDuration;
     this._SettingsPanel.zmodemAutoDetect = this._Options.ZModemAutoDetect;
     this._SettingsPanel.defaultProtocol = this._Options.DefaultTransferProtocol;
@@ -970,6 +989,19 @@ export class fTelnetClient {
         // Ignore.
       }
     });
+    this._SettingsPanel.addEventListener(
+      'settings-localecho-change',
+      (e: Event): void => {
+        const detail = (e as CustomEvent<SettingsLocalEchoChangeDetail>).detail;
+        // Apply to the live Crt so typed keys are (or stop being)
+        // echoed to the screen immediately. Intentionally NOT
+        // persisted to sessionStorage — local echo is a per-session
+        // troubleshooting toggle and always starts off on a fresh
+        // load, per design.
+        this._Crt.LocalEcho = detail.enabled;
+        this._Options.LocalEcho = detail.enabled;
+      },
+    );
     this._SettingsPanel.addEventListener('settings-vibrate-change', (e: Event): void => {
       const detail = (e as CustomEvent<SettingsVibrateChangeDetail>).detail;
       this._Options.VirtualKeyboardVibrateDuration = detail.duration;
@@ -1656,6 +1688,11 @@ export class fTelnetClient {
     if (this._Connection === undefined) {
       return;
     }
+    // Mark this close as user-initiated so OnConnectionClose() does
+    // NOT trigger the auto-reconnect countdown. (An unexpected drop
+    // reaches OnConnectionClose via the still-attached onclose event
+    // with this flag false.)
+    this._userInitiatedDisconnect = true;
     this._Connection.onclose.off();
     this._Connection.onconnect.off();
     this._Connection.ondata.off();
@@ -2034,6 +2071,17 @@ export class fTelnetClient {
     if (this._UserManual !== undefined) {
       this._UserManual.open = false;
       this._UserManual.resetPosition();
+    }
+
+    // Auto-reconnect: if this close was NOT user-initiated (i.e. an
+    // unexpected drop) and we have somewhere to reconnect to, show
+    // the countdown popup. The normal disconnected state is already
+    // applied above, so cancelling simply leaves it in place. Consume
+    // the flag either way.
+    const wasUserInitiated = this._userInitiatedDisconnect;
+    this._userInitiatedDisconnect = false;
+    if (!wasUserInitiated && this._Options.Hostname) {
+      this.showReconnectDialog();
     }
   }
 
@@ -2905,6 +2953,7 @@ export class fTelnetClient {
     this._SettingsPanel.pageY = this._MenuButtons.pageY;
     this._SettingsPanel.currentTheme = this._Options.Theme;
     this._SettingsPanel.muted = this._Options.MuteSounds;
+    this._SettingsPanel.localEcho = this._Options.LocalEcho;
     this._SettingsPanel.vibrateDuration = this._Options.VirtualKeyboardVibrateDuration;
     this._SettingsPanel.zmodemAutoDetect = this._Options.ZModemAutoDetect;
     this._SettingsPanel.defaultProtocol = this._Options.DefaultTransferProtocol;
@@ -3014,6 +3063,43 @@ export class fTelnetClient {
       dialog.addEventListener('confirm-dialog-result', handler);
       dialog.open = true;
     });
+  }
+
+  /**
+   * Show the auto-reconnect countdown popup after an unexpected
+   * disconnect. Counts down 5s; on expiry it reconnects via
+   * Connect(), on Cancel it closes and leaves the normal
+   * disconnected state (already applied by OnConnectionClose) in
+   * place. Lazy-creates the dialog on first use, like the others.
+   *
+   * Auto-reconnect is always on (every unexpected drop calls this).
+   * A retry cap, if wanted later, can guard the call site in
+   * OnConnectionClose with a counter — this method stays as-is.
+   */
+  private showReconnectDialog(): void {
+    if (this._ReconnectDialog === undefined) {
+      this._ReconnectDialog = document.createElement(
+        'f-reconnect-dialog',
+      ) as FReconnectDialog;
+      document.body.appendChild(this._ReconnectDialog);
+    }
+    const dialog = this._ReconnectDialog;
+    dialog.setAttribute('data-theme', this._Options.Theme);
+    dialog.language = this._Options.Language as Language;
+    dialog.seconds = 5;
+
+    const handler = (e: Event): void => {
+      dialog.removeEventListener('reconnect-dialog-result', handler);
+      dialog.open = false;
+      const detail = (e as CustomEvent<{ reconnect: boolean }>).detail;
+      if (detail.reconnect) {
+        this.Connect();
+      }
+      // If cancelled, do nothing — the disconnected state from
+      // OnConnectionClose stays, with the Reconnect button available.
+    };
+    dialog.addEventListener('reconnect-dialog-result', handler);
+    dialog.open = true;
   }
 
   /**

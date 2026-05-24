@@ -203,4 +203,13 @@ export const fi: Catalog = {
   // ── Shared dialog buttons (FInfoDialog / FConfirmDialog) ────
   'dialog.button.ok': 'OK',
   'dialog.button.cancel': 'Peruuta',
+
+  // ── Terminal settings (Local Echo) ───────────────────
+  'settings.terminal': 'Pääte',
+  'settings.terminal.localecho': 'Paikallinen kaiku',
+
+  // ── Auto-reconnect popup ─────────────────────────
+  'reconnect.title': 'Yhteys katkesi',
+  'reconnect.body': 'Yhdistetään uudelleen {seconds} sekunnin kuluttua…',
+  'reconnect.cancel': 'Peruuta',
 };

@@ -534,6 +534,26 @@ describe('i18n core', () => {
       expect(t('dialog.button.cancel', 'en')).toBe('Cancel');
     });
 
+    it('translates the Terminal / Local Echo settings (beta.41)', () => {
+      expect(t('settings.terminal', 'en')).toBe('Terminal');
+      expect(t('settings.terminal.localecho', 'en')).toBe('Local Echo');
+      expect(t('settings.terminal.localecho', 'de')).toBe('Lokales Echo');
+      expect(t('settings.terminal.localecho', 'fr')).toBe('Écho local');
+      expect(t('settings.terminal.localecho', 'ja')).toBe('ローカルエコー');
+    });
+
+    it('translates the auto-reconnect popup (beta.41)', () => {
+      expect(t('reconnect.title', 'en')).toBe('Connection lost');
+      expect(t('reconnect.cancel', 'en')).toBe('Cancel');
+      expect(t('reconnect.title', 'de')).toBe('Verbindung verloren');
+      expect(t('reconnect.title', 'ru')).toBe('Соединение потеряно');
+      // Body interpolates {seconds} and drops the placeholder.
+      const en5 = tf('reconnect.body', 'en', { seconds: '5' });
+      expect(en5).toContain('5');
+      expect(en5).not.toContain('{seconds}');
+      expect(tf('reconnect.body', 'ja', { seconds: '3' })).toContain('3');
+    });
+
     it('returns the Italian string when translated', () => {
       expect(t('menu.connect', 'it')).toBe('Connetti');
       expect(t('menu.settings', 'it')).toBe('Impostazioni');

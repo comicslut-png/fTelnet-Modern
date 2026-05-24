@@ -190,4 +190,13 @@ export const de: Catalog = {
   // ── Shared dialog buttons (FInfoDialog / FConfirmDialog) ────
   'dialog.button.ok': 'OK',
   'dialog.button.cancel': 'Abbrechen',
+
+  // ── Terminal settings (Local Echo) ───────────────────
+  'settings.terminal': 'Terminal',
+  'settings.terminal.localecho': 'Lokales Echo',
+
+  // ── Auto-reconnect popup ─────────────────────────
+  'reconnect.title': 'Verbindung verloren',
+  'reconnect.body': 'Erneute Verbindung in {seconds} Sekunden…',
+  'reconnect.cancel': 'Abbrechen',
 };

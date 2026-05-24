@@ -203,4 +203,13 @@ export const el: Catalog = {
   // ── Shared dialog buttons (FInfoDialog / FConfirmDialog) ────
   'dialog.button.ok': 'OK',
   'dialog.button.cancel': 'Άκυρο',
+
+  // ── Terminal settings (Local Echo) ───────────────────
+  'settings.terminal': 'Τερματικό',
+  'settings.terminal.localecho': 'Τοπική ηχώ',
+
+  // ── Auto-reconnect popup ─────────────────────────
+  'reconnect.title': 'Η σύνδεση χάθηκε',
+  'reconnect.body': 'Επανασύνδεση σε {seconds} δευτερόλεπτα…',
+  'reconnect.cancel': 'Άκυρο',
 };

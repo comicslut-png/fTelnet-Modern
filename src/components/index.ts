@@ -22,6 +22,10 @@ export {
   type ConfirmDialogResultDetail,
 } from './FConfirmDialog.js';
 export {
+  FReconnectDialog,
+  type ReconnectDialogResultDetail,
+} from './FReconnectDialog.js';
+export {
   FMenuPopup,
   type MenuActionDetail,
   type MenuActionName,
@@ -31,6 +35,7 @@ export { FScrollbackBar } from './FScrollbackBar.js';
 export {
   FSettingsPanel,
   type SettingsMuteChangeDetail,
+  type SettingsLocalEchoChangeDetail,
   type SettingsThemeChangeDetail,
   type SettingsVibrateChangeDetail,
   type SettingsZModemAutoDetectChangeDetail,

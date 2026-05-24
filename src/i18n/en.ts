@@ -86,6 +86,8 @@ export const en = {
   'settings.touch': 'Touch',
   'settings.touch.vibrate': 'Vibrate duration:',
   'settings.touch.ms': 'ms',
+  'settings.terminal': 'Terminal',
+  'settings.terminal.localecho': 'Local Echo',
   'settings.about': 'About',
   'settings.close': 'Close',
 
@@ -197,6 +199,11 @@ export const en = {
   // ── Shared dialog buttons (FInfoDialog / FConfirmDialog) ────
   'dialog.button.ok': 'OK',
   'dialog.button.cancel': 'Cancel',
+
+  // ── Auto-reconnect popup (after an unexpected disconnect) ───
+  'reconnect.title': 'Connection lost',
+  'reconnect.body': 'Reconnecting in {seconds} seconds…',
+  'reconnect.cancel': 'Cancel',
 } as const;
 
 /** The set of valid translatable keys, derived from the English base. */

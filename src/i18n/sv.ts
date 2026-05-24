@@ -192,4 +192,13 @@ export const sv: Catalog = {
   // ── Shared dialog buttons (FInfoDialog / FConfirmDialog) ────
   'dialog.button.ok': 'OK',
   'dialog.button.cancel': 'Avbryt',
+
+  // ── Terminal settings (Local Echo) ───────────────────
+  'settings.terminal': 'Terminal',
+  'settings.terminal.localecho': 'Lokalt eko',
+
+  // ── Auto-reconnect popup ─────────────────────────
+  'reconnect.title': 'Anslutningen förlorad',
+  'reconnect.body': 'Återansluter om {seconds} sekunder…',
+  'reconnect.cancel': 'Avbryt',
 };

@@ -202,4 +202,13 @@ export const ru: Catalog = {
   // ── Shared dialog buttons (FInfoDialog / FConfirmDialog) ────
   'dialog.button.ok': 'OK',
   'dialog.button.cancel': 'Отмена',
+
+  // ── Terminal settings (Local Echo) ───────────────────
+  'settings.terminal': 'Терминал',
+  'settings.terminal.localecho': 'Локальное эхо',
+
+  // ── Auto-reconnect popup ─────────────────────────
+  'reconnect.title': 'Соединение потеряно',
+  'reconnect.body': 'Повторное подключение через {seconds} с…',
+  'reconnect.cancel': 'Отмена',
 };
