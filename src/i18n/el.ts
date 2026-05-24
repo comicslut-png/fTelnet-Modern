@@ -147,4 +147,60 @@ export const el: Catalog = {
   'dialog.copy.body':
     'Κάντε κλικ και σύρετε το ποντίκι πάνω από το κείμενο που ' +
     'θέλετε να αντιγράψετε.',
+
+  // ── Upload confirmation dialog (FUploadConfirm) ─────────────
+  'upload.title': 'Επιβεβαίωση αποστολής',
+  'upload.title.batch': 'Επιβεβαίωση αποστολής (δέσμη)',
+  'upload.label.file': 'Αρχείο:',
+  'upload.label.size': 'Μέγεθος:',
+  'upload.label.modified': 'Τροποποιήθηκε:',
+  'upload.label.protocol': 'Πρωτόκολλο:',
+  'upload.label.files': 'Αρχεία:',
+  'upload.label.totalSize': 'Συνολικό μέγεθος:',
+  'upload.value.fileCount': '{count} αρχεία',
+  'upload.value.unknown': 'Άγνωστο',
+  'upload.details.show': '▸ Εμφάνιση λεπτομερειών',
+  'upload.details.hide': '▾ Απόκρυψη λεπτομερειών',
+  'upload.warning':
+    '⚠️ Βεβαιωθείτε ότι το BBS σας βρίσκεται σε προτροπή ' +
+    'αποστολής πριν κάνετε κλικ στο Αποστολή.',
+  'upload.button.cancel': 'Άκυρο',
+  'upload.button.send': 'Αποστολή',
+  'upload.button.sendCount': 'Αποστολή {count} αρχείων',
+
+  // ── Drag-and-drop overlay (FDropOverlay) ────────────────────
+  'drop.title': 'Αποθέστε το αρχείο εδώ',
+  'drop.subtitle': 'για αποστολή μέσω {protocol}',
+
+  // ── Focus warning (FFocusWarning) ───────────────────────────
+  'focus.message': '*** ΚΑΝΤΕ ΚΛΙΚ ΕΔΩ ΓΙΑ ΕΝΕΡΓΟΠΟΙΗΣΗ ΕΙΣΑΓΩΓΗΣ ΑΠΟ ΠΛΗΚΤΡΟΛΟΓΙΟ ***',
+
+  // ── Open-URL confirmation (Crt single-click on a link) ──────
+  'url.confirm.title': 'Άνοιγμα συνδέσμου',
+  'url.confirm.body':
+    'Θέλετε να ανοίξετε αυτή τη διεύθυνση URL σε νέο παράθυρο;\n\n{url}',
+
+  // ── Scrollback bar (FScrollbackBar) ─────────────────────────
+  'scrollback.label': 'ΚΥΛΙΣΗ:',
+  'scrollback.modern.hint':
+    'ΚΥΛΙΣΗ: Κυλήστε ξανά προς τα κάτω για έξοδο από τη ' +
+    'λειτουργία κύλισης',
+  'scrollback.lineUp': 'Γραμμή πάνω',
+  'scrollback.lineDown': 'Γραμμή κάτω',
+  'scrollback.pageUp': 'Σελίδα πάνω',
+  'scrollback.pageDown': 'Σελίδα κάτω',
+  'scrollback.exit': 'Έξοδος',
+
+  // ── Disconnect confirmation (themed confirm dialog) ─────────
+  'disconnect.confirm.title': 'Αποσύνδεση',
+  'disconnect.confirm.body':
+    'Είστε βέβαιοι ότι θέλετε να αποσυνδεθείτε;',
+
+  // ── Settings: tooltip on not-yet-translated language options ─
+  'settings.language.comingSoon':
+    'Σύντομα διαθέσιμο — η βοήθεια με τη μετάφραση είναι ευπρόσδεκτη',
+
+  // ── Shared dialog buttons (FInfoDialog / FConfirmDialog) ────
+  'dialog.button.ok': 'OK',
+  'dialog.button.cancel': 'Άκυρο',
 };

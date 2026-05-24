@@ -9,7 +9,7 @@ import {
 } from '@i18n/index.js';
 import { en } from '@i18n/en.js';
 import { de } from '@i18n/de.js';
-import { el as elCatalog } from '@i18n/el.js';
+import { cs as csCatalog } from '@i18n/cs.js';
 
 /*
   Tests for the i18n core (Phase 5 beta.6).
@@ -72,20 +72,20 @@ describe('i18n core', () => {
 
   describe('fallback behavior', () => {
     it('falls back to English for a key a partial catalog omits', () => {
-      // The completed catalogs (de/fr/es/pt/it/ru/sv/pl/uk/fi) no
-      // longer exercise the fallback path. Use Greek, which still has
+      // The completed catalogs (de/fr/es/pt/it/ru/sv/pl/uk/fi/el) no
+      // longer exercise the fallback path. Use Czech, which still has
       // the older menu/status keys but not yet the post-beta.22
       // message keys — any key it lacks must return the English value.
       const enKeys = Object.keys(en) as (keyof typeof en)[];
       let exercisedAtLeastOne = false;
       for (const key of enKeys) {
-        const elHas = Object.prototype.hasOwnProperty.call(elCatalog, key);
-        if (!elHas) {
+        const csHas = Object.prototype.hasOwnProperty.call(csCatalog, key);
+        if (!csHas) {
           exercisedAtLeastOne = true;
-          expect(t(key, 'el')).toBe(en[key]);
+          expect(t(key, 'cs')).toBe(en[key]);
         }
       }
-      // Guard: if Greek ever gets completed too, this test would
+      // Guard: if Czech ever gets completed too, this test would
       // silently stop testing anything — fail loudly so we repoint it.
       expect(exercisedAtLeastOne).toBe(true);
     });
@@ -184,6 +184,34 @@ describe('i18n core', () => {
     it('returns the Greek string when translated', () => {
       expect(t('menu.connect', 'el')).toBe('Σύνδεση');
       expect(t('menu.settings', 'el')).toBe('Ρυθμίσεις');
+    });
+
+    it('translates the Greek popup/message strings (beta.38)', () => {
+      expect(t('upload.title', 'el')).toBe('Επιβεβαίωση αποστολής');
+      expect(t('upload.button.send', 'el')).toBe('Αποστολή');
+      expect(t('upload.button.cancel', 'el')).toBe('Άκυρο');
+      expect(t('upload.value.unknown', 'el')).toBe('Άγνωστο');
+      expect(t('drop.title', 'el')).toBe('Αποθέστε το αρχείο εδώ');
+      expect(t('url.confirm.title', 'el')).toBe('Άνοιγμα συνδέσμου');
+      expect(t('focus.message', 'el')).toContain('ΚΑΝΤΕ ΚΛΙΚ ΕΔΩ');
+      expect(t('scrollback.exit', 'el')).toBe('Έξοδος');
+      expect(t('disconnect.confirm.title', 'el')).toBe('Αποσύνδεση');
+      expect(t('dialog.button.cancel', 'el')).toBe('Άκυρο');
+    });
+
+    it('interpolates the Greek popup strings (beta.38)', () => {
+      expect(tf('upload.value.fileCount', 'el', { count: '3' })).toBe(
+        '3 αρχεία',
+      );
+      expect(tf('upload.button.sendCount', 'el', { count: '5' })).toBe(
+        'Αποστολή 5 αρχείων',
+      );
+      expect(tf('drop.subtitle', 'el', { protocol: 'ZMODEM' })).toBe(
+        'για αποστολή μέσω ZMODEM',
+      );
+      const body = tf('url.confirm.body', 'el', { url: 'http://x' });
+      expect(body).toContain('http://x');
+      expect(body).toContain('\n');
     });
 
     it('returns the Finnish string when translated', () => {
