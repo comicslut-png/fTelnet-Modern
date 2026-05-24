@@ -202,5 +202,6 @@ export const it: Catalog = {
   // ── Auto-reconnect popup ─────────────────────────
   'reconnect.title': 'Connessione persa',
   'reconnect.body': 'Riconnessione tra {seconds} secondi…',
+  'reconnect.attempts': 'Tentativi: {n} di {max}',
   'reconnect.cancel': 'Annulla',
 };

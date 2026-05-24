@@ -112,7 +112,7 @@ export class FSettingsPanel extends LitElement {
    * tests and the panel can read the same value without needing
    * a build-time injection mechanism.
    */
-  public static readonly VERSION = '2.0.0-beta.41';
+  public static readonly VERSION = '2.0.0-beta.42';
 
   @property({ type: Boolean })
   open = false;

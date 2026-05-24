@@ -5,6 +5,50 @@ All notable changes to fTelnet-Modern are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.0.0-beta.42] — 2026-05-23
+
+Refines the beta.41 features (Local Echo + Auto Reconnect) and fixes
+the Settings panel alignment.
+
+> This package includes the beta.41 changes too (the Local Echo
+> setting and the Auto Reconnect popup), so applying it brings the
+> repo fully current to beta.42 whether or not beta.41 was already
+> committed.
+
+### Changed
+
+  - **Auto Reconnect is now capped at 3 attempts.** After three
+    consecutive failed auto-reconnects the popup stops appearing and
+    the client stays disconnected (Reconnect button still available).
+    The counter resets to zero on any successful connection, so a
+    later unrelated drop gets a fresh budget of 3. Cancelling also
+    resets the budget.
+
+  - **The reconnect popup now shows an "Attempts: n of N" line** below
+    the countdown, so the user can see which attempt is in progress.
+    New `reconnect.attempts` key ({n}/{max} interpolation), translated
+    in all 15 languages. en.ts: 99 → 100 keys.
+
+### Fixed
+
+  - **Settings panel alignment.** The two rows of group boxes now sit
+    on a shared 4-column CSS grid, so every box edge snaps to the same
+    vertical grid lines in both rows. Previously the rows used
+    flexbox with mismatched weights (a 3-box row vs a 4-box row
+    subtract a different number of gaps), so the columns drifted out
+    of alignment and the last box on row 2 was the wrong width. Now
+    Theme/Sound, Protocol/Touch, and Language/(Terminal+placeholder)
+    align cleanly, and the right edge is flush with the panel.
+
+### Tests
+
+1314 → 1317. Reconnect-dialog attempts-line rendering; i18n for the
+new attempts key.
+
+### Bundle
+
+~769 → ~770 KB raw / ~166 KB gzipped.
+
 ## [2.0.0-beta.41] — 2026-05-23
 
 Two new capabilities: a **Local Echo** setting and an **Auto

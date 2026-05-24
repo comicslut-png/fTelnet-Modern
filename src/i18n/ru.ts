@@ -210,5 +210,6 @@ export const ru: Catalog = {
   // ── Auto-reconnect popup ─────────────────────────
   'reconnect.title': 'Соединение потеряно',
   'reconnect.body': 'Повторное подключение через {seconds} с…',
+  'reconnect.attempts': 'Попытки: {n} из {max}',
   'reconnect.cancel': 'Отмена',
 };

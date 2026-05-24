@@ -200,5 +200,6 @@ export const cs: Catalog = {
   // ── Auto-reconnect popup ─────────────────────────
   'reconnect.title': 'Připojení ztraceno',
   'reconnect.body': 'Opětovné připojení za {seconds} s…',
+  'reconnect.attempts': 'Pokusy: {n} z {max}',
   'reconnect.cancel': 'Zrušit',
 };

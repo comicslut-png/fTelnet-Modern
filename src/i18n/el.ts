@@ -211,5 +211,6 @@ export const el: Catalog = {
   // ── Auto-reconnect popup ─────────────────────────
   'reconnect.title': 'Η σύνδεση χάθηκε',
   'reconnect.body': 'Επανασύνδεση σε {seconds} δευτερόλεπτα…',
+  'reconnect.attempts': 'Προσπάθειες: {n} από {max}',
   'reconnect.cancel': 'Άκυρο',
 };

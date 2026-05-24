@@ -56,6 +56,14 @@ export class FReconnectDialog extends LitElement {
   @property({ type: Number })
   seconds = 5;
 
+  /** Which reconnect attempt this is (1-based), shown in the popup. */
+  @property({ type: Number })
+  attempt = 1;
+
+  /** Total allowed attempts, shown as "Attempts: n of N". */
+  @property({ type: Number })
+  maxAttempts = 3;
+
   /** Active UI language; drives the title, body, and Cancel label. */
   @property({ type: String })
   language: Language = 'en';
@@ -156,6 +164,10 @@ export class FReconnectDialog extends LitElement {
     const body = tf('reconnect.body', this.language, {
       seconds: String(Math.max(this._remaining, 0)),
     });
+    const attempts = tf('reconnect.attempts', this.language, {
+      n: String(this.attempt),
+      max: String(this.maxAttempts),
+    });
     return html`
       <div
         class="fTelnetInfoDialog"
@@ -168,6 +180,7 @@ export class FReconnectDialog extends LitElement {
         </div>
         <div class="fTelnetInfoDialogBody">
           <p class="fTelnetInfoDialogParagraph">${body}</p>
+          <p class="fTelnetInfoDialogParagraph">${attempts}</p>
         </div>
         <div class="fTelnetInfoDialogFooter">
           <button

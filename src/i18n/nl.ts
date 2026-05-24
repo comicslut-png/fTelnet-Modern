@@ -206,5 +206,6 @@ export const nl: Catalog = {
   // ── Auto-reconnect popup ─────────────────────────
   'reconnect.title': 'Verbinding verbroken',
   'reconnect.body': 'Opnieuw verbinden over {seconds} seconden…',
+  'reconnect.attempts': 'Pogingen: {n} van {max}',
   'reconnect.cancel': 'Annuleren',
 };

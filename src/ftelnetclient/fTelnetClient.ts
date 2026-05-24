@@ -245,6 +245,16 @@ export class fTelnetClient {
    */
   private _userInitiatedDisconnect = false;
   /**
+   * Count of consecutive auto-reconnect attempts since the last
+   * successful connection. Incremented each time the countdown popup
+   * is shown; once it reaches MAX_RECONNECT_ATTEMPTS the popup stops
+   * appearing (we give up). Reset to 0 in OnConnectionConnect on a
+   * successful connect, so a later unrelated drop gets a fresh budget.
+   */
+  private _reconnectAttempt = 0;
+  /** Hard cap on consecutive auto-reconnect attempts. */
+  private static readonly MAX_RECONNECT_ATTEMPTS = 3;
+  /**
    * Phase 5 (beta.3): user manual popup. Created lazily on first
    * open. Stays in the DOM after that; its `open` property gates
    * visibility. Resets position state on disconnect so the next
@@ -2075,18 +2085,28 @@ export class fTelnetClient {
 
     // Auto-reconnect: if this close was NOT user-initiated (i.e. an
     // unexpected drop) and we have somewhere to reconnect to, show
-    // the countdown popup. The normal disconnected state is already
-    // applied above, so cancelling simply leaves it in place. Consume
-    // the flag either way.
+    // the countdown popup — UNLESS we've already used up the attempt
+    // budget. The normal disconnected state is already applied above,
+    // so giving up (or cancelling) simply leaves it in place. Consume
+    // the user-initiated flag either way.
     const wasUserInitiated = this._userInitiatedDisconnect;
     this._userInitiatedDisconnect = false;
-    if (!wasUserInitiated && this._Options.Hostname) {
-      this.showReconnectDialog();
+    if (
+      !wasUserInitiated &&
+      this._Options.Hostname &&
+      this._reconnectAttempt < fTelnetClient.MAX_RECONNECT_ATTEMPTS
+    ) {
+      this._reconnectAttempt += 1;
+      this.showReconnectDialog(this._reconnectAttempt);
     }
   }
 
   private OnConnectionConnect(): void {
     this._Crt.ClrScr();
+
+    // A successful connection clears the auto-reconnect attempt
+    // budget, so any later unrelated drop starts fresh at attempt 1.
+    this._reconnectAttempt = 0;
 
     // Make sure the ZMODEM auto-detector exists and is in a fresh
     // state. Stays alive across the whole session; resets after each
@@ -3072,11 +3092,13 @@ export class fTelnetClient {
    * disconnected state (already applied by OnConnectionClose) in
    * place. Lazy-creates the dialog on first use, like the others.
    *
-   * Auto-reconnect is always on (every unexpected drop calls this).
-   * A retry cap, if wanted later, can guard the call site in
-   * OnConnectionClose with a counter — this method stays as-is.
+   * `attempt` is the 1-based attempt number, shown as
+   * "Attempts: n of N". The cap itself is enforced at the call site
+   * (OnConnectionClose), which won't call this once the budget is
+   * spent. Cancelling resets the budget so a later manual reconnect
+   * starts fresh.
    */
-  private showReconnectDialog(): void {
+  private showReconnectDialog(attempt: number): void {
     if (this._ReconnectDialog === undefined) {
       this._ReconnectDialog = document.createElement(
         'f-reconnect-dialog',
@@ -3087,6 +3109,8 @@ export class fTelnetClient {
     dialog.setAttribute('data-theme', this._Options.Theme);
     dialog.language = this._Options.Language as Language;
     dialog.seconds = 5;
+    dialog.attempt = attempt;
+    dialog.maxAttempts = fTelnetClient.MAX_RECONNECT_ATTEMPTS;
 
     const handler = (e: Event): void => {
       dialog.removeEventListener('reconnect-dialog-result', handler);
@@ -3094,9 +3118,13 @@ export class fTelnetClient {
       const detail = (e as CustomEvent<{ reconnect: boolean }>).detail;
       if (detail.reconnect) {
         this.Connect();
+      } else {
+        // Cancelled: the user is done auto-reconnecting. Clear the
+        // attempt budget so a fresh manual reconnect (or a later
+        // unrelated drop) starts again at attempt 1. The disconnected
+        // state from OnConnectionClose stays in place.
+        this._reconnectAttempt = 0;
       }
-      // If cancelled, do nothing — the disconnected state from
-      // OnConnectionClose stays, with the Reconnect button available.
     };
     dialog.addEventListener('reconnect-dialog-result', handler);
     dialog.open = true;

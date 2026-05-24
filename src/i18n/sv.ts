@@ -200,5 +200,6 @@ export const sv: Catalog = {
   // ── Auto-reconnect popup ─────────────────────────
   'reconnect.title': 'Anslutningen förlorad',
   'reconnect.body': 'Återansluter om {seconds} sekunder…',
+  'reconnect.attempts': 'Försök: {n} av {max}',
   'reconnect.cancel': 'Avbryt',
 };

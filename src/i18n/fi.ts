@@ -211,5 +211,6 @@ export const fi: Catalog = {
   // ── Auto-reconnect popup ─────────────────────────
   'reconnect.title': 'Yhteys katkesi',
   'reconnect.body': 'Yhdistetään uudelleen {seconds} sekunnin kuluttua…',
+  'reconnect.attempts': 'Yritykset: {n} / {max}',
   'reconnect.cancel': 'Peruuta',
 };

@@ -494,10 +494,21 @@
    The third column in each row is WIDER (the Language picker needs
    room for its two internal sub-columns). The two rows are stacked
    with a gap; About spans full width below. */
+/* Two-row settings layout on a shared 4-column grid so every column
+   edge snaps to the same vertical grid lines in BOTH rows. (The old
+   flexbox approach couldn't align the rows: a 3-box row subtracts 2
+   gaps while a 4-box row subtracts 3, so the 1:1:2 vs 1:1:1:1 splits
+   drifted apart. A fixed grid template fixes this — identical tracks,
+   identical gap, both rows.)
+
+   Row 1:  Theme(1) | Protocol(1) | Language(spans 2)
+   Row 2:  Sound(1) | Touch(1) | Terminal(1) | placeholder(1)        */
 .fTelnetSettingsPanelColumns {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
   gap: 12px;
   margin-bottom: 12px;
+  align-items: stretch;
 }
 
 /* Second row sits directly above About; keep its bottom margin so
@@ -506,19 +517,17 @@
    spacing handles the rest.) */
 
 .fTelnetSettingsPanelColumn {
-  flex: 1 1 0;
   min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-/* The wide third column (Language in row 1, placeholder in row 2).
-   Roughly double a normal column so the Language fieldset's two
-   sub-columns of radios sit comfortably side by side, matching the
-   mockup. */
+/* The wide column (Language in row 1) spans two grid tracks, so its
+   left edge aligns with Terminal below and its right edge aligns
+   with the placeholder below — both flush to the panel edge. */
 .fTelnetSettingsPanelColumnWide {
-  flex: 2 1 0;
+  grid-column: span 2;
 }
 
 /* Language fieldset: side-by-side sub-columns of radios. Functional
@@ -551,14 +560,17 @@
 }
 
 /* Make the only/last fieldset in each column stretch to fill the
-   row's height, so all three boxes in a row share the same bottom
-   edge regardless of content height. In row 1 the Theme box (6
-   radios) is tallest and Protocol/Language stretch to match; in
-   row 2 the placeholder stretches. Targeting :last-child keeps
-   this robust as content changes. */
+   row's height, so all boxes in a row share the same bottom edge
+   regardless of content height. In row 1 the Theme box (6 radios) is
+   tallest and Protocol/Language stretch to match; in row 2 the
+   shorter boxes stretch to the row height. Targeting :last-child
+   keeps this robust as content changes. The column itself is a flex
+   child of the grid cell (align-items: stretch above), so it fills
+   the cell height; this makes its inner fieldset fill the column. */
 .fTelnetSettingsPanelColumn .fTelnetSettingsPanelGroup:last-child {
   flex: 1 1 auto;
 }
+
 
 /* The About fieldset spans full width below the two columns. */
 .fTelnetSettingsPanelGroupFullWidth {

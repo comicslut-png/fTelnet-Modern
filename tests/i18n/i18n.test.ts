@@ -554,6 +554,20 @@ describe('i18n core', () => {
       expect(tf('reconnect.body', 'ja', { seconds: '3' })).toContain('3');
     });
 
+    it('translates + interpolates the reconnect attempts line (beta.42)', () => {
+      const en = tf('reconnect.attempts', 'en', { n: '2', max: '3' });
+      expect(en).toBe('Attempts: 2 of 3');
+      expect(en).not.toContain('{n}');
+      expect(en).not.toContain('{max}');
+      // A few other languages substitute both params too.
+      expect(tf('reconnect.attempts', 'de', { n: '1', max: '3' })).toContain(
+        '1',
+      );
+      expect(tf('reconnect.attempts', 'ja', { n: '2', max: '3' })).toContain(
+        '2',
+      );
+    });
+
     it('returns the Italian string when translated', () => {
       expect(t('menu.connect', 'it')).toBe('Connetti');
       expect(t('menu.settings', 'it')).toBe('Impostazioni');

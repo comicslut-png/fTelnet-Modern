@@ -203,6 +203,7 @@ export const en = {
   // ── Auto-reconnect popup (after an unexpected disconnect) ───
   'reconnect.title': 'Connection lost',
   'reconnect.body': 'Reconnecting in {seconds} seconds…',
+  'reconnect.attempts': 'Attempts: {n} of {max}',
   'reconnect.cancel': 'Cancel',
 } as const;
 

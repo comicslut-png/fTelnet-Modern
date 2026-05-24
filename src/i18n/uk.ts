@@ -203,5 +203,6 @@ export const uk: Catalog = {
   // ── Auto-reconnect popup ─────────────────────────
   'reconnect.title': 'З\'єднання втрачено',
   'reconnect.body': 'Повторне підключення через {seconds} с…',
+  'reconnect.attempts': 'Спроби: {n} з {max}',
   'reconnect.cancel': 'Скасувати',
 };

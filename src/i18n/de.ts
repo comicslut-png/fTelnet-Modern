@@ -198,5 +198,6 @@ export const de: Catalog = {
   // ── Auto-reconnect popup ─────────────────────────
   'reconnect.title': 'Verbindung verloren',
   'reconnect.body': 'Erneute Verbindung in {seconds} Sekunden…',
+  'reconnect.attempts': 'Versuche: {n} von {max}',
   'reconnect.cancel': 'Abbrechen',
 };

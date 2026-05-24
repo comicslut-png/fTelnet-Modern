@@ -147,4 +147,21 @@ describe('<f-reconnect-dialog>', () => {
     );
     expect(el.querySelector('button')?.textContent?.trim()).toBe('Abbrechen');
   });
+
+  it('shows the attempts line "Attempts: n of N" (beta.42)', async () => {
+    el.attempt = 2;
+    el.maxAttempts = 3;
+    await open(5);
+    const body = el.querySelector('.fTelnetInfoDialogBody');
+    expect(body?.textContent).toContain('Attempts: 2 of 3');
+  });
+
+  it('reflects the attempt number passed in (beta.42)', async () => {
+    el.attempt = 3;
+    el.maxAttempts = 3;
+    await open(5);
+    expect(el.querySelector('.fTelnetInfoDialogBody')?.textContent).toContain(
+      '3 of 3',
+    );
+  });
 });

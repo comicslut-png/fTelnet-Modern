@@ -208,5 +208,6 @@ export const ja: Catalog = {
   // ── Auto-reconnect popup ─────────────────────────
   'reconnect.title': '接続が切断されました',
   'reconnect.body': '{seconds} 秒後に再接続します…',
+  'reconnect.attempts': '再接続: {n} / {max} 回',
   'reconnect.cancel': 'キャンセル',
 };
