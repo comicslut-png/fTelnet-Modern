@@ -1,6 +1,6 @@
 {
   "name": "ftelnet-modern",
-  "version": "2.0.0-beta.30",
+  "version": "2.0.0-beta.31",
   "description": "fTelnet-Modern: a maintained, modernized fork of fTelnet (Rick Parrish, R&M Software) — an HTML5 WebSocket client for BBSes and text-mode hosts. ZMODEM file transfer, theming, Lit-based UI.",
   "type": "module",
   "license": "AGPL-3.0-or-later",

@@ -141,4 +141,60 @@ export const pt: Catalog = {
   'dialog.copy.title': 'Copiar texto',
   'dialog.copy.body':
     'Clique e arraste o mouse sobre o texto que deseja copiar.',
+
+  // ── Upload confirmation dialog (FUploadConfirm) ─────────────
+  'upload.title': 'Confirmar envio',
+  'upload.title.batch': 'Confirmar envio (lote)',
+  'upload.label.file': 'Arquivo:',
+  'upload.label.size': 'Tamanho:',
+  'upload.label.modified': 'Modificado:',
+  'upload.label.protocol': 'Protocolo:',
+  'upload.label.files': 'Arquivos:',
+  'upload.label.totalSize': 'Tamanho total:',
+  'upload.value.fileCount': '{count} arquivos',
+  'upload.value.unknown': 'Desconhecido',
+  'upload.details.show': '▸ Mostrar detalhes',
+  'upload.details.hide': '▾ Ocultar detalhes',
+  'upload.warning':
+    '⚠️ Certifique-se de que seu BBS esteja em um prompt de ' +
+    'envio antes de clicar em Enviar.',
+  'upload.button.cancel': 'Cancelar',
+  'upload.button.send': 'Enviar',
+  'upload.button.sendCount': 'Enviar {count} arquivos',
+
+  // ── Drag-and-drop overlay (FDropOverlay) ────────────────────
+  'drop.title': 'Solte o arquivo aqui',
+  'drop.subtitle': 'para enviar via {protocol}',
+
+  // ── Focus warning (FFocusWarning) ───────────────────────────
+  'focus.message': '*** CLIQUE AQUI PARA ATIVAR A ENTRADA DO TECLADO ***',
+
+  // ── Open-URL confirmation (Crt single-click on a link) ──────
+  'url.confirm.title': 'Abrir link',
+  'url.confirm.body':
+    'Deseja abrir esta URL em uma nova janela?\n\n{url}',
+
+  // ── Scrollback bar (FScrollbackBar) ─────────────────────────
+  'scrollback.label': 'HISTÓRICO:',
+  'scrollback.modern.hint':
+    'HISTÓRICO: Role de volta até o final para sair do modo ' +
+    'de histórico',
+  'scrollback.lineUp': 'Linha acima',
+  'scrollback.lineDown': 'Linha abaixo',
+  'scrollback.pageUp': 'Página acima',
+  'scrollback.pageDown': 'Página abaixo',
+  'scrollback.exit': 'Sair',
+
+  // ── Disconnect confirmation (themed confirm dialog) ─────────
+  'disconnect.confirm.title': 'Desconectar',
+  'disconnect.confirm.body':
+    'Tem certeza de que deseja desconectar?',
+
+  // ── Settings: tooltip on not-yet-translated language options ─
+  'settings.language.comingSoon':
+    'Em breve — ajuda com a tradução é bem-vinda',
+
+  // ── Shared dialog buttons (FInfoDialog / FConfirmDialog) ────
+  'dialog.button.ok': 'OK',
+  'dialog.button.cancel': 'Cancelar',
 };
