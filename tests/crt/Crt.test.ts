@@ -1325,6 +1325,32 @@ describe('Crt — Delta 3c-1 foundation', () => {
       expect(cellReverse(2, 1)).toBe(false);
     });
 
+    it('single-clicking a URL fires onopenurl with the URL (beta.23)', () => {
+      // Write a URL onto row 2 and single-click inside it.
+      crt.GotoXY(1, 2);
+      crt.Write('http://bbs.example.com');
+      let opened: string | undefined;
+      crt.onopenurl.on((url) => {
+        opened = url;
+      });
+      // Click a cell within the URL (col 5, row 2).
+      dispatchAtCell('mousedown', 5, 2);
+      dispatchAtCell('mouseup', 5, 2);
+      expect(opened).toBe('http://bbs.example.com');
+    });
+
+    it('single-clicking a non-URL word does not fire onopenurl', () => {
+      crt.GotoXY(1, 3);
+      crt.Write('justplaintext');
+      let fired = false;
+      crt.onopenurl.on(() => {
+        fired = true;
+      });
+      dispatchAtCell('mousedown', 4, 3);
+      dispatchAtCell('mouseup', 4, 3);
+      expect(fired).toBe(false);
+    });
+
     it('persists the highlight when the drag is released off-canvas', () => {
       dispatchAtCell('mousedown', 1, 1);
       dispatchAtCell('mousemove', 4, 1);

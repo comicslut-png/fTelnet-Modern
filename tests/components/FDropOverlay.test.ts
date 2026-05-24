@@ -439,4 +439,35 @@ describe('<f-drop-overlay>', () => {
       expect(await getSubtitle()).toBe('to upload via ZMODEM');
     });
   });
+
+  describe('i18n (beta.23)', () => {
+    async function show(): Promise<void> {
+      el.visible = true;
+      await el.updateComplete;
+    }
+
+    it('renders the English title + subtitle via t()/tf()', async () => {
+      el.language = 'en';
+      await show();
+      expect(
+        el.querySelector('.fTelnetDropOverlayTitle')?.textContent?.trim(),
+      ).toBe('Drop file here');
+      expect(
+        el.querySelector('.fTelnetDropOverlaySubtitle')?.textContent?.trim(),
+      ).toBe('to upload via ZMODEM');
+    });
+
+    it('has a settable language property (default en)', async () => {
+      expect(el.language).toBe('en');
+      el.language = 'de';
+      await show();
+      // No German translation for these keys yet → English fallback,
+      // but the property is wired and re-render succeeds.
+      expect(el.language).toBe('de');
+      expect(
+        (el.querySelector('.fTelnetDropOverlayTitle')?.textContent?.trim()
+          ?.length ?? 0),
+      ).toBeGreaterThan(0);
+    });
+  });
 });

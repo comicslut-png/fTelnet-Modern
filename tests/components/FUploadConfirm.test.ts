@@ -636,4 +636,53 @@ describe('<f-upload-confirm>', () => {
       expect(text).not.toContain('ZMODEM');
     });
   });
+
+  describe('i18n (beta.23)', () => {
+    beforeEach(async () => {
+      el.files = [
+        new File(['hello world'], 'greet.txt', {
+          type: 'text/plain',
+          lastModified: new Date('2026-01-15T10:30:00').getTime(),
+        }),
+      ];
+      el.open = true;
+      await el.updateComplete;
+    });
+
+    it('renders English labels/buttons via t()', async () => {
+      el.language = 'en';
+      await el.updateComplete;
+      const header = el.querySelector('.fTelnetUploadConfirmHeader');
+      expect(header?.textContent?.trim()).toBe('Confirm Upload');
+      const cancel = el.querySelector('.fTelnetUploadConfirmCancel');
+      expect(cancel?.textContent?.trim()).toBe('Cancel');
+      const send = el.querySelector('.fTelnetUploadConfirmSend');
+      expect(send?.textContent?.trim()).toBe('Send');
+    });
+
+    it('has a settable language property (default en)', async () => {
+      expect(el.language).toBe('en');
+      el.language = 'de';
+      await el.updateComplete;
+      // No German for these keys yet → English fallback, but wired
+      // and re-render succeeds.
+      expect(el.language).toBe('de');
+      expect(
+        el.querySelector('.fTelnetUploadConfirmHeader')?.textContent?.trim()
+          .length ?? 0,
+      ).toBeGreaterThan(0);
+    });
+
+    it('batch send button uses the interpolated count', async () => {
+      el.language = 'en';
+      el.files = [
+        new File(['a'], 'a.txt'),
+        new File(['b'], 'b.txt'),
+        new File(['c'], 'c.txt'),
+      ];
+      await el.updateComplete;
+      const send = el.querySelector('.fTelnetUploadConfirmSend');
+      expect(send?.textContent?.trim()).toBe('Send 3 files');
+    });
+  });
 });

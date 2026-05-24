@@ -64,8 +64,10 @@ applicable.
   webfont) — with room in the picker to add more. Built on a simple
   per-language string catalog with English fallback, so any
   untranslated text stays readable and adding a language is
-  catalog-only. The main menu and status bar are translated; other
-  areas follow in later releases.
+  catalog-only. The main menu, status bar, settings panel, upload
+  and drop dialogs, focus warning, and link-open prompt are
+  translatable; the file-transfer progress panel stays English (it's
+  a fixed-width retro ASCII layout).
 - **ZMODEM file transfers** (new in Phase 4): receive downloads from
   any BBS that speaks ZMODEM. Auto-detects when the BBS initiates a
   transfer; no user configuration required. Confirmed working across
@@ -170,13 +172,13 @@ See `docs/` for stage-by-stage planning notes:
 
 ### Test coverage
 
-1255 unit tests across 56 files, run on every commit. Phase boundaries:
+1264 unit tests across 56 files, run on every commit. Phase boundaries:
 
   - End of Phase 1: 559 tests
   - End of Phase 2: 691 tests
   - End of Phase 3: 722 tests
   - End of Phase 4: 980 tests
-  - Phase 5 (in progress): 1255 tests
+  - Phase 5 (in progress): 1264 tests
 
 ## Testing against a real BBS
 
@@ -249,7 +251,7 @@ for that command, not a bug in the client.
 ```bash
 npm install              # install dependencies
 npm run dev              # start Vite dev server with hot reload (port 5173)
-npm test                 # run the full Vitest suite (1255 tests)
+npm test                 # run the full Vitest suite (1264 tests)
 npm run typecheck        # tsc --noEmit
 npm run build:all        # produce all four bundle flavors
 ```
@@ -259,7 +261,7 @@ Output bundles land in `dist/`:
 - `ftelnet.norip.noxfer.js` — ANSI/BBS only, smallest bundle
 - `ftelnet.norip.xfer.js` — adds YMODEM + ZMODEM file transfer
 - `ftelnet.rip.noxfer.js` — adds RIPscrip graphics emulation
-- `ftelnet.rip.xfer.js` — everything (~720 KB / ~156 KB gzipped)
+- `ftelnet.rip.xfer.js` — everything (~724 KB / ~157 KB gzipped)
 
 Each comes with a source map and a minified `.min.js` variant.
 

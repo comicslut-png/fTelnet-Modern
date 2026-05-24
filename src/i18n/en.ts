@@ -132,6 +132,50 @@ export const en = {
   'dialog.copy.title': 'Copying Text',
   'dialog.copy.body':
     'Click and drag your mouse over the text you want to copy.',
+
+  // ── Upload confirmation dialog (FUploadConfirm) ─────────────
+  'upload.title': 'Confirm Upload',
+  'upload.title.batch': 'Confirm Upload (Batch)',
+  'upload.label.file': 'File:',
+  'upload.label.size': 'Size:',
+  'upload.label.modified': 'Modified:',
+  'upload.label.protocol': 'Protocol:',
+  'upload.label.files': 'Files:',
+  'upload.label.totalSize': 'Total size:',
+  // {count} = number of files, e.g. "3 files"
+  'upload.value.fileCount': '{count} files',
+  'upload.value.unknown': 'Unknown',
+  'upload.details.show': '▸ Show details',
+  'upload.details.hide': '▾ Hide details',
+  'upload.warning':
+    '⚠️ Make sure your BBS is at an upload prompt before clicking Send.',
+  'upload.button.cancel': 'Cancel',
+  'upload.button.send': 'Send',
+  // {count} = number of files, e.g. "Send 3 files"
+  'upload.button.sendCount': 'Send {count} files',
+
+  // ── File transfer progress panel (FTransferProgress) ────────
+  //
+  // NOTE: deferred. FTransferProgress is a fixed-width box-drawing
+  // ASCII panel (rendered in a <pre>) with labels padded to exact
+  // column widths. It's as much a retro *visual* element as it is
+  // text, and translating its terse labels (CPS:, ETA:, Bytes:,
+  // Errors:) safely within the box needs a dedicated, careful pass.
+  // Left in English for now; revisit separately if desired.
+
+  // ── Drag-and-drop overlay (FDropOverlay) ────────────────────
+  'drop.title': 'Drop file here',
+  // {protocol} = ZMODEM or YMODEM
+  'drop.subtitle': 'to upload via {protocol}',
+
+  // ── Focus warning (FFocusWarning) ───────────────────────────
+  'focus.message': '*** CLICK HERE TO ENABLE KEYBOARD INPUT ***',
+
+  // ── Open-URL confirmation (Crt single-click on a link) ──────
+  'url.confirm.title': 'Open Link',
+  // {url} = the clicked URL
+  'url.confirm.body':
+    'Would you like to open this URL in a new window?\n\n{url}',
 } as const;
 
 /** The set of valid translatable keys, derived from the English base. */

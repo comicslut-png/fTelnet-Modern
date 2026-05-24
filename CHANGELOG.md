@@ -5,6 +5,67 @@ All notable changes to fTelnet-Modern are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.0.0-beta.23] — 2026-05-23
+
+i18n foundation for the remaining end-user messages. This release is
+**language-independent plumbing** — it extracts the previously
+hardcoded-English popup/overlay/warning strings into the translation
+catalog and wires the components through `t()`/`tf()`, and themes the
+last unthemed end-user `confirm()`. All fifteen languages keep
+working unchanged via the English fallback; the actual translations
+land per-language in the releases that follow (Dutch first).
+
+### Added / Changed
+
+  - **Upload confirmation dialog (FUploadConfirm)** now pulls its
+    text from the catalog: the header (single + batch), the field
+    labels (File/Size/Modified/Protocol/Files/Total size), the
+    file-count and "Unknown" values, the show/hide-details toggle,
+    the upload-prompt warning, and the Cancel/Send buttons
+    (including the interpolated "Send N files").
+
+  - **Drag-and-drop overlay (FDropOverlay)** now translates its
+    "Drop file here" title and "to upload via {protocol}" subtitle.
+
+  - **Focus warning (FFocusWarning)** — the "CLICK HERE TO ENABLE
+    KEYBOARD INPUT" banner — now comes from the catalog.
+
+  - **Open-link confirmation** — clicking a URL in the terminal used
+    the browser's native `confirm()` (unthemed, untranslatable, and
+    a layering wart in Crt). It's now a themed dialog: Crt emits a
+    new `onopenurl` event with the URL, and the client shows the
+    themed `<f-confirm-dialog>` (added in beta.22) with translated
+    text before opening the link. Crt no longer touches UI chrome.
+
+  - New catalog keys (`upload.*`, `drop.*`, `focus.*`,
+    `url.confirm.*`) added to the English base. Every other catalog
+    is partial and falls back to English until translated.
+
+### Not included
+
+  - The file-transfer progress panel (FTransferProgress) is left in
+    English by design. It's a fixed-width box-drawing ASCII panel
+    whose terse labels are padded to exact columns — as much a retro
+    visual element as text — so it's out of scope for catalog
+    translation.
+
+  - Developer/sysop error alerts (invalid container id, font-load
+    failures, etc.) remain native/English by design — they're for
+    whoever embeds fTelnet, where a plain searchable English error
+    is more useful than a translation.
+
+### Tests
+
+1255 → 1264. New i18n tests for FFocusWarning, FDropOverlay, and
+FUploadConfirm (English text via t(), settable language property,
+interpolated batch count), plus two Crt tests for the new
+`onopenurl` event (fires with the URL on a link click; does not fire
+on a non-URL word).
+
+### Bundle
+
+~720 → ~724 KB raw / ~157 KB gzipped.
+
 ## [2.0.0-beta.22] — 2026-05-23
 
 ### Changed

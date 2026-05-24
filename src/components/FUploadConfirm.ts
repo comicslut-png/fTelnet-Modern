@@ -9,6 +9,7 @@
 
 import { html, LitElement, type TemplateResult, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
+import { t, tf, type Language } from '@i18n/index.js';
 
 /**
  * Payload for the `upload-confirm` event.
@@ -79,6 +80,10 @@ export class FUploadConfirm extends LitElement {
    */
   @property({ type: String, attribute: 'transfer-protocol' })
   transferProtocol: 'zmodem' | 'ymodem' = 'zmodem';
+
+  /** Active UI language; drives all labels/buttons via t()/tf(). */
+  @property({ type: String })
+  language: Language = 'en';
 
   /**
    * Whether the multi-file details list is expanded. Only used
@@ -229,7 +234,7 @@ export class FUploadConfirm extends LitElement {
 
   /** Format a Date as a short locale string. */
   private _formatDate(ms: number): string {
-    if (ms === 0) return 'Unknown';
+    if (ms === 0) return t('upload.value.unknown', this.language);
     const d = new Date(ms);
     return d.toLocaleString();
   }
@@ -257,23 +262,31 @@ export class FUploadConfirm extends LitElement {
   private _renderSingleFileBody(f: File): TemplateResult {
     return html`
       <div class="fTelnetUploadConfirmRow">
-        <span class="fTelnetUploadConfirmLabel">File:</span>
+        <span class="fTelnetUploadConfirmLabel"
+          >${t('upload.label.file', this.language)}</span
+        >
         <span class="fTelnetUploadConfirmValue">${f.name}</span>
       </div>
       <div class="fTelnetUploadConfirmRow">
-        <span class="fTelnetUploadConfirmLabel">Size:</span>
+        <span class="fTelnetUploadConfirmLabel"
+          >${t('upload.label.size', this.language)}</span
+        >
         <span class="fTelnetUploadConfirmValue"
           >${this._formatSize(f.size)}</span
         >
       </div>
       <div class="fTelnetUploadConfirmRow">
-        <span class="fTelnetUploadConfirmLabel">Modified:</span>
+        <span class="fTelnetUploadConfirmLabel"
+          >${t('upload.label.modified', this.language)}</span
+        >
         <span class="fTelnetUploadConfirmValue"
           >${this._formatDate(f.lastModified)}</span
         >
       </div>
       <div class="fTelnetUploadConfirmRow">
-        <span class="fTelnetUploadConfirmLabel">Protocol:</span>
+        <span class="fTelnetUploadConfirmLabel"
+          >${t('upload.label.protocol', this.language)}</span
+        >
         <span class="fTelnetUploadConfirmValue"
           >${this.transferProtocol === 'ymodem' ? 'YMODEM' : 'ZMODEM'}</span
         >
@@ -295,19 +308,27 @@ export class FUploadConfirm extends LitElement {
     const total = this._totalSize();
     return html`
       <div class="fTelnetUploadConfirmRow">
-        <span class="fTelnetUploadConfirmLabel">Files:</span>
+        <span class="fTelnetUploadConfirmLabel"
+          >${t('upload.label.files', this.language)}</span
+        >
         <span class="fTelnetUploadConfirmValue"
-          >${this.files.length} files</span
+          >${tf('upload.value.fileCount', this.language, {
+            count: String(this.files.length),
+          })}</span
         >
       </div>
       <div class="fTelnetUploadConfirmRow">
-        <span class="fTelnetUploadConfirmLabel">Total size:</span>
+        <span class="fTelnetUploadConfirmLabel"
+          >${t('upload.label.totalSize', this.language)}</span
+        >
         <span class="fTelnetUploadConfirmValue"
           >${this._formatSize(total)}</span
         >
       </div>
       <div class="fTelnetUploadConfirmRow">
-        <span class="fTelnetUploadConfirmLabel">Protocol:</span>
+        <span class="fTelnetUploadConfirmLabel"
+          >${t('upload.label.protocol', this.language)}</span
+        >
         <span class="fTelnetUploadConfirmValue"
           >${this.transferProtocol === 'ymodem'
             ? 'YMODEM (batch)'
@@ -323,7 +344,9 @@ export class FUploadConfirm extends LitElement {
             e.preventDefault();
             this._detailsOpen = !this._detailsOpen;
           }}
-          >${this._detailsOpen ? '▾ Hide details' : '▸ Show details'}</a
+          >${this._detailsOpen
+            ? t('upload.details.hide', this.language)
+            : t('upload.details.show', this.language)}</a
         >
       </div>
       ${this._detailsOpen ? this._renderFileList() : nothing}
@@ -357,13 +380,14 @@ export class FUploadConfirm extends LitElement {
     return html`
       <div class="fTelnetUploadConfirm">
         <div class="fTelnetUploadConfirmHeader">
-          ${isBatch ? 'Confirm Upload (Batch)' : 'Confirm Upload'}
+          ${isBatch
+            ? t('upload.title.batch', this.language)
+            : t('upload.title', this.language)}
         </div>
         <div class="fTelnetUploadConfirmBody">
           ${this._renderBody()}
           <div class="fTelnetUploadConfirmWarning">
-            ⚠️ Make sure your BBS is at an upload prompt before
-            clicking Send.
+            ${t('upload.warning', this.language)}
           </div>
         </div>
         <div class="fTelnetUploadConfirmFooter">
@@ -374,7 +398,7 @@ export class FUploadConfirm extends LitElement {
               e.preventDefault();
               this._cancel();
             }}
-            >Cancel</a
+            >${t('upload.button.cancel', this.language)}</a
           >
           <a
             href="#"
@@ -383,7 +407,11 @@ export class FUploadConfirm extends LitElement {
               e.preventDefault();
               this._confirm();
             }}
-            >${isBatch ? `Send ${this.files.length} files` : 'Send'}</a
+            >${isBatch
+              ? tf('upload.button.sendCount', this.language, {
+                  count: String(this.files.length),
+                })
+              : t('upload.button.send', this.language)}</a
           >
         </div>
       </div>

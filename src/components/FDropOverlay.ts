@@ -9,6 +9,7 @@
 
 import { html, LitElement, type TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
+import { t, tf, type Language } from '@i18n/index.js';
 
 /**
  * Payload for `drop-file-selected` event.
@@ -80,6 +81,10 @@ export class FDropOverlay extends LitElement {
    */
   @property({ type: String, attribute: 'transfer-protocol' })
   transferProtocol: 'zmodem' | 'ymodem' = 'zmodem';
+
+  /** Active UI language; drives the overlay text via t()/tf(). */
+  @property({ type: String })
+  language: Language = 'en';
 
   /**
    * Counter for dragenter/dragleave pair tracking. dragenter fires
@@ -347,10 +352,12 @@ export class FDropOverlay extends LitElement {
         <div class="fTelnetDropOverlayMessage">
           <div class="fTelnetDropOverlayIcon">📁</div>
           <div class="fTelnetDropOverlayTitle">
-            Drop file here
+            ${t('drop.title', this.language)}
           </div>
           <div class="fTelnetDropOverlaySubtitle">
-            to upload via ${this.transferProtocol === 'ymodem' ? 'YMODEM' : 'ZMODEM'}
+            ${tf('drop.subtitle', this.language, {
+              protocol: this.transferProtocol === 'ymodem' ? 'YMODEM' : 'ZMODEM',
+            })}
           </div>
         </div>
       </div>

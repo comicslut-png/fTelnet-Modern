@@ -153,4 +153,27 @@ describe('<f-focus-warning>', () => {
       expect(second.widthPx).toBe(800);
     });
   });
+
+  describe('i18n', () => {
+    it('renders the English warning text via t()', async () => {
+      el.visible = true;
+      el.language = 'en';
+      await el.updateComplete;
+      const bar = el.querySelector('.fTelnetFocusWarning');
+      expect(bar?.textContent?.trim()).toBe(
+        '*** CLICK HERE TO ENABLE KEYBOARD INPUT ***',
+      );
+    });
+
+    it('has a settable language property (default en)', async () => {
+      expect(el.language).toBe('en');
+      el.language = 'de';
+      await el.updateComplete;
+      // No German translation for this key yet, so it falls back to
+      // English — but the property is wired and re-render succeeds.
+      expect(el.language).toBe('de');
+      const bar = el.querySelector('.fTelnetFocusWarning');
+      expect(bar?.textContent?.trim().length).toBeGreaterThan(0);
+    });
+  });
 });

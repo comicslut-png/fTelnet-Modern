@@ -651,6 +651,17 @@ export class fTelnetClient {
     this._Crt.onscreensizechange.on((): void => {
       this.OnCrtScreenSizeChanged();
     });
+    this._Crt.onopenurl.on((url: string): void => {
+      // Themed confirm before opening a clicked link in a new window.
+      void this.showConfirmDialog(
+        t('url.confirm.title', this._Options.Language as Language),
+        tf('url.confirm.body', this._Options.Language as Language, { url }),
+      ).then((confirmed: boolean): void => {
+        if (confirmed) {
+          window.open(url);
+        }
+      });
+    });
     this._Crt.Atari = this._Options.Emulation === 'Atari';
     this._Crt.BareLFtoCRLF = this._Options.BareLFtoCRLF;
     this._Crt.C64 = this._Options.Emulation === 'C64';
@@ -734,6 +745,7 @@ export class fTelnetClient {
     // so the existing CSS applies unchanged). Visibility is set
     // imperatively via the .visible property — see OnTimer().
     this._FocusWarningBar = document.createElement('f-focus-warning') as FFocusWarning;
+    this._FocusWarningBar.language = this._Options.Language as Language;
     this._fTelnetContainer.appendChild(this._FocusWarningBar);
 
     // ── Scrollback bar ──
@@ -1042,6 +1054,18 @@ export class fTelnetClient {
           // acceptable, low-surprise behavior for a status line.
           this._StatusBar.language = detail.language;
         }
+        // Newly-localized message components (beta.23). Each is
+        // persistent in the DOM and re-renders when its language
+        // property changes.
+        if (this._FocusWarningBar !== undefined) {
+          this._FocusWarningBar.language = detail.language;
+        }
+        if (this._DropOverlay !== undefined) {
+          this._DropOverlay.language = detail.language;
+        }
+        if (this._UploadConfirm !== undefined) {
+          this._UploadConfirm.language = detail.language;
+        }
         try {
           window.sessionStorage.setItem(
             'fTelnet.language',
@@ -1084,6 +1108,7 @@ export class fTelnetClient {
     // _UploadConfirm via the same path.
     this._DropOverlay = document.createElement('f-drop-overlay') as FDropOverlay;
     this._DropOverlay.transferProtocol = this._Options.DefaultTransferProtocol;
+    this._DropOverlay.language = this._Options.Language as Language;
     this._DropOverlay.addEventListener('drop-file-selected', (e: Event): void => {
       const detail = (e as CustomEvent<DropFileSelectedDetail>).detail;
       this._beginUploadFlow(detail.files);
@@ -1099,6 +1124,7 @@ export class fTelnetClient {
       'f-upload-confirm',
     ) as FUploadConfirm;
     this._UploadConfirm.transferProtocol = this._Options.DefaultTransferProtocol;
+    this._UploadConfirm.language = this._Options.Language as Language;
     this._UploadConfirm.addEventListener('upload-confirm', (e: Event): void => {
       const detail = (e as CustomEvent<UploadConfirmDetail>).detail;
       // Symmetric reset with the cancel handler below: both `open`

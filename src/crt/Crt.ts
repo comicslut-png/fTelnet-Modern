@@ -79,6 +79,13 @@ export class Crt implements AnsiTarget {
   public readonly onkeypressed: IEvent<[]> = new TypedEvent<[]>();
   public readonly onmousereport: IEvent<[string]> = new TypedEvent<[string]>();
   public readonly onscreensizechange: IEvent<[]> = new TypedEvent<[]>();
+  /**
+   * Fired when the user single-clicks a word that's an http(s) URL.
+   * Carries the URL. The client handles it (shows a themed confirm
+   * and opens the link if confirmed) — Crt itself stays ignorant of
+   * UI chrome and language, consistent with its other events.
+   */
+  public readonly onopenurl: IEvent<[string]> = new TypedEvent<[string]>();
 
   // ───────── Color constants (instance access) ─────────
   // Original code referenced `Crt.LIGHTGRAY` etc.; preserved as static
@@ -2654,10 +2661,11 @@ export class Crt implements AnsiTarget {
 
     const lower = clickedWord.toLowerCase();
     if (lower.startsWith('http://') || lower.startsWith('https://')) {
-      // eslint-disable-next-line no-alert
-      if (confirm(`Would you like to open this url in a new window?\n\n${clickedWord}`)) {
-        window.open(clickedWord);
-      }
+      // Hand the URL up to the client, which shows a themed confirm
+      // and opens the link if the user agrees. (Previously this used
+      // a native confirm() here; that couldn't be themed or
+      // translated, and Crt shouldn't own UI chrome anyway.)
+      this.onopenurl.trigger(clickedWord);
     }
   }
 

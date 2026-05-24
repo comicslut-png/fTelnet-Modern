@@ -20,6 +20,7 @@
 
 import { LitElement, html, type TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
+import { t, type Language } from '@i18n/index.js';
 
 /**
  * `<f-focus-warning>` — the red "*** CLICK HERE TO ENABLE KEYBOARD INPUT ***"
@@ -58,6 +59,10 @@ export class FFocusWarning extends LitElement {
   @property({ type: Number, attribute: 'width-px' })
   widthPx = 0;
 
+  /** Active UI language; drives the warning text via t(). */
+  @property({ type: String })
+  language: Language = 'en';
+
   /**
    * Render into light DOM so the existing `.fTelnetFocusWarning`
    * selectors in ftelnet.css apply without modification.
@@ -80,7 +85,7 @@ export class FFocusWarning extends LitElement {
 
     return html`
       <div class="fTelnetFocusWarning" style=${inlineStyle}>
-        *** CLICK HERE TO ENABLE KEYBOARD INPUT ***
+        ${t('focus.message', this.language)}
       </div>
     `;
   }
