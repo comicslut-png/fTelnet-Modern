@@ -136,4 +136,60 @@ export const cs: Catalog = {
   'dialog.copy.title': 'Kopírování textu',
   'dialog.copy.body':
     'Klikněte a táhněte myší přes text, který chcete zkopírovat.',
+
+  // ── Upload confirmation dialog (FUploadConfirm) ─────────────
+  'upload.title': 'Potvrdit odeslání',
+  'upload.title.batch': 'Potvrdit odeslání (dávka)',
+  'upload.label.file': 'Soubor:',
+  'upload.label.size': 'Velikost:',
+  'upload.label.modified': 'Změněno:',
+  'upload.label.protocol': 'Protokol:',
+  'upload.label.files': 'Soubory:',
+  'upload.label.totalSize': 'Celková velikost:',
+  'upload.value.fileCount': 'Soubory: {count}',
+  'upload.value.unknown': 'Neznámé',
+  'upload.details.show': '▸ Zobrazit podrobnosti',
+  'upload.details.hide': '▾ Skrýt podrobnosti',
+  'upload.warning':
+    '⚠️ Ujistěte se, že je váš BBS u výzvy k odeslání, než ' +
+    'kliknete na Odeslat.',
+  'upload.button.cancel': 'Zrušit',
+  'upload.button.send': 'Odeslat',
+  'upload.button.sendCount': 'Odeslat soubory: {count}',
+
+  // ── Drag-and-drop overlay (FDropOverlay) ────────────────────
+  'drop.title': 'Přetáhněte soubor sem',
+  'drop.subtitle': 'pro odeslání přes {protocol}',
+
+  // ── Focus warning (FFocusWarning) ───────────────────────────
+  'focus.message': '*** KLIKNĚTE ZDE PRO AKTIVACI KLÁVESOVÉHO VSTUPU ***',
+
+  // ── Open-URL confirmation (Crt single-click on a link) ──────
+  'url.confirm.title': 'Otevřít odkaz',
+  'url.confirm.body':
+    'Chcete otevřít tuto URL adresu v novém okně?\n\n{url}',
+
+  // ── Scrollback bar (FScrollbackBar) ─────────────────────────
+  'scrollback.label': 'HISTORIE:',
+  'scrollback.modern.hint':
+    'HISTORIE: Posuňte se zpět dolů na konec pro ukončení ' +
+    'režimu historie',
+  'scrollback.lineUp': 'Řádek nahoru',
+  'scrollback.lineDown': 'Řádek dolů',
+  'scrollback.pageUp': 'Stránka nahoru',
+  'scrollback.pageDown': 'Stránka dolů',
+  'scrollback.exit': 'Ukončit',
+
+  // ── Disconnect confirmation (themed confirm dialog) ─────────
+  'disconnect.confirm.title': 'Odpojit',
+  'disconnect.confirm.body':
+    'Opravdu se chcete odpojit?',
+
+  // ── Settings: tooltip on not-yet-translated language options ─
+  'settings.language.comingSoon':
+    'Již brzy — pomoc s překladem vítána',
+
+  // ── Shared dialog buttons (FInfoDialog / FConfirmDialog) ────
+  'dialog.button.ok': 'OK',
+  'dialog.button.cancel': 'Zrušit',
 };

@@ -9,7 +9,7 @@ import {
 } from '@i18n/index.js';
 import { en } from '@i18n/en.js';
 import { de } from '@i18n/de.js';
-import { cs as csCatalog } from '@i18n/cs.js';
+import { ja as jaCatalog } from '@i18n/ja.js';
 
 /*
   Tests for the i18n core (Phase 5 beta.6).
@@ -72,21 +72,25 @@ describe('i18n core', () => {
 
   describe('fallback behavior', () => {
     it('falls back to English for a key a partial catalog omits', () => {
-      // The completed catalogs (de/fr/es/pt/it/ru/sv/pl/uk/fi/el) no
-      // longer exercise the fallback path. Use Czech, which still has
-      // the older menu/status keys but not yet the post-beta.22
-      // message keys — any key it lacks must return the English value.
+      // All Latin/Cyrillic/Greek catalogs are now complete. Japanese
+      // is the last partial one — it still has the older menu/status
+      // keys but not yet the post-beta.22 message keys. Any key it
+      // lacks must return exactly the English value.
       const enKeys = Object.keys(en) as (keyof typeof en)[];
       let exercisedAtLeastOne = false;
       for (const key of enKeys) {
-        const csHas = Object.prototype.hasOwnProperty.call(csCatalog, key);
-        if (!csHas) {
+        const jaHas = Object.prototype.hasOwnProperty.call(jaCatalog, key);
+        if (!jaHas) {
           exercisedAtLeastOne = true;
-          expect(t(key, 'cs')).toBe(en[key]);
+          expect(t(key, 'ja')).toBe(en[key]);
         }
       }
-      // Guard: if Czech ever gets completed too, this test would
-      // silently stop testing anything — fail loudly so we repoint it.
+      // Guard: if Japanese ever gets completed too (it's the last
+      // partial catalog), this test would silently stop testing
+      // anything — fail loudly so we repoint it. NOTE: once Japanese
+      // is done, every catalog is complete; at that point this test
+      // should switch to asserting against an unregistered code or a
+      // deliberately-incomplete fixture rather than a real language.
       expect(exercisedAtLeastOne).toBe(true);
     });
 
@@ -179,6 +183,34 @@ describe('i18n core', () => {
     it('returns the Czech string when translated', () => {
       expect(t('menu.connect', 'cs')).toBe('Připojit');
       expect(t('menu.settings', 'cs')).toBe('Nastavení');
+    });
+
+    it('translates the Czech popup/message strings (beta.39)', () => {
+      expect(t('upload.title', 'cs')).toBe('Potvrdit odeslání');
+      expect(t('upload.button.send', 'cs')).toBe('Odeslat');
+      expect(t('upload.button.cancel', 'cs')).toBe('Zrušit');
+      expect(t('upload.value.unknown', 'cs')).toBe('Neznámé');
+      expect(t('drop.title', 'cs')).toBe('Přetáhněte soubor sem');
+      expect(t('url.confirm.title', 'cs')).toBe('Otevřít odkaz');
+      expect(t('focus.message', 'cs')).toContain('KLIKNĚTE ZDE');
+      expect(t('scrollback.exit', 'cs')).toBe('Ukončit');
+      expect(t('disconnect.confirm.title', 'cs')).toBe('Odpojit');
+      expect(t('dialog.button.cancel', 'cs')).toBe('Zrušit');
+    });
+
+    it('interpolates the Czech popup strings (beta.39)', () => {
+      expect(tf('upload.value.fileCount', 'cs', { count: '3' })).toBe(
+        'Soubory: 3',
+      );
+      expect(tf('upload.button.sendCount', 'cs', { count: '5' })).toBe(
+        'Odeslat soubory: 5',
+      );
+      expect(tf('drop.subtitle', 'cs', { protocol: 'ZMODEM' })).toBe(
+        'pro odeslání přes ZMODEM',
+      );
+      const body = tf('url.confirm.body', 'cs', { url: 'http://x' });
+      expect(body).toContain('http://x');
+      expect(body).toContain('\n');
     });
 
     it('returns the Greek string when translated', () => {
