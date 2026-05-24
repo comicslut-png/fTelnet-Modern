@@ -211,6 +211,35 @@ describe('i18n core', () => {
       expect(t('menu.settings', 'es')).toBe('Configuración');
     });
 
+    it('translates the Spanish popup/message strings (beta.30)', () => {
+      expect(t('upload.title', 'es')).toBe('Confirmar envío');
+      expect(t('upload.button.send', 'es')).toBe('Enviar');
+      expect(t('upload.button.cancel', 'es')).toBe('Cancelar');
+      expect(t('upload.value.unknown', 'es')).toBe('Desconocido');
+      expect(t('drop.title', 'es')).toBe('Suelte el archivo aquí');
+      expect(t('url.confirm.title', 'es')).toBe('Abrir enlace');
+      expect(t('focus.message', 'es')).toContain('HAGA CLIC');
+      expect(t('scrollback.exit', 'es')).toBe('Salir');
+      expect(t('disconnect.confirm.title', 'es')).toBe('Desconectar');
+      expect(t('dialog.button.ok', 'es')).toBe('Aceptar');
+      expect(t('dialog.button.cancel', 'es')).toBe('Cancelar');
+    });
+
+    it('interpolates the Spanish popup strings (beta.30)', () => {
+      expect(tf('upload.value.fileCount', 'es', { count: '3' })).toBe(
+        '3 archivos',
+      );
+      expect(tf('upload.button.sendCount', 'es', { count: '5' })).toBe(
+        'Enviar 5 archivos',
+      );
+      expect(tf('drop.subtitle', 'es', { protocol: 'ZMODEM' })).toBe(
+        'para enviarlo mediante ZMODEM',
+      );
+      const body = tf('url.confirm.body', 'es', { url: 'http://x' });
+      expect(body).toContain('http://x');
+      expect(body).toContain('\n');
+    });
+
     it('returns the Portuguese string when translated', () => {
       expect(t('menu.connect', 'pt')).toBe('Conectar');
       expect(t('menu.settings', 'pt')).toBe('Configurações');

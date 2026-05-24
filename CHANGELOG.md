@@ -5,6 +5,55 @@ All notable changes to fTelnet-Modern are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.0.0-beta.30] — 2026-05-23
+
+Fourth language pass over the post-beta.22 message strings:
+**Spanish (Español)**.
+
+### Added
+
+  - **Spanish translations** for the complete set of message strings
+    (upload-confirm dialog, drag-and-drop overlay, focus warning,
+    open-link prompt, scrollback bar, disconnect confirm, language-
+    picker tooltip, shared dialog buttons). Formal "usted" register;
+    OK renders as the conventional Spanish "Aceptar".
+
+  - Verified by en/es key diff: Spanish now has all 94 base keys
+    (was 61), zero missing. (Best-effort, native review welcome.)
+
+### Tests
+
+1277 → 1279. Spanish popup/message + interpolation tests.
+
+### Bundle
+
+~732 → ~735 KB raw / ~159 KB gzipped.
+
+## [2.0.0-beta.30] — 2026-05-23
+
+Fourth language pass over the post-beta.22 message strings:
+**Spanish (Español)**.
+
+### Added
+
+  - **Spanish translations** for the complete set of message strings:
+    the upload-confirm dialog, drag-and-drop overlay, focus warning,
+    open-link prompt, scrollback bar, disconnect confirm, language-
+    picker tooltip, and the shared OK/Cancel dialog buttons. Formal
+    "usted" register, matching the existing Spanish.
+
+  - Verified by en/es key diff: Spanish has all 94 base keys, zero
+    missing. (Best-effort, native review welcome — corrections are
+    catalog-only.)
+
+### Tests
+
+1277 → 1279. Spanish popup/message + interpolation tests.
+
+### Bundle
+
+~732 KB raw / ~158 KB gzipped (unchanged — catalog-only).
+
 ## [2.0.0-beta.29] — 2026-05-23
 
 Third language pass over the post-beta.22 message strings:
