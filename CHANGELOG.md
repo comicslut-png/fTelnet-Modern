@@ -5,6 +5,76 @@ All notable changes to fTelnet-Modern are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.0.0-beta.40] — 2026-05-23
+
+Fourteenth and **final** language pass over the post-beta.22 message
+strings: **Japanese (日本語)**. With this, all 15 languages are
+complete. This release also introduces the **all-in-one sysop
+starter package** as a downloadable release artifact.
+
+### Added
+
+  - **Japanese translations** for the complete set of message
+    strings: the upload-confirm dialog, drag-and-drop overlay, focus
+    warning, open-link prompt, scrollback bar, disconnect confirm,
+    language-picker tooltip, and the shared OK/Cancel dialog buttons.
+    Japanese has no grammatical plurals, so the `{count}`
+    interpolations read naturally. Scrollback uses 履歴 to match the
+    existing menu term.
+
+    > **Native review strongly recommended.** Unlike the Latin/
+    > Cyrillic/Greek passes, neither the maintainer nor the tooling
+    > can reliably proofread CJK. These strings are careful best-
+    > effort; corrections are catalog-only (no code change needed).
+
+  - Verified by en/ja key diff: Japanese now has all 94 base keys
+    (was 61), zero missing. No mojibake in the build.
+
+  - **Sysop starter package** (`ftelnet-starter.zip`) — a ready-to-
+    run, all-in-one bundle for BBS operators: the built client (all
+    four flavors), `ftelnet.css`, fonts, the virtual keyboard assets,
+    a 3-line-config `index.html`, and a plain-text README. Attached
+    to this GitHub Release as a download (not committed to the source
+    tree — it's a build artifact). See the release notes for usage.
+
+### Changed
+
+  - The i18n per-key fallback test was rewritten. Japanese was the
+    last partial catalog; completing it means every real catalog is
+    full, so the old "find a real language missing a key" approach
+    can no longer exercise the fallback branch (its guard fired, as
+    designed). It now asserts the fallback mechanism directly against
+    an unregistered language code, so every English base key is
+    proven to fall through to English.
+
+### Font note (Japanese)
+
+  - The bundled `noto-sans-jp-subset.woff2` is applied only as a
+    *trailing* fallback on the UI chrome, so any Japanese codepoint
+    not in the subset falls through to the system font (full JP
+    coverage) rather than rendering as tofu. The new strings may
+    introduce glyphs outside the current subset; regenerating the
+    subset to include them is optional/cosmetic (see ja.ts notes).
+
+### i18n — COMPLETE
+
+All 15 languages now have the full 94-key catalog: English (base),
+Dutch, German, French, Spanish, Portuguese, Italian, Russian,
+Swedish, Polish, Ukrainian, Finnish, Greek, Czech, Japanese.
+
+Intentionally left English by design: the file-transfer progress
+panel (retro ASCII layout), developer/sysop error alerts, and the
+user manual.
+
+### Tests
+
+1297 → 1299. Japanese popup/message + interpolation tests; fallback
+test rewritten.
+
+### Bundle
+
+~755 → ~757 KB raw / ~163 KB gzipped.
+
 ## [2.0.0-beta.39] — 2026-05-23
 
 Thirteenth language pass over the post-beta.22 message strings:

@@ -57,17 +57,20 @@ applicable.
   levels — from users who've never seen a BBS to seasoned sysops.
 - **Multilingual UI** (new in beta.6): a Language picker in
   Settings switches the client chrome between languages. Fifteen
-  ship functional today — English, German, French, Spanish,
-  Portuguese, Dutch, Italian, Russian, Swedish, Polish, Ukrainian,
-  Finnish, Greek, Czech, and Japanese (spanning Latin, Cyrillic,
-  Greek, and CJK scripts; Japanese ships with a small subset
-  webfont) — with room in the picker to add more. Built on a simple
-  per-language string catalog with English fallback, so any
-  untranslated text stays readable and adding a language is
-  catalog-only. The main menu, status bar, settings panel, upload
-  and drop dialogs, focus warning, and link-open prompt are
-  translatable; the file-transfer progress panel stays English (it's
-  a fixed-width retro ASCII layout).
+  ship today, all with the complete string catalog — English,
+  German, French, Spanish, Portuguese, Dutch, Italian, Russian,
+  Swedish, Polish, Ukrainian, Finnish, Greek, Czech, and Japanese
+  (spanning
+  Latin, Cyrillic, Greek, and CJK scripts; Japanese ships with a
+  small subset webfont) — with room in the picker to add more. Built
+  on a simple per-language string catalog with English fallback, so
+  any untranslated text stays readable and adding a language is
+  catalog-only. Every end-user chrome surface is translatable — the
+  main menu, status bar, settings panel, upload and drop dialogs,
+  focus warning, link-open prompt, scrollback bar, disconnect
+  confirmation, and the shared dialog buttons. The file-transfer
+  progress panel stays English by design (a fixed-width retro ASCII
+  layout), as do developer/sysop error alerts and the user manual.
 - **ZMODEM file transfers** (new in Phase 4): receive downloads from
   any BBS that speaks ZMODEM. Auto-detects when the BBS initiates a
   transfer; no user configuration required. Confirmed working across
@@ -172,13 +175,13 @@ See `docs/` for stage-by-stage planning notes:
 
 ### Test coverage
 
-1297 unit tests across 56 files, run on every commit. Phase boundaries:
+1299 unit tests across 56 files, run on every commit. Phase boundaries:
 
   - End of Phase 1: 559 tests
   - End of Phase 2: 691 tests
   - End of Phase 3: 722 tests
   - End of Phase 4: 980 tests
-  - Phase 5 (in progress): 1297 tests
+  - Phase 5 (in progress): 1299 tests
 
 ## Testing against a real BBS
 
@@ -251,7 +254,7 @@ for that command, not a bug in the client.
 ```bash
 npm install              # install dependencies
 npm run dev              # start Vite dev server with hot reload (port 5173)
-npm test                 # run the full Vitest suite (1297 tests)
+npm test                 # run the full Vitest suite (1299 tests)
 npm run typecheck        # tsc --noEmit
 npm run build:all        # produce all four bundle flavors
 ```

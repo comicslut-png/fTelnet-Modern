@@ -9,7 +9,6 @@ import {
 } from '@i18n/index.js';
 import { en } from '@i18n/en.js';
 import { de } from '@i18n/de.js';
-import { ja as jaCatalog } from '@i18n/ja.js';
 
 /*
   Tests for the i18n core (Phase 5 beta.6).
@@ -71,27 +70,26 @@ describe('i18n core', () => {
   });
 
   describe('fallback behavior', () => {
-    it('falls back to English for a key a partial catalog omits', () => {
-      // All Latin/Cyrillic/Greek catalogs are now complete. Japanese
-      // is the last partial one — it still has the older menu/status
-      // keys but not yet the post-beta.22 message keys. Any key it
-      // lacks must return exactly the English value.
+    it('falls back to English for a key missing from a partial catalog', () => {
+      // Every real catalog is now complete (de/fr/es/pt/it/ru/sv/pl/
+      // uk/fi/el/cs/ja all have all 94 keys), so no real language
+      // exercises the per-key fallback path anymore. We assert the
+      // mechanism directly instead: t() must return the English base
+      // for any key absent from a given language's catalog. We prove
+      // this via the registered behavior — pick a key and confirm a
+      // language that (hypothetically) lacked it would get English —
+      // using the unregistered-code path, which is the same lookup
+      // miss → English-fallback branch in t().
+      //
+      // Concretely: a code with no catalog is the strongest form of
+      // "every key is missing", so every key must return its English
+      // value. This keeps the fallback branch genuinely covered now
+      // that all real catalogs are full.
       const enKeys = Object.keys(en) as (keyof typeof en)[];
-      let exercisedAtLeastOne = false;
+      const noCatalog = 'zz' as Language;
       for (const key of enKeys) {
-        const jaHas = Object.prototype.hasOwnProperty.call(jaCatalog, key);
-        if (!jaHas) {
-          exercisedAtLeastOne = true;
-          expect(t(key, 'ja')).toBe(en[key]);
-        }
+        expect(t(key, noCatalog)).toBe(en[key]);
       }
-      // Guard: if Japanese ever gets completed too (it's the last
-      // partial catalog), this test would silently stop testing
-      // anything — fail loudly so we repoint it. NOTE: once Japanese
-      // is done, every catalog is complete; at that point this test
-      // should switch to asserting against an unregistered code or a
-      // deliberately-incomplete fixture rather than a real language.
-      expect(exercisedAtLeastOne).toBe(true);
     });
 
     it('falls back to English for an unregistered language code', () => {
@@ -178,6 +176,34 @@ describe('i18n core', () => {
     it('returns the Japanese (CJK) string when translated', () => {
       expect(t('menu.connect', 'ja')).toBe('接続');
       expect(t('menu.settings', 'ja')).toBe('設定');
+    });
+
+    it('translates the Japanese popup/message strings (beta.40)', () => {
+      expect(t('upload.title', 'ja')).toBe('アップロードの確認');
+      expect(t('upload.button.send', 'ja')).toBe('送信');
+      expect(t('upload.button.cancel', 'ja')).toBe('キャンセル');
+      expect(t('upload.value.unknown', 'ja')).toBe('不明');
+      expect(t('drop.title', 'ja')).toBe('ここにファイルをドロップ');
+      expect(t('url.confirm.title', 'ja')).toBe('リンクを開く');
+      expect(t('focus.message', 'ja')).toContain('キーボード入力');
+      expect(t('scrollback.exit', 'ja')).toBe('終了');
+      expect(t('disconnect.confirm.title', 'ja')).toBe('切断');
+      expect(t('dialog.button.cancel', 'ja')).toBe('キャンセル');
+    });
+
+    it('interpolates the Japanese popup strings (beta.40)', () => {
+      expect(tf('upload.value.fileCount', 'ja', { count: '3' })).toBe(
+        '3 個のファイル',
+      );
+      expect(tf('upload.button.sendCount', 'ja', { count: '5' })).toBe(
+        '5 個のファイルを送信',
+      );
+      expect(tf('drop.subtitle', 'ja', { protocol: 'ZMODEM' })).toBe(
+        'ZMODEM でアップロード',
+      );
+      const body = tf('url.confirm.body', 'ja', { url: 'http://x' });
+      expect(body).toContain('http://x');
+      expect(body).toContain('\n');
     });
 
     it('returns the Czech string when translated', () => {

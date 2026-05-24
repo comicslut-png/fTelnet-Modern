@@ -144,4 +144,60 @@ export const ja: Catalog = {
   'dialog.copy.body':
     'コピーしたいテキストの上でマウスをクリックしてドラッグして' +
     'ください。',
+
+  // ── Upload confirmation dialog (FUploadConfirm) ─────────────
+  'upload.title': 'アップロードの確認',
+  'upload.title.batch': 'アップロードの確認（一括）',
+  'upload.label.file': 'ファイル:',
+  'upload.label.size': 'サイズ:',
+  'upload.label.modified': '更新日時:',
+  'upload.label.protocol': 'プロトコル:',
+  'upload.label.files': 'ファイル:',
+  'upload.label.totalSize': '合計サイズ:',
+  'upload.value.fileCount': '{count} 個のファイル',
+  'upload.value.unknown': '不明',
+  'upload.details.show': '▸ 詳細を表示',
+  'upload.details.hide': '▾ 詳細を非表示',
+  'upload.warning':
+    '⚠️ 送信をクリックする前に、BBS がアップロードの' +
+    '入力待ち状態であることを確認してください。',
+  'upload.button.cancel': 'キャンセル',
+  'upload.button.send': '送信',
+  'upload.button.sendCount': '{count} 個のファイルを送信',
+
+  // ── Drag-and-drop overlay (FDropOverlay) ────────────────────
+  'drop.title': 'ここにファイルをドロップ',
+  'drop.subtitle': '{protocol} でアップロード',
+
+  // ── Focus warning (FFocusWarning) ───────────────────────────
+  'focus.message': '*** キーボード入力を有効にするにはここをクリック ***',
+
+  // ── Open-URL confirmation (Crt single-click on a link) ──────
+  'url.confirm.title': 'リンクを開く',
+  'url.confirm.body':
+    'この URL を新しいウィンドウで開きますか？\n\n{url}',
+
+  // ── Scrollback bar (FScrollbackBar) ─────────────────────────
+  'scrollback.label': '履歴:',
+  'scrollback.modern.hint':
+    '履歴: 履歴モードを終了するには一番下まで' +
+    'スクロールしてください',
+  'scrollback.lineUp': '1行上',
+  'scrollback.lineDown': '1行下',
+  'scrollback.pageUp': '1ページ上',
+  'scrollback.pageDown': '1ページ下',
+  'scrollback.exit': '終了',
+
+  // ── Disconnect confirmation (themed confirm dialog) ─────────
+  'disconnect.confirm.title': '切断',
+  'disconnect.confirm.body':
+    '本当に切断しますか？',
+
+  // ── Settings: tooltip on not-yet-translated language options ─
+  'settings.language.comingSoon':
+    '近日公開 — 翻訳のご協力を歓迎します',
+
+  // ── Shared dialog buttons (FInfoDialog / FConfirmDialog) ────
+  'dialog.button.ok': 'OK',
+  'dialog.button.cancel': 'キャンセル',
 };
