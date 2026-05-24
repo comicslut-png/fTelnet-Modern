@@ -9,6 +9,7 @@ import {
 } from '@i18n/index.js';
 import { en } from '@i18n/en.js';
 import { de } from '@i18n/de.js';
+import { it as itCatalog } from '@i18n/it.js';
 
 /*
   Tests for the i18n core (Phase 5 beta.6).
@@ -34,20 +35,59 @@ describe('i18n core', () => {
       expect(t('menu.connect', 'de')).toBe('Verbinden');
       expect(t('menu.settings', 'de')).toBe('Einstellungen');
     });
+
+    it('translates the German popup/message strings (beta.28)', () => {
+      // Upload dialog
+      expect(t('upload.title', 'de')).toBe('Upload bestätigen');
+      expect(t('upload.button.send', 'de')).toBe('Senden');
+      expect(t('upload.button.cancel', 'de')).toBe('Abbrechen');
+      expect(t('upload.value.unknown', 'de')).toBe('Unbekannt');
+      // Drop overlay, focus, link prompt, scrollback, disconnect
+      expect(t('drop.title', 'de')).toBe('Datei hier ablegen');
+      expect(t('url.confirm.title', 'de')).toBe('Link öffnen');
+      expect(t('focus.message', 'de')).toContain('HIER KLICKEN');
+      expect(t('scrollback.exit', 'de')).toBe('Beenden');
+      expect(t('disconnect.confirm.title', 'de')).toBe(
+        'Verbindung trennen',
+      );
+      // Shared dialog buttons
+      expect(t('dialog.button.cancel', 'de')).toBe('Abbrechen');
+    });
+
+    it('interpolates the German popup strings (beta.28)', () => {
+      expect(tf('upload.value.fileCount', 'de', { count: '3' })).toBe(
+        '3 Dateien',
+      );
+      expect(tf('upload.button.sendCount', 'de', { count: '5' })).toBe(
+        '5 Dateien senden',
+      );
+      expect(tf('drop.subtitle', 'de', { protocol: 'ZMODEM' })).toBe(
+        'zum Hochladen über ZMODEM',
+      );
+      const body = tf('url.confirm.body', 'de', { url: 'http://x' });
+      expect(body).toContain('http://x');
+      expect(body).toContain('\n');
+    });
   });
 
   describe('fallback behavior', () => {
-    it('falls back to English for a key the German catalog omits', () => {
-      // Construct a key that exists in en but (hypothetically) not
-      // in de by checking every base key: any key de lacks must
-      // return exactly the English value.
+    it('falls back to English for a key a partial catalog omits', () => {
+      // German is now a complete catalog, so it no longer exercises
+      // the fallback path. Use Italian, which still has the older
+      // menu/status keys but not yet the post-beta.22 message keys —
+      // any key it lacks must return exactly the English value.
       const enKeys = Object.keys(en) as (keyof typeof en)[];
+      let exercisedAtLeastOne = false;
       for (const key of enKeys) {
-        const deHas = Object.prototype.hasOwnProperty.call(de, key);
-        if (!deHas) {
-          expect(t(key, 'de')).toBe(en[key]);
+        const itHas = Object.prototype.hasOwnProperty.call(itCatalog, key);
+        if (!itHas) {
+          exercisedAtLeastOne = true;
+          expect(t(key, 'it')).toBe(en[key]);
         }
       }
+      // Guard: if Italian ever gets completed too, this test would
+      // silently stop testing anything — fail loudly so we repoint it.
+      expect(exercisedAtLeastOne).toBe(true);
     });
 
     it('falls back to English for an unregistered language code', () => {

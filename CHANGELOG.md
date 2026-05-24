@@ -5,6 +5,42 @@ All notable changes to fTelnet-Modern are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.0.0-beta.28] — 2026-05-23
+
+Second language pass over the post-beta.22 message strings:
+**German (Deutsch)**.
+
+### Added
+
+  - **German translations** for the complete set of message strings
+    the per-language passes cover: the upload-confirm dialog (header,
+    labels, buttons, file-count/"Send N files" interpolations, the
+    upload warning), the drag-and-drop overlay, the focus warning,
+    the open-link prompt, the scrollback bar, the disconnect confirm,
+    the language-picker tooltip, and the shared OK/Cancel dialog
+    buttons. Formal "Sie" register, matching the existing German.
+
+  - Coverage was verified by diffing the English and German key sets:
+    German now has all 94 base keys (was 61), zero missing. (Best-
+    effort translation, native review welcome — corrections are
+    catalog-only.)
+
+### Changed
+
+  - The i18n fallback test was repointed from German (now a complete
+    catalog) to Italian (still partial), so it keeps genuinely
+    exercising the English-fallback path, with a guard that fails
+    loudly if Italian is ever completed too.
+
+### Tests
+
+1273 → 1275. German popup/message + interpolation tests; fallback
+test repointed.
+
+### Bundle
+
+~728 → ~730 KB raw / ~158 KB gzipped.
+
 ## [2.0.0-beta.27] — 2026-05-23
 
 The **OK / Cancel buttons** in the themed dialogs were still hardcoded

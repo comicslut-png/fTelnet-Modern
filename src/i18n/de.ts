@@ -134,4 +134,60 @@ export const de: Catalog = {
   'dialog.copy.body':
     'Klicken und ziehen Sie mit der Maus über den Text, den Sie ' +
     'kopieren möchten.',
+
+  // ── Upload confirmation dialog (FUploadConfirm) ─────────────
+  'upload.title': 'Upload bestätigen',
+  'upload.title.batch': 'Upload bestätigen (Stapel)',
+  'upload.label.file': 'Datei:',
+  'upload.label.size': 'Größe:',
+  'upload.label.modified': 'Geändert:',
+  'upload.label.protocol': 'Protokoll:',
+  'upload.label.files': 'Dateien:',
+  'upload.label.totalSize': 'Gesamtgröße:',
+  'upload.value.fileCount': '{count} Dateien',
+  'upload.value.unknown': 'Unbekannt',
+  'upload.details.show': '▸ Details anzeigen',
+  'upload.details.hide': '▾ Details ausblenden',
+  'upload.warning':
+    '⚠️ Stellen Sie sicher, dass Ihr BBS auf eine Upload-' +
+    'Eingabeaufforderung wartet, bevor Sie auf Senden klicken.',
+  'upload.button.cancel': 'Abbrechen',
+  'upload.button.send': 'Senden',
+  'upload.button.sendCount': '{count} Dateien senden',
+
+  // ── Drag-and-drop overlay (FDropOverlay) ────────────────────
+  'drop.title': 'Datei hier ablegen',
+  'drop.subtitle': 'zum Hochladen über {protocol}',
+
+  // ── Focus warning (FFocusWarning) ───────────────────────────
+  'focus.message': '*** HIER KLICKEN, UM DIE TASTATUREINGABE ZU AKTIVIEREN ***',
+
+  // ── Open-URL confirmation (Crt single-click on a link) ──────
+  'url.confirm.title': 'Link öffnen',
+  'url.confirm.body':
+    'Möchten Sie diese URL in einem neuen Fenster öffnen?\n\n{url}',
+
+  // ── Scrollback bar (FScrollbackBar) ─────────────────────────
+  'scrollback.label': 'RÜCKBLÄTTERN:',
+  'scrollback.modern.hint':
+    'RÜCKBLÄTTERN: Blättern Sie nach unten, um den ' +
+    'Rückblättermodus zu verlassen',
+  'scrollback.lineUp': 'Zeile hoch',
+  'scrollback.lineDown': 'Zeile runter',
+  'scrollback.pageUp': 'Seite hoch',
+  'scrollback.pageDown': 'Seite runter',
+  'scrollback.exit': 'Beenden',
+
+  // ── Disconnect confirmation (themed confirm dialog) ─────────
+  'disconnect.confirm.title': 'Verbindung trennen',
+  'disconnect.confirm.body':
+    'Möchten Sie die Verbindung wirklich trennen?',
+
+  // ── Settings: tooltip on not-yet-translated language options ─
+  'settings.language.comingSoon':
+    'Demnächst verfügbar — Hilfe bei der Übersetzung willkommen',
+
+  // ── Shared dialog buttons (FInfoDialog / FConfirmDialog) ────
+  'dialog.button.ok': 'OK',
+  'dialog.button.cancel': 'Abbrechen',
 };
