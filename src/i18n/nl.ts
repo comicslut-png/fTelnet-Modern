@@ -142,4 +142,36 @@ export const nl: Catalog = {
   'dialog.copy.title': 'Tekst kopiëren',
   'dialog.copy.body':
     'Klik en sleep met de muis over de tekst die u wilt kopiëren.',
+
+  // ── Upload confirmation dialog (FUploadConfirm) ─────────────
+  'upload.title': 'Upload bevestigen',
+  'upload.title.batch': 'Upload bevestigen (batch)',
+  'upload.label.file': 'Bestand:',
+  'upload.label.size': 'Grootte:',
+  'upload.label.modified': 'Gewijzigd:',
+  'upload.label.protocol': 'Protocol:',
+  'upload.label.files': 'Bestanden:',
+  'upload.label.totalSize': 'Totale grootte:',
+  'upload.value.fileCount': '{count} bestanden',
+  'upload.value.unknown': 'Onbekend',
+  'upload.details.show': '▸ Details tonen',
+  'upload.details.hide': '▾ Details verbergen',
+  'upload.warning':
+    '⚠️ Zorg dat uw BBS bij een uploadprompt staat voordat u op ' +
+    'Verzenden klikt.',
+  'upload.button.cancel': 'Annuleren',
+  'upload.button.send': 'Verzenden',
+  'upload.button.sendCount': '{count} bestanden verzenden',
+
+  // ── Drag-and-drop overlay (FDropOverlay) ────────────────────
+  'drop.title': 'Sleep bestand hierheen',
+  'drop.subtitle': 'om te uploaden via {protocol}',
+
+  // ── Focus warning (FFocusWarning) ───────────────────────────
+  'focus.message': '*** KLIK HIER OM TOETSENBORDINVOER IN TE SCHAKELEN ***',
+
+  // ── Open-URL confirmation (Crt single-click on a link) ──────
+  'url.confirm.title': 'Koppeling openen',
+  'url.confirm.body':
+    'Wilt u deze URL in een nieuw venster openen?\n\n{url}',
 };

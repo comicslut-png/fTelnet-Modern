@@ -5,6 +5,36 @@ All notable changes to fTelnet-Modern are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.0.0-beta.24] — 2026-05-23
+
+First language pass over the new end-user message strings: **Dutch**.
+
+### Added
+
+  - **Dutch (Nederlands) translations** for the popup/overlay/warning
+    strings that beta.23 wired into the catalog — the upload
+    confirmation dialog (header, labels, buttons, the "Send N files"
+    and file-count interpolations, the upload-prompt warning), the
+    drag-and-drop overlay ("Sleep bestand hierheen" / "om te uploaden
+    via {protocol}"), the focus warning banner, and the themed
+    open-link prompt. Selecting Nederlands now shows these in Dutch
+    instead of falling back to English.
+
+  - This is a catalog-only change (`nl.ts`). It's the first of the
+    per-language passes filling in the beta.23 foundation; the other
+    languages follow one at a time. (Best-effort translation, native
+    review welcome — corrections are catalog-only.)
+
+### Tests
+
+1264 → 1266. Two new tests verifying the Dutch popup/message
+strings resolve through `t()` and that the `{count}`/`{protocol}`/
+`{url}` interpolations produce correct Dutch output.
+
+### Bundle
+
+~724 → ~725 KB raw / ~157 KB gzipped.
+
 ## [2.0.0-beta.23] — 2026-05-23
 
 i18n foundation for the remaining end-user messages. This release is

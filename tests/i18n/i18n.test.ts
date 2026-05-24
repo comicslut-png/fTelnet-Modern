@@ -153,6 +153,35 @@ describe('i18n core', () => {
       expect(t('menu.settings', 'nl')).toBe('Instellingen');
     });
 
+    it('translates the Dutch popup/message strings (beta.24)', () => {
+      // Upload dialog
+      expect(t('upload.title', 'nl')).toBe('Upload bevestigen');
+      expect(t('upload.button.send', 'nl')).toBe('Verzenden');
+      expect(t('upload.button.cancel', 'nl')).toBe('Annuleren');
+      expect(t('upload.value.unknown', 'nl')).toBe('Onbekend');
+      // Drop overlay + focus warning + open-link prompt
+      expect(t('drop.title', 'nl')).toBe('Sleep bestand hierheen');
+      expect(t('url.confirm.title', 'nl')).toBe('Koppeling openen');
+      // The focus banner keeps its all-caps style in Dutch.
+      expect(t('focus.message', 'nl')).toContain('KLIK HIER');
+    });
+
+    it('interpolates the Dutch popup strings (beta.24)', () => {
+      expect(tf('upload.value.fileCount', 'nl', { count: '3' })).toBe(
+        '3 bestanden',
+      );
+      expect(tf('upload.button.sendCount', 'nl', { count: '5' })).toBe(
+        '5 bestanden verzenden',
+      );
+      expect(tf('drop.subtitle', 'nl', { protocol: 'ZMODEM' })).toBe(
+        'om te uploaden via ZMODEM',
+      );
+      // url.confirm.body has a real newline before the URL.
+      const body = tf('url.confirm.body', 'nl', { url: 'http://x' });
+      expect(body).toContain('http://x');
+      expect(body).toContain('\n');
+    });
+
     it('returns the Italian string when translated', () => {
       expect(t('menu.connect', 'it')).toBe('Connetti');
       expect(t('menu.settings', 'it')).toBe('Impostazioni');
