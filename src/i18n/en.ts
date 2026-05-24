@@ -176,6 +176,16 @@ export const en = {
   // {url} = the clicked URL
   'url.confirm.body':
     'Would you like to open this URL in a new window?\n\n{url}',
+
+  // ── Scrollback bar (FScrollbackBar) ─────────────────────────
+  'scrollback.label': 'SCROLLBACK:',
+  'scrollback.modern.hint':
+    'SCROLLBACK: Scroll back down to the bottom to exit scrollback mode',
+  'scrollback.lineUp': 'Line Up',
+  'scrollback.lineDown': 'Line Down',
+  'scrollback.pageUp': 'Page Up',
+  'scrollback.pageDown': 'Page Down',
+  'scrollback.exit': 'Exit',
 } as const;
 
 /** The set of valid translatable keys, derived from the English base. */

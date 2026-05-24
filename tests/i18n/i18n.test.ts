@@ -182,6 +182,18 @@ describe('i18n core', () => {
       expect(body).toContain('\n');
     });
 
+    it('translates the Dutch scrollback + dialog strings (beta.25)', () => {
+      // Scrollback bar
+      expect(t('scrollback.lineUp', 'nl')).toBe('Regel omhoog');
+      expect(t('scrollback.pageDown', 'nl')).toBe('Pagina omlaag');
+      expect(t('scrollback.exit', 'nl')).toBe('Afsluiten');
+      expect(t('scrollback.label', 'nl')).toBe('TERUGSCROLLEN:');
+      // Download/copy info dialogs (translated since beta.6, now
+      // actually wired at the call sites in beta.25).
+      expect(t('dialog.download.title', 'nl')).toBe('Bestanden downloaden');
+      expect(t('dialog.copy.title', 'nl')).toBe('Tekst kopiëren');
+    });
+
     it('returns the Italian string when translated', () => {
       expect(t('menu.connect', 'it')).toBe('Connetti');
       expect(t('menu.settings', 'it')).toBe('Impostazioni');

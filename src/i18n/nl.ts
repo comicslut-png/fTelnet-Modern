@@ -174,4 +174,15 @@ export const nl: Catalog = {
   'url.confirm.title': 'Koppeling openen',
   'url.confirm.body':
     'Wilt u deze URL in een nieuw venster openen?\n\n{url}',
+
+  // ── Scrollback bar (FScrollbackBar) ─────────────────────────
+  'scrollback.label': 'TERUGSCROLLEN:',
+  'scrollback.modern.hint':
+    'TERUGSCROLLEN: Scroll terug naar beneden om de ' +
+    'terugscrollmodus te verlaten',
+  'scrollback.lineUp': 'Regel omhoog',
+  'scrollback.lineDown': 'Regel omlaag',
+  'scrollback.pageUp': 'Pagina omhoog',
+  'scrollback.pageDown': 'Pagina omlaag',
+  'scrollback.exit': 'Afsluiten',
 };

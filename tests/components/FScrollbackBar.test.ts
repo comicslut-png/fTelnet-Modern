@@ -223,4 +223,46 @@ describe('<f-scrollback-bar>', () => {
       expect(firedSecond).toBe(1);
     });
   });
+
+  describe('i18n (beta.25)', () => {
+    it('renders English label + links via t()', async () => {
+      el.language = 'en';
+      await el.updateComplete;
+      expect(
+        el.querySelector('.fTelnetScrollback span')?.textContent?.trim(),
+      ).toBe('SCROLLBACK:');
+      const labels = Array.from(el.querySelectorAll('a')).map((a) =>
+        a.textContent?.trim(),
+      );
+      expect(labels).toEqual([
+        'Line Up',
+        'Line Down',
+        'Page Up',
+        'Page Down',
+        'Exit',
+      ]);
+    });
+
+    it('renders the English modern-mode hint via t()', async () => {
+      el.mode = 'modern';
+      el.language = 'en';
+      await el.updateComplete;
+      const text =
+        el.querySelector('.fTelnetScrollback')?.textContent?.trim() ?? '';
+      expect(text).toContain('SCROLLBACK:');
+      expect(text).toContain('exit scrollback mode');
+    });
+
+    it('has a settable language property (default en)', async () => {
+      expect(el.language).toBe('en');
+      el.language = 'de';
+      await el.updateComplete;
+      // No German for these keys yet → English fallback, but wired.
+      expect(el.language).toBe('de');
+      expect(
+        el.querySelector('.fTelnetScrollback span')?.textContent?.trim()
+          .length ?? 0,
+      ).toBeGreaterThan(0);
+    });
+  });
 });

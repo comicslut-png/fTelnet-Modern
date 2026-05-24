@@ -758,6 +758,7 @@ export class fTelnetClient {
     // key event onto the Crt's queue, same as the original.
     this._ScrollbackBar = document.createElement('f-scrollback-bar') as FScrollbackBar;
     this._ScrollbackBar.mode = this._UseModernScrollback ? 'modern' : 'classic';
+    this._ScrollbackBar.language = this._Options.Language as Language;
     this._ScrollbackBar.addEventListener('scrollback-line-up', (): void => {
       this._Crt.PushKeyDown(KeyboardKeys.UP, KeyboardKeys.UP, false, false, false);
     });
@@ -1065,6 +1066,9 @@ export class fTelnetClient {
         }
         if (this._UploadConfirm !== undefined) {
           this._UploadConfirm.language = detail.language;
+        }
+        if (this._ScrollbackBar !== undefined) {
+          this._ScrollbackBar.language = detail.language;
         }
         try {
           window.sessionStorage.setItem(
@@ -1409,8 +1413,8 @@ export class fTelnetClient {
       this._MenuButtons.open = false;
     }
     this.showInfoDialog(
-      'Copying Text',
-      'Click and drag your mouse over the text you want to copy.',
+      t('dialog.copy.title', this._Options.Language as Language),
+      t('dialog.copy.body', this._Options.Language as Language),
     );
   }
 
@@ -1699,13 +1703,8 @@ export class fTelnetClient {
       // it, and ZModemReceive takes over automatically. Tell the
       // user how that works rather than starting something here.
       this.showInfoDialog(
-        'Downloading Files',
-        'Use the BBS\'s download command — ZMODEM auto-detects.\n\n' +
-          'When the BBS starts the transfer the progress panel ' +
-          'appears automatically, and your browser will save the ' +
-          'file when it completes.\n\n' +
-          'To use the menu button to start downloads, switch the ' +
-          'default protocol to YMODEM in Settings.',
+        t('dialog.download.title', this._Options.Language as Language),
+        t('dialog.download.body', this._Options.Language as Language),
       );
       return;
     }

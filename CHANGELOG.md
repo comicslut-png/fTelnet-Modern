@@ -5,6 +5,44 @@ All notable changes to fTelnet-Modern are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.0.0-beta.25] — 2026-05-23
+
+Cleans up the last two end-user messages that were still showing in
+English, and adds their Dutch translations.
+
+### Fixed
+
+  - **The "Downloading Files" and "Copying Text" info dialogs** were
+    passing hardcoded English literals to `showInfoDialog`, even
+    though translated `dialog.download.*` / `dialog.copy.*` catalog
+    keys have existed since beta.6 (and were already translated to
+    Dutch). The two call sites now route through `t()`, so these
+    dialogs finally honor the selected language.
+
+### Added / Changed
+
+  - **Scrollback bar (FScrollbackBar)** now pulls its text from the
+    catalog: the "SCROLLBACK:" label, the modern-mode exit hint, and
+    the five action links (Line Up / Line Down / Page Up / Page Down
+    / Exit). New `scrollback.*` keys added to the English base and
+    wired through `t()`; the client sets/propagates its language like
+    the other components.
+
+  - **Dutch** translations for the new `scrollback.*` keys
+    ("TERUGSCROLLEN:", "Regel omhoog/omlaag", "Pagina omhoog/omlaag",
+    "Afsluiten", and the modern hint). The download/copy dialog Dutch
+    already existed; it just wasn't being used until the fix above.
+
+### Tests
+
+1266 → 1270. Scrollback i18n tests (English label/links/hint via
+t(), settable language property) and a Dutch test covering the new
+scrollback strings plus the now-wired download/copy dialog titles.
+
+### Bundle
+
+~725 → ~726 KB raw / ~157 KB gzipped.
+
 ## [2.0.0-beta.24] — 2026-05-23
 
 First language pass over the new end-user message strings: **Dutch**.

@@ -20,6 +20,7 @@
 
 import { LitElement, html, type TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
+import { t, type Language } from '@i18n/index.js';
 
 /**
  * `<f-scrollback-bar>` — the green bar shown above the BBS canvas
@@ -71,6 +72,10 @@ export class FScrollbackBar extends LitElement {
   @property({ type: Number, attribute: 'width-px' })
   widthPx = 0;
 
+  /** Active UI language; drives the bar labels via t(). */
+  @property({ type: String })
+  language: Language = 'en';
+
   protected override createRenderRoot(): HTMLElement {
     return this;
   }
@@ -81,37 +86,36 @@ export class FScrollbackBar extends LitElement {
     return this.mode === 'modern'
       ? html`
           <div class="fTelnetScrollback" style=${inlineStyle}>
-            SCROLLBACK: Scroll back down to the bottom to exit
-            scrollback mode
+            ${t('scrollback.modern.hint', this.language)}
           </div>
         `
       : html`
           <div class="fTelnetScrollback" style=${inlineStyle}>
-            <span>SCROLLBACK:</span>
+            <span>${t('scrollback.label', this.language)}</span>
             <a
               href="#"
               @click=${(e: MouseEvent): void => this.handleClick(e, 'scrollback-line-up')}
-              >Line Up</a
+              >${t('scrollback.lineUp', this.language)}</a
             >
             <a
               href="#"
               @click=${(e: MouseEvent): void => this.handleClick(e, 'scrollback-line-down')}
-              >Line Down</a
+              >${t('scrollback.lineDown', this.language)}</a
             >
             <a
               href="#"
               @click=${(e: MouseEvent): void => this.handleClick(e, 'scrollback-page-up')}
-              >Page Up</a
+              >${t('scrollback.pageUp', this.language)}</a
             >
             <a
               href="#"
               @click=${(e: MouseEvent): void => this.handleClick(e, 'scrollback-page-down')}
-              >Page Down</a
+              >${t('scrollback.pageDown', this.language)}</a
             >
             <a
               href="#"
               @click=${(e: MouseEvent): void => this.handleClick(e, 'scrollback-exit')}
-              >Exit</a
+              >${t('scrollback.exit', this.language)}</a
             >
           </div>
         `;
