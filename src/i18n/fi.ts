@@ -147,4 +147,60 @@ export const fi: Catalog = {
   'dialog.copy.title': 'Tekstin kopiointi',
   'dialog.copy.body':
     'Napsauta ja vedä hiirellä tekstin yli, jonka haluat kopioida.',
+
+  // ── Upload confirmation dialog (FUploadConfirm) ─────────────
+  'upload.title': 'Vahvista lähetys',
+  'upload.title.batch': 'Vahvista lähetys (erä)',
+  'upload.label.file': 'Tiedosto:',
+  'upload.label.size': 'Koko:',
+  'upload.label.modified': 'Muokattu:',
+  'upload.label.protocol': 'Protokolla:',
+  'upload.label.files': 'Tiedostot:',
+  'upload.label.totalSize': 'Kokonaiskoko:',
+  'upload.value.fileCount': '{count} tiedostoa',
+  'upload.value.unknown': 'Tuntematon',
+  'upload.details.show': '▸ Näytä tiedot',
+  'upload.details.hide': '▾ Piilota tiedot',
+  'upload.warning':
+    '⚠️ Varmista, että BBS on lähetyskehotteessa ennen kuin ' +
+    'napsautat Lähetä.',
+  'upload.button.cancel': 'Peruuta',
+  'upload.button.send': 'Lähetä',
+  'upload.button.sendCount': 'Lähetä {count} tiedostoa',
+
+  // ── Drag-and-drop overlay (FDropOverlay) ────────────────────
+  'drop.title': 'Pudota tiedosto tähän',
+  'drop.subtitle': 'lähettääksesi protokollalla {protocol}',
+
+  // ── Focus warning (FFocusWarning) ───────────────────────────
+  'focus.message': '*** NAPSAUTA TÄSTÄ OTTAAKSESI NÄPPÄIMISTÖSYÖTÖN KÄYTTÖÖN ***',
+
+  // ── Open-URL confirmation (Crt single-click on a link) ──────
+  'url.confirm.title': 'Avaa linkki',
+  'url.confirm.body':
+    'Haluatko avata tämän URL-osoitteen uudessa ikkunassa?\n\n{url}',
+
+  // ── Scrollback bar (FScrollbackBar) ─────────────────────────
+  'scrollback.label': 'VIERITYS:',
+  'scrollback.modern.hint':
+    'VIERITYS: Vieritä takaisin alas poistuaksesi ' +
+    'vieritystilasta',
+  'scrollback.lineUp': 'Rivi ylös',
+  'scrollback.lineDown': 'Rivi alas',
+  'scrollback.pageUp': 'Sivu ylös',
+  'scrollback.pageDown': 'Sivu alas',
+  'scrollback.exit': 'Poistu',
+
+  // ── Disconnect confirmation (themed confirm dialog) ─────────
+  'disconnect.confirm.title': 'Katkaise yhteys',
+  'disconnect.confirm.body':
+    'Haluatko varmasti katkaista yhteyden?',
+
+  // ── Settings: tooltip on not-yet-translated language options ─
+  'settings.language.comingSoon':
+    'Tulossa pian — apua käännöksessä otetaan vastaan',
+
+  // ── Shared dialog buttons (FInfoDialog / FConfirmDialog) ────
+  'dialog.button.ok': 'OK',
+  'dialog.button.cancel': 'Peruuta',
 };

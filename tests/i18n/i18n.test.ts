@@ -9,7 +9,7 @@ import {
 } from '@i18n/index.js';
 import { en } from '@i18n/en.js';
 import { de } from '@i18n/de.js';
-import { fi as fiCatalog } from '@i18n/fi.js';
+import { el as elCatalog } from '@i18n/el.js';
 
 /*
   Tests for the i18n core (Phase 5 beta.6).
@@ -72,20 +72,20 @@ describe('i18n core', () => {
 
   describe('fallback behavior', () => {
     it('falls back to English for a key a partial catalog omits', () => {
-      // The completed catalogs (de/fr/es/pt/it/ru/sv/pl/uk) no longer
-      // exercise the fallback path. Use Finnish, which still has the
-      // older menu/status keys but not yet the post-beta.22 message
-      // keys — any key it lacks must return exactly the English value.
+      // The completed catalogs (de/fr/es/pt/it/ru/sv/pl/uk/fi) no
+      // longer exercise the fallback path. Use Greek, which still has
+      // the older menu/status keys but not yet the post-beta.22
+      // message keys — any key it lacks must return the English value.
       const enKeys = Object.keys(en) as (keyof typeof en)[];
       let exercisedAtLeastOne = false;
       for (const key of enKeys) {
-        const fiHas = Object.prototype.hasOwnProperty.call(fiCatalog, key);
-        if (!fiHas) {
+        const elHas = Object.prototype.hasOwnProperty.call(elCatalog, key);
+        if (!elHas) {
           exercisedAtLeastOne = true;
-          expect(t(key, 'fi')).toBe(en[key]);
+          expect(t(key, 'el')).toBe(en[key]);
         }
       }
-      // Guard: if Finnish ever gets completed too, this test would
+      // Guard: if Greek ever gets completed too, this test would
       // silently stop testing anything — fail loudly so we repoint it.
       expect(exercisedAtLeastOne).toBe(true);
     });
@@ -189,6 +189,34 @@ describe('i18n core', () => {
     it('returns the Finnish string when translated', () => {
       expect(t('menu.connect', 'fi')).toBe('Yhdistä');
       expect(t('menu.settings', 'fi')).toBe('Asetukset');
+    });
+
+    it('translates the Finnish popup/message strings (beta.37)', () => {
+      expect(t('upload.title', 'fi')).toBe('Vahvista lähetys');
+      expect(t('upload.button.send', 'fi')).toBe('Lähetä');
+      expect(t('upload.button.cancel', 'fi')).toBe('Peruuta');
+      expect(t('upload.value.unknown', 'fi')).toBe('Tuntematon');
+      expect(t('drop.title', 'fi')).toBe('Pudota tiedosto tähän');
+      expect(t('url.confirm.title', 'fi')).toBe('Avaa linkki');
+      expect(t('focus.message', 'fi')).toContain('NAPSAUTA TÄSTÄ');
+      expect(t('scrollback.exit', 'fi')).toBe('Poistu');
+      expect(t('disconnect.confirm.title', 'fi')).toBe('Katkaise yhteys');
+      expect(t('dialog.button.cancel', 'fi')).toBe('Peruuta');
+    });
+
+    it('interpolates the Finnish popup strings (beta.37)', () => {
+      expect(tf('upload.value.fileCount', 'fi', { count: '3' })).toBe(
+        '3 tiedostoa',
+      );
+      expect(tf('upload.button.sendCount', 'fi', { count: '5' })).toBe(
+        'Lähetä 5 tiedostoa',
+      );
+      expect(tf('drop.subtitle', 'fi', { protocol: 'ZMODEM' })).toBe(
+        'lähettääksesi protokollalla ZMODEM',
+      );
+      const body = tf('url.confirm.body', 'fi', { url: 'http://x' });
+      expect(body).toContain('http://x');
+      expect(body).toContain('\n');
     });
 
     it('returns the Polish string when translated', () => {

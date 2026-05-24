@@ -172,13 +172,13 @@ See `docs/` for stage-by-stage planning notes:
 
 ### Test coverage
 
-1291 unit tests across 56 files, run on every commit. Phase boundaries:
+1293 unit tests across 56 files, run on every commit. Phase boundaries:
 
   - End of Phase 1: 559 tests
   - End of Phase 2: 691 tests
   - End of Phase 3: 722 tests
   - End of Phase 4: 980 tests
-  - Phase 5 (in progress): 1291 tests
+  - Phase 5 (in progress): 1293 tests
 
 ## Testing against a real BBS
 
@@ -251,7 +251,7 @@ for that command, not a bug in the client.
 ```bash
 npm install              # install dependencies
 npm run dev              # start Vite dev server with hot reload (port 5173)
-npm test                 # run the full Vitest suite (1291 tests)
+npm test                 # run the full Vitest suite (1293 tests)
 npm run typecheck        # tsc --noEmit
 npm run build:all        # produce all four bundle flavors
 ```
