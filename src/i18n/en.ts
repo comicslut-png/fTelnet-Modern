@@ -186,6 +186,17 @@ export const en = {
   'scrollback.pageUp': 'Page Up',
   'scrollback.pageDown': 'Page Down',
   'scrollback.exit': 'Exit',
+
+  // ── Disconnect confirmation (themed confirm dialog) ─────────
+  'disconnect.confirm.title': 'Disconnect',
+  'disconnect.confirm.body': 'Are you sure you want to disconnect?',
+
+  // ── Settings: tooltip on not-yet-translated language options ─
+  'settings.language.comingSoon': 'Coming soon — translation help welcome',
+
+  // ── Shared dialog buttons (FInfoDialog / FConfirmDialog) ────
+  'dialog.button.ok': 'OK',
+  'dialog.button.cancel': 'Cancel',
 } as const;
 
 /** The set of valid translatable keys, derived from the English base. */

@@ -185,4 +185,17 @@ export const nl: Catalog = {
   'scrollback.pageUp': 'Pagina omhoog',
   'scrollback.pageDown': 'Pagina omlaag',
   'scrollback.exit': 'Afsluiten',
+
+  // ── Disconnect confirmation (themed confirm dialog) ─────────
+  'disconnect.confirm.title': 'Verbinding verbreken',
+  'disconnect.confirm.body':
+    'Weet u zeker dat u de verbinding wilt verbreken?',
+
+  // ── Settings: tooltip on not-yet-translated language options ─
+  'settings.language.comingSoon':
+    'Binnenkort beschikbaar — hulp bij vertaling welkom',
+
+  // ── Shared dialog buttons (FInfoDialog / FConfirmDialog) ────
+  'dialog.button.ok': 'OK',
+  'dialog.button.cancel': 'Annuleren',
 };

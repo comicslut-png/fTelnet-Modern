@@ -77,6 +77,20 @@ describe('<f-confirm-dialog>', () => {
       expect(buttons).toContain('OK');
       expect(buttons).toContain('Cancel');
     });
+
+    it('translates the default buttons via language (beta.26)', async () => {
+      // No explicit labels → falls back to the catalog for the
+      // active language. Dutch cancel is "Annuleren".
+      el.okLabel = '';
+      el.cancelLabel = '';
+      el.language = 'nl';
+      await el.updateComplete;
+      const buttons = Array.from(
+        el.querySelectorAll('.fTelnetInfoDialogOk'),
+      ).map((b) => b.textContent?.trim());
+      expect(buttons).toContain('OK'); // OK is "OK" in Dutch too
+      expect(buttons).toContain('Annuleren');
+    });
   });
 
   describe('content', () => {

@@ -20,6 +20,7 @@
 
 import { LitElement, html, type TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
+import { t, type Language } from '@i18n/index.js';
 
 /**
  * Payload for the `info-dialog-close` event — fires when the user
@@ -80,6 +81,10 @@ export class FInfoDialog extends LitElement {
    */
   @property({ type: String })
   message = '';
+
+  /** Active UI language; drives the OK button label via t(). */
+  @property({ type: String })
+  language: Language = 'en';
 
   protected override createRenderRoot(): HTMLElement {
     return this;
@@ -210,7 +215,7 @@ export class FInfoDialog extends LitElement {
             class="fTelnetInfoDialogOk"
             @click=${this.handleOkClick}
           >
-            OK
+            ${t('dialog.button.ok', this.language)}
           </button>
         </div>
       </div>

@@ -194,6 +194,23 @@ describe('i18n core', () => {
       expect(t('dialog.copy.title', 'nl')).toBe('Tekst kopiëren');
     });
 
+    it('translates the Dutch disconnect + coming-soon strings (beta.26)', () => {
+      expect(t('disconnect.confirm.title', 'nl')).toBe(
+        'Verbinding verbreken',
+      );
+      expect(t('disconnect.confirm.body', 'nl')).toContain('verbreken');
+      expect(t('settings.language.comingSoon', 'nl')).toContain(
+        'Binnenkort',
+      );
+    });
+
+    it('translates the shared dialog buttons (beta.26)', () => {
+      expect(t('dialog.button.ok', 'nl')).toBe('OK');
+      expect(t('dialog.button.cancel', 'nl')).toBe('Annuleren');
+      // English base
+      expect(t('dialog.button.cancel', 'en')).toBe('Cancel');
+    });
+
     it('returns the Italian string when translated', () => {
       expect(t('menu.connect', 'it')).toBe('Connetti');
       expect(t('menu.settings', 'it')).toBe('Impostazioni');

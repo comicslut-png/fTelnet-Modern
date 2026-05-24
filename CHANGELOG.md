@@ -5,6 +5,119 @@ All notable changes to fTelnet-Modern are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.0.0-beta.27] — 2026-05-23
+
+The **OK / Cancel buttons** in the themed dialogs were still hardcoded
+English, even when the rest of the dialog (title, body) was
+translated. Now they're catalog-driven too.
+
+> Note: this package folds in the beta.26 changes as well (disconnect
+> confirm + language-picker tooltip), so it brings the repo fully
+> current to beta.27 whether or not beta.26 was already applied.
+
+### Fixed
+
+  - **FConfirmDialog** (the disconnect + open-link prompts) had
+    `okLabel = 'OK'` / `cancelLabel = 'Cancel'` hardcoded as English
+    defaults — so a Dutch disconnect dialog still showed English
+    buttons. The labels now default to empty and fall back to the
+    translated `dialog.button.ok` / `dialog.button.cancel` for the
+    dialog's `language`. An explicitly-set label still overrides
+    (used nowhere yet, but kept for flexibility).
+
+  - **FInfoDialog** (the copy + download dialogs) had a hardcoded
+    "OK" button; now translated the same way.
+
+  - Both dialogs gained a `language` property; the client sets it
+    (alongside the theme) each time it shows a dialog.
+
+### Added
+
+  - Shared `dialog.button.ok` / `dialog.button.cancel` keys, with
+    Dutch ("OK" / "Annuleren"). Added to the master i18n list below.
+
+### i18n coverage — master list (updated)
+
+**Translatable:** main menu, status bar, settings panel (incl. the
+language-picker "coming soon" tooltip), upload-confirm dialog,
+drag-and-drop overlay, focus warning, open-link prompt, scrollback
+bar, copy/download info dialogs, disconnect confirm, **and the shared
+OK/Cancel/OK dialog buttons**. This is the full set a per-language
+pass must cover.
+
+**Intentionally English:** file-transfer progress panel (retro ASCII
+layout), developer/sysop error alerts, user manual (deferred).
+
+**Languages:** English (base) + Dutch (complete). The other 13 still
+need the post-beta.22 message strings.
+
+### Tests
+
+1271 → 1273. FConfirmDialog test for the translated default buttons
+(Dutch "Annuleren"); i18n test for the shared button keys.
+
+### Bundle
+
+~727 → ~728 KB raw / ~157 KB gzipped.
+
+## [2.0.0-beta.26] — 2026-05-23
+
+Catches the disconnect confirmation (still English) and the language-
+picker "coming soon" tooltip, and adds their Dutch. Also records a
+master i18n coverage list (below) so future language passes have a
+single source of truth.
+
+### Fixed
+
+  - **The disconnect confirmation** ("Are you sure you want to
+    disconnect?") was passing hardcoded English to the themed confirm
+    dialog. It was built in beta.22, before the beta.23 i18n sweep,
+    and — like the download dialog in beta.25 — it's a call-site
+    string rather than component text, so it slipped the inventory.
+    Now routed through `t()` (new `disconnect.confirm.*` keys).
+
+  - **The language picker's "Coming soon — translation help welcome"
+    tooltip** (shown on not-yet-translated language options) now
+    comes from the catalog (`settings.language.comingSoon`).
+
+### Added
+
+  - Dutch for the two new keys ("Verbinding verbreken" / "Weet u
+    zeker dat u de verbinding wilt verbreken?", and "Binnenkort
+    beschikbaar — hulp bij vertaling welkom").
+
+### i18n coverage — master list (as of beta.26)
+
+**Translatable (wired through the catalog):** main menu, status bar,
+settings panel, upload-confirm dialog, drag-and-drop overlay, focus
+warning, open-link prompt, scrollback bar, copy/download info
+dialogs, disconnect confirm, language-picker tooltip. These are the
+complete set a per-language pass needs to cover.
+
+**Intentionally English (by decision, not oversight):**
+  - File-transfer progress panel (FTransferProgress) — fixed-width
+    box-drawing ASCII layout; a retro visual element.
+  - Developer/sysop error alerts (invalid container id, font-load
+    failures, RIP debug) — for embedders; plain searchable English
+    is more useful than a translation.
+  - The user manual (FUserManual) — deferred by choice.
+
+**Languages:** English (base) + Dutch (complete). The other 13
+(German, French, Spanish, Portuguese, Italian, Russian, Swedish,
+Polish, Ukrainian, Finnish, Greek, Czech, Japanese) have the older
+menu/status/settings strings but not yet the newer message strings
+(upload/drop/focus/url/scrollback/dialog/disconnect) — those are the
+per-language passes still to come.
+
+### Tests
+
+1270 → 1271. Dutch test extended to cover the disconnect + coming-
+soon strings.
+
+### Bundle
+
+~726 → ~727 KB raw / ~157 KB gzipped.
+
 ## [2.0.0-beta.25] — 2026-05-23
 
 Cleans up the last two end-user messages that were still showing in

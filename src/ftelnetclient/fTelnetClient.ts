@@ -1635,8 +1635,8 @@ export class fTelnetClient {
     // confirm() used to block synchronously, but no caller depends on
     // the boolean result anymore).
     void this.showConfirmDialog(
-      'Disconnect',
-      'Are you sure you want to disconnect?',
+      t('disconnect.confirm.title', this._Options.Language as Language),
+      t('disconnect.confirm.body', this._Options.Language as Language),
     ).then((confirmed: boolean): void => {
       if (confirmed) {
         this.performDisconnect();
@@ -2971,6 +2971,7 @@ export class fTelnetClient {
     }
     // Keep the theme current in case it changed since last shown.
     this._InfoDialog.setAttribute('data-theme', this._Options.Theme);
+    this._InfoDialog.language = this._Options.Language as Language;
     this._InfoDialog.dialogTitle = title;
     this._InfoDialog.message = message;
     this._InfoDialog.open = true;
@@ -2999,6 +3000,7 @@ export class fTelnetClient {
     const dialog = this._ConfirmDialog;
     // Keep the theme current in case it changed since last shown.
     dialog.setAttribute('data-theme', this._Options.Theme);
+    dialog.language = this._Options.Language as Language;
     dialog.dialogTitle = title;
     dialog.message = message;
 

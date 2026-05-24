@@ -9,6 +9,7 @@
 
 import { LitElement, html, type TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
+import { t, type Language } from '@i18n/index.js';
 
 /**
  * Payload for the `confirm-dialog-result` event. `confirmed` is true
@@ -59,13 +60,24 @@ export class FConfirmDialog extends LitElement {
   @property({ type: String })
   message = '';
 
-  /** Label for the confirm button (default "OK"). */
+  /**
+   * Label for the confirm button. When empty (the default), the
+   * button uses the translated `dialog.button.ok` for the active
+   * `language`. A non-empty value overrides the translation.
+   */
   @property({ type: String })
-  okLabel = 'OK';
+  okLabel = '';
 
-  /** Label for the cancel button (default "Cancel"). */
+  /**
+   * Label for the cancel button. When empty (the default), the
+   * button uses the translated `dialog.button.cancel`.
+   */
   @property({ type: String })
-  cancelLabel = 'Cancel';
+  cancelLabel = '';
+
+  /** Active UI language; drives the default OK/Cancel labels. */
+  @property({ type: String })
+  language: Language = 'en';
 
   protected override createRenderRoot(): HTMLElement {
     return this;
@@ -197,14 +209,14 @@ export class FConfirmDialog extends LitElement {
             class="fTelnetInfoDialogOk"
             @click=${this.handleOkClick}
           >
-            ${this.okLabel}
+            ${this.okLabel || t('dialog.button.ok', this.language)}
           </button>
           <button
             type="button"
             class="fTelnetInfoDialogOk fTelnetConfirmDialogCancel"
             @click=${this.handleCancelClick}
           >
-            ${this.cancelLabel}
+            ${this.cancelLabel || t('dialog.button.cancel', this.language)}
           </button>
         </div>
       </div>

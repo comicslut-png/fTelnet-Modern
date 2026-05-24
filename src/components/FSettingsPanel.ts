@@ -107,7 +107,7 @@ export class FSettingsPanel extends LitElement {
    * tests and the panel can read the same value without needing
    * a build-time injection mechanism.
    */
-  public static readonly VERSION = '2.0.0-beta.25';
+  public static readonly VERSION = '2.0.0-beta.27';
 
   @property({ type: Boolean })
   open = false;
@@ -264,7 +264,7 @@ export class FSettingsPanel extends LitElement {
                               : ' fTelnetSettingsPanelOptionDisabled'}"
                             title=${lang.available
                               ? ''
-                              : 'Coming soon — translation help welcome'}
+                              : t('settings.language.comingSoon', this.language)}
                           >
                             <input
                               type="radio"
