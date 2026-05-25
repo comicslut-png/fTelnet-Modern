@@ -5,6 +5,7 @@ import type {
   SettingsDefaultProtocolChangeDetail,
   SettingsMuteChangeDetail,
   SettingsLocalEchoChangeDetail,
+  SettingsAutoReconnectChangeDetail,
   SettingsThemeChangeDetail,
   SettingsVibrateChangeDetail,
   SettingsZModemAutoDetectChangeDetail,
@@ -288,6 +289,49 @@ describe('<f-settings-panel>', () => {
       el.addEventListener('settings-localecho-change', (e): void => {
         events.push(
           (e as CustomEvent<SettingsLocalEchoChangeDetail>).detail,
+        );
+      });
+
+      checkbox.checked = true;
+      checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+      checkbox.checked = false;
+      checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+
+      expect(events).toEqual([{ enabled: true }, { enabled: false }]);
+    });
+  });
+
+  describe('auto reconnect reactivity (beta.43)', () => {
+    // The Terminal group has two checkboxes: Local Echo (first) and
+    // Auto Reconnect (second). Grab the second.
+    function getAutoReconnectCheckbox(): HTMLInputElement {
+      const fieldset = Array.from(
+        el.querySelectorAll<HTMLFieldSetElement>('fieldset'),
+      ).find((f) => f.querySelector('legend')?.textContent === 'Terminal');
+      const boxes = fieldset!.querySelectorAll<HTMLInputElement>(
+        'input[type="checkbox"]',
+      );
+      return boxes[1]!;
+    }
+
+    it('renders an Auto Reconnect checkbox, off by default', () => {
+      const checkbox = getAutoReconnectCheckbox();
+      expect(checkbox).toBeTruthy();
+      expect(checkbox.checked).toBe(false);
+    });
+
+    it('changing autoReconnect updates the checkbox', async () => {
+      el.autoReconnect = true;
+      await el.updateComplete;
+      expect(getAutoReconnectCheckbox().checked).toBe(true);
+    });
+
+    it('toggling the checkbox dispatches settings-autoreconnect-change', () => {
+      const checkbox = getAutoReconnectCheckbox();
+      const events: SettingsAutoReconnectChangeDetail[] = [];
+      el.addEventListener('settings-autoreconnect-change', (e): void => {
+        events.push(
+          (e as CustomEvent<SettingsAutoReconnectChangeDetail>).detail,
         );
       });
 

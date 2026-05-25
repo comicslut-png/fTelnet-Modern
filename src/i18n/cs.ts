@@ -196,6 +196,7 @@ export const cs: Catalog = {
   // ── Terminal settings (Local Echo) ───────────────────
   'settings.terminal': 'Terminál',
   'settings.terminal.localecho': 'Místní echo',
+  'settings.terminal.autoreconnect': 'Automatické připojení',
 
   // ── Auto-reconnect popup ─────────────────────────
   'reconnect.title': 'Připojení ztraceno',

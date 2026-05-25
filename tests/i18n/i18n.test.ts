@@ -542,6 +542,20 @@ describe('i18n core', () => {
       expect(t('settings.terminal.localecho', 'ja')).toBe('ローカルエコー');
     });
 
+    it('translates the Auto Reconnect setting (beta.43)', () => {
+      expect(t('settings.terminal.autoreconnect', 'en')).toBe('Auto Reconnect');
+      expect(t('settings.terminal.autoreconnect', 'de')).toBe(
+        'Auto-Wiederverbindung',
+      );
+      expect(t('settings.terminal.autoreconnect', 'ja')).toBe('自動再接続');
+      // every catalog has it (no fallback to English for the 14)
+      for (const lang of ['nl', 'ru', 'uk', 'el', 'cs'] as const) {
+        expect(t('settings.terminal.autoreconnect', lang)).not.toBe(
+          'Auto Reconnect',
+        );
+      }
+    });
+
     it('translates the auto-reconnect popup (beta.41)', () => {
       expect(t('reconnect.title', 'en')).toBe('Connection lost');
       expect(t('reconnect.cancel', 'en')).toBe('Cancel');

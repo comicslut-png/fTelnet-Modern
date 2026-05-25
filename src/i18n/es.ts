@@ -193,6 +193,7 @@ export const es: Catalog = {
   // ── Terminal settings (Local Echo) ───────────────────
   'settings.terminal': 'Terminal',
   'settings.terminal.localecho': 'Eco local',
+  'settings.terminal.autoreconnect': 'Reconexión automática',
 
   // ── Auto-reconnect popup ─────────────────────────
   'reconnect.title': 'Conexión perdida',

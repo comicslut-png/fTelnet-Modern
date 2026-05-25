@@ -43,6 +43,11 @@ export interface SettingsLocalEchoChangeDetail {
   enabled: boolean;
 }
 
+/** Payload for the `settings-autoreconnect-change` event. */
+export interface SettingsAutoReconnectChangeDetail {
+  enabled: boolean;
+}
+
 /** Payload for the `settings-vibrate-change` event. */
 export interface SettingsVibrateChangeDetail {
   duration: number;
@@ -112,7 +117,7 @@ export class FSettingsPanel extends LitElement {
    * tests and the panel can read the same value without needing
    * a build-time injection mechanism.
    */
-  public static readonly VERSION = '2.0.0-beta.42';
+  public static readonly VERSION = '2.0.0-beta.43';
 
   @property({ type: Boolean })
   open = false;
@@ -148,6 +153,15 @@ export class FSettingsPanel extends LitElement {
    */
   @property({ type: Boolean, attribute: 'local-echo' })
   localEcho = false;
+
+  /**
+   * Auto-reconnect: when true, an unexpected disconnect shows a
+   * countdown popup that reconnects automatically. Off by default.
+   * Unlike local echo this IS persisted (it's a deliberate user
+   * preference, not a per-session toggle).
+   */
+  @property({ type: Boolean, attribute: 'auto-reconnect' })
+  autoReconnect = false;
 
   @property({ type: Number, attribute: 'vibrate-duration' })
   vibrateDuration = 25;
@@ -347,6 +361,14 @@ export class FSettingsPanel extends LitElement {
                 />
                 ${t('settings.terminal.localecho', this.language)}
               </label>
+              <label class="fTelnetSettingsPanelOption">
+                <input
+                  type="checkbox"
+                  ?checked=${this.autoReconnect}
+                  @change=${this.handleAutoReconnectChange}
+                />
+                ${t('settings.terminal.autoreconnect', this.language)}
+              </label>
             </fieldset>
           </div>
 
@@ -523,6 +545,21 @@ export class FSettingsPanel extends LitElement {
     this.dispatchEvent(
       new CustomEvent<SettingsLocalEchoChangeDetail>(
         'settings-localecho-change',
+        {
+          detail: { enabled: checked },
+          bubbles: true,
+          composed: true,
+        }
+      )
+    );
+  };
+
+  private handleAutoReconnectChange = (e: Event): void => {
+    const checked = (e.target as HTMLInputElement).checked;
+    this.autoReconnect = checked;
+    this.dispatchEvent(
+      new CustomEvent<SettingsAutoReconnectChangeDetail>(
+        'settings-autoreconnect-change',
         {
           detail: { enabled: checked },
           bubbles: true,

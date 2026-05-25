@@ -202,6 +202,7 @@ export const nl: Catalog = {
   // ── Terminal settings (Local Echo) ───────────────────
   'settings.terminal': 'Terminal',
   'settings.terminal.localecho': 'Lokale echo',
+  'settings.terminal.autoreconnect': 'Automatisch herverbinden',
 
   // ── Auto-reconnect popup ─────────────────────────
   'reconnect.title': 'Verbinding verbroken',

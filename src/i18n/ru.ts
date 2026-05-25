@@ -206,6 +206,7 @@ export const ru: Catalog = {
   // ── Terminal settings (Local Echo) ───────────────────
   'settings.terminal': 'Терминал',
   'settings.terminal.localecho': 'Локальное эхо',
+  'settings.terminal.autoreconnect': 'Автоповтор подключения',
 
   // ── Auto-reconnect popup ─────────────────────────
   'reconnect.title': 'Соединение потеряно',

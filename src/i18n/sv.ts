@@ -196,6 +196,7 @@ export const sv: Catalog = {
   // ── Terminal settings (Local Echo) ───────────────────
   'settings.terminal': 'Terminal',
   'settings.terminal.localecho': 'Lokalt eko',
+  'settings.terminal.autoreconnect': 'Återanslut automatiskt',
 
   // ── Auto-reconnect popup ─────────────────────────
   'reconnect.title': 'Anslutningen förlorad',

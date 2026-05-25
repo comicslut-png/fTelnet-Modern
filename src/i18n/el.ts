@@ -207,6 +207,7 @@ export const el: Catalog = {
   // ── Terminal settings (Local Echo) ───────────────────
   'settings.terminal': 'Τερματικό',
   'settings.terminal.localecho': 'Τοπική ηχώ',
+  'settings.terminal.autoreconnect': 'Αυτόματη επανασύνδεση',
 
   // ── Auto-reconnect popup ─────────────────────────
   'reconnect.title': 'Η σύνδεση χάθηκε',

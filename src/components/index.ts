@@ -36,6 +36,7 @@ export {
   FSettingsPanel,
   type SettingsMuteChangeDetail,
   type SettingsLocalEchoChangeDetail,
+  type SettingsAutoReconnectChangeDetail,
   type SettingsThemeChangeDetail,
   type SettingsVibrateChangeDetail,
   type SettingsZModemAutoDetectChangeDetail,

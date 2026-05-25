@@ -199,6 +199,7 @@ export const uk: Catalog = {
   // ── Terminal settings (Local Echo) ───────────────────
   'settings.terminal': 'Термінал',
   'settings.terminal.localecho': 'Локальне відлуння',
+  'settings.terminal.autoreconnect': 'Автоперепідключення',
 
   // ── Auto-reconnect popup ─────────────────────────
   'reconnect.title': 'З\'єднання втрачено',

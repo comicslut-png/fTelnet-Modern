@@ -78,6 +78,7 @@ import {
   type ScreenSizeChangeDetail,
   type SettingsMuteChangeDetail,
   type SettingsLocalEchoChangeDetail,
+  type SettingsAutoReconnectChangeDetail,
   type SettingsThemeChangeDetail,
   type SettingsVibrateChangeDetail,
   type SettingsZModemAutoDetectChangeDetail,
@@ -490,6 +491,15 @@ export class fTelnetClient {
       const storedMute = window.sessionStorage.getItem('fTelnet.mute');
       if (storedMute !== null) {
         this._Options.MuteSounds = storedMute === 'true';
+      }
+
+      // Auto-reconnect preference (Settings → Terminal). Off unless the
+      // user has turned it on this tab-session. Stored as 'true'/'false'.
+      const storedAutoReconnect = window.sessionStorage.getItem(
+        'fTelnet.autoReconnect',
+      );
+      if (storedAutoReconnect !== null) {
+        this._Options.AutoReconnect = storedAutoReconnect === 'true';
       }
 
       const storedVibrate = window.sessionStorage.getItem('fTelnet.vibrate');
@@ -975,6 +985,7 @@ export class fTelnetClient {
     this._SettingsPanel.currentTheme = this._Options.Theme;
     this._SettingsPanel.muted = this._Options.MuteSounds;
     this._SettingsPanel.localEcho = this._Options.LocalEcho;
+    this._SettingsPanel.autoReconnect = this._Options.AutoReconnect;
     this._SettingsPanel.vibrateDuration = this._Options.VirtualKeyboardVibrateDuration;
     this._SettingsPanel.zmodemAutoDetect = this._Options.ZModemAutoDetect;
     this._SettingsPanel.defaultProtocol = this._Options.DefaultTransferProtocol;
@@ -1010,6 +1021,24 @@ export class fTelnetClient {
         // load, per design.
         this._Crt.LocalEcho = detail.enabled;
         this._Options.LocalEcho = detail.enabled;
+      },
+    );
+    this._SettingsPanel.addEventListener(
+      'settings-autoreconnect-change',
+      (e: Event): void => {
+        const detail = (e as CustomEvent<SettingsAutoReconnectChangeDetail>)
+          .detail;
+        this._Options.AutoReconnect = detail.enabled;
+        // Persist per tab-session (like mute/theme), so the choice
+        // survives reloads/reconnects within the session.
+        try {
+          window.sessionStorage.setItem(
+            'fTelnet.autoReconnect',
+            String(detail.enabled),
+          );
+        } catch {
+          // Ignore — browser without sessionStorage.
+        }
       },
     );
     this._SettingsPanel.addEventListener('settings-vibrate-change', (e: Event): void => {
@@ -1712,6 +1741,8 @@ export class fTelnetClient {
     this._Connection.close();
     this._Connection = undefined;
 
+    // User-initiated; _userInitiatedDisconnect is set, which suppresses
+    // any auto-reconnect.
     this.OnConnectionClose();
   }
 
@@ -2083,15 +2114,17 @@ export class fTelnetClient {
       this._UserManual.resetPosition();
     }
 
-    // Auto-reconnect: if this close was NOT user-initiated (i.e. an
-    // unexpected drop) and we have somewhere to reconnect to, show
-    // the countdown popup — UNLESS we've already used up the attempt
-    // budget. The normal disconnected state is already applied above,
-    // so giving up (or cancelling) simply leaves it in place. Consume
-    // the user-initiated flag either way.
+    // Auto-reconnect: governed solely by the user's setting. When ON,
+    // show the countdown popup on any disconnect — EXCEPT one the user
+    // initiated via fTelnet's own Disconnect button (reconnecting right
+    // after the user chose to disconnect would be nonsensical), and
+    // except once the attempt budget is spent. When OFF (the default),
+    // no popup ever appears. The toggle does exactly what it says; no
+    // close-type heuristics second-guess the user's explicit choice.
     const wasUserInitiated = this._userInitiatedDisconnect;
     this._userInitiatedDisconnect = false;
     if (
+      this._Options.AutoReconnect &&
       !wasUserInitiated &&
       this._Options.Hostname &&
       this._reconnectAttempt < fTelnetClient.MAX_RECONNECT_ATTEMPTS
@@ -2974,6 +3007,7 @@ export class fTelnetClient {
     this._SettingsPanel.currentTheme = this._Options.Theme;
     this._SettingsPanel.muted = this._Options.MuteSounds;
     this._SettingsPanel.localEcho = this._Options.LocalEcho;
+    this._SettingsPanel.autoReconnect = this._Options.AutoReconnect;
     this._SettingsPanel.vibrateDuration = this._Options.VirtualKeyboardVibrateDuration;
     this._SettingsPanel.zmodemAutoDetect = this._Options.ZModemAutoDetect;
     this._SettingsPanel.defaultProtocol = this._Options.DefaultTransferProtocol;

@@ -5,15 +5,44 @@ All notable changes to fTelnet-Modern are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.0.0-beta.43] — 2026-05-24
+
+Makes Auto Reconnect an opt-in setting (default off), fixing a case
+where logging off the BBS triggered the reconnect popup.
+
+### Changed
+
+  - **Auto Reconnect is now a Settings toggle (Settings → Terminal),
+    OFF by default.** Previously it was always on, so any disconnect —
+    including a normal BBS logoff — popped the reconnect countdown,
+    which was unwanted. Now the popup only appears when the user has
+    enabled the toggle. The toggle does exactly what it says: when on,
+    the countdown appears on any disconnect (except one initiated via
+    fTelnet's own Disconnect button, and once the 3-attempt budget is
+    spent); when off, it never appears. No close-type heuristics — the
+    setting alone governs the behavior, so it's predictable regardless
+    of BBS software or proxy. The choice persists per tab-session.
+
+### i18n
+
+  - New key `settings.terminal.autoreconnect`, translated in all 15
+    languages. en.ts: 100 → 101 keys.
+
+### Tests
+
+1317 → 1325. Settings Auto-Reconnect checkbox (default off,
+reactivity, change event); client-level trigger tests (off → no
+popup; on → popup; user-initiated → no popup; budget spent → no
+popup); i18n for the new key.
+
+### Bundle
+
+~770 → ~773 KB raw / ~166 KB gzipped.
+
 ## [2.0.0-beta.42] — 2026-05-23
 
 Refines the beta.41 features (Local Echo + Auto Reconnect) and fixes
 the Settings panel alignment.
-
-> This package includes the beta.41 changes too (the Local Echo
-> setting and the Auto Reconnect popup), so applying it brings the
-> repo fully current to beta.42 whether or not beta.41 was already
-> committed.
 
 ### Changed
 

@@ -88,6 +88,7 @@ export const en = {
   'settings.touch.ms': 'ms',
   'settings.terminal': 'Terminal',
   'settings.terminal.localecho': 'Local Echo',
+  'settings.terminal.autoreconnect': 'Auto Reconnect',
   'settings.about': 'About',
   'settings.close': 'Close',
 

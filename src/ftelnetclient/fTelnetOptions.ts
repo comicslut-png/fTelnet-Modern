@@ -79,6 +79,13 @@ export class fTelnetOptions {
   public Hostname = 'bbs.ftelnet.ca';
   public LocalEcho = false;
   public NegotiateLocalEcho = true;
+  // Auto-reconnect: when true, an UNEXPECTED drop shows a countdown
+  // popup that reconnects automatically (capped at 3 attempts). OFF by
+  // default — when off, no reconnect popup ever appears, which avoids
+  // the popup firing after a normal BBS logoff (a remote-initiated
+  // close is indistinguishable from a drop on some proxies). Users on
+  // flaky links can opt in.
+  public AutoReconnect = false;
   public Port = 1123;
   public ProxyHostname = '';
   public ProxyPort = 1123;

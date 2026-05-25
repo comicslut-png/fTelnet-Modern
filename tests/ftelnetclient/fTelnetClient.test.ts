@@ -454,4 +454,59 @@ describe('fTelnetClient', () => {
       expect(calls[1]).toEqual(['i'.charCodeAt(0), 0, false, false, false]);
     });
   });
+
+  describe('auto-reconnect trigger (governed by the setting)', () => {
+    /*
+      The reconnect popup is governed solely by the AutoReconnect
+      setting (off by default). When ON, it fires on any disconnect
+      EXCEPT a user-initiated one (fTelnet's own Disconnect button) and
+      except once the attempt budget is spent. When OFF, it never
+      fires. No close-type heuristics — the toggle does what it says.
+
+      OnConnectionClose() is private; we reach it via a cast.
+    */
+    type Privates = {
+      OnConnectionClose: () => void;
+      _ReconnectDialog?: { open: boolean };
+      _userInitiatedDisconnect: boolean;
+      _reconnectAttempt: number;
+      _Options: { Hostname: string; AutoReconnect: boolean };
+    };
+
+    function makeClient(autoReconnect = true): Privates {
+      createdClient = new fTelnetClient('fTelnetContainer', new fTelnetOptions());
+      const p = createdClient as unknown as Privates;
+      p._Options.Hostname = 'bbs.example.com';
+      p._Options.AutoReconnect = autoReconnect;
+      p._reconnectAttempt = 0;
+      p._userInitiatedDisconnect = false;
+      return p;
+    }
+
+    it('does NOT show the popup when Auto Reconnect is OFF (default)', () => {
+      const p = makeClient(false);
+      p.OnConnectionClose();
+      expect(p._ReconnectDialog?.open ?? false).toBe(false);
+    });
+
+    it('DOES show the popup on a disconnect when Auto Reconnect is ON', () => {
+      const p = makeClient(true);
+      p.OnConnectionClose();
+      expect(p._ReconnectDialog?.open).toBe(true);
+    });
+
+    it('does NOT show the popup when the user initiated the disconnect', () => {
+      const p = makeClient(true);
+      p._userInitiatedDisconnect = true;
+      p.OnConnectionClose();
+      expect(p._ReconnectDialog?.open ?? false).toBe(false);
+    });
+
+    it('does NOT show the popup once the attempt budget is spent', () => {
+      const p = makeClient(true);
+      p._reconnectAttempt = 3; // MAX_RECONNECT_ATTEMPTS
+      p.OnConnectionClose();
+      expect(p._ReconnectDialog?.open ?? false).toBe(false);
+    });
+  });
 });

@@ -201,6 +201,7 @@ export const pt: Catalog = {
   // ── Terminal settings (Local Echo) ───────────────────
   'settings.terminal': 'Terminal',
   'settings.terminal.localecho': 'Eco local',
+  'settings.terminal.autoreconnect': 'Reconexão automática',
 
   // ── Auto-reconnect popup ─────────────────────────
   'reconnect.title': 'Conexão perdida',
