@@ -203,6 +203,7 @@ export const nl: Catalog = {
   'settings.terminal': 'Terminal',
   'settings.terminal.localecho': 'Lokale echo',
   'settings.terminal.autoreconnect': 'Automatisch herverbinden',
+  'settings.terminal.doorway': 'Doorway-modus',
 
   // ── Auto-reconnect popup ─────────────────────────
   'reconnect.title': 'Verbinding verbroken',

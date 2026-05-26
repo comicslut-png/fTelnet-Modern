@@ -194,6 +194,7 @@ export const es: Catalog = {
   'settings.terminal': 'Terminal',
   'settings.terminal.localecho': 'Eco local',
   'settings.terminal.autoreconnect': 'Reconexión automática',
+  'settings.terminal.doorway': 'Modo Doorway',
 
   // ── Auto-reconnect popup ─────────────────────────
   'reconnect.title': 'Conexión perdida',

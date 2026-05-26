@@ -19,6 +19,7 @@ class RecordingTarget implements AnsiTarget {
   public TextAttr = 7;
   public ReportMouse = false;
   public ReportMouseSgr = false;
+  public DoorwayMode = false;
 
   // Fixed state
   public Atari = false;
@@ -499,6 +500,47 @@ describe('Ansi parser', () => {
       expect(() => ansi.Write('\x1B[Z')).not.toThrow();
       // Z is actually CBT — let's pick something truly unknown.
       expect(() => ansi.Write('\x1B[~')).not.toThrow();
+    });
+  });
+
+  describe('doorway mode (beta.44)', () => {
+    it('ESC[=255h enables doorway mode on the target', () => {
+      ansi.Write('\x1B[=255h');
+      expect(target.DoorwayMode).toBe(true);
+    });
+
+    it('ESC[=255l disables doorway mode', () => {
+      target.DoorwayMode = true;
+      ansi.Write('\x1B[=255l');
+      expect(target.DoorwayMode).toBe(false);
+    });
+
+    it('in doorway mode, a NULL forces the next byte to be written literally', () => {
+      target.DoorwayMode = true;
+      // NUL then ESC: without the literal rule, ESC would start an
+      // escape sequence. With it, the ESC byte is written as text.
+      ansi.Write('\x00\x1B');
+      const writes = target.callsOf('Write').map((c) => c.args[0]).join('');
+      expect(writes).toBe('\x1B');
+    });
+
+    it('the literal rule consumes only ONE byte (next char parses normally)', () => {
+      target.DoorwayMode = true;
+      // NUL X (X literal), then a real ESC[31m should still set color.
+      ansi.Write('\x00X\x1B[31m');
+      const writes = target.callsOf('Write').map((c) => c.args[0]).join('');
+      expect(writes).toBe('X');
+      // The ESC[31m after the literal X is parsed normally (red = CGA 4).
+      expect(target.lastCallOf('TextColor')?.args[0]).toBe(4);
+    });
+
+    it('NOT in doorway mode, a NULL is handled normally (no literal latch)', () => {
+      // doorway off (default): NUL then ESC[2J behaves as usual (the
+      // ESC sequence is interpreted, not written literally).
+      ansi.Write('\x00\x1B[2J');
+      const writes = target.callsOf('Write').map((c) => c.args[0]).join('');
+      // The ESC[2J should NOT appear as literal text.
+      expect(writes.includes('\x1B')).toBe(false);
     });
   });
 });

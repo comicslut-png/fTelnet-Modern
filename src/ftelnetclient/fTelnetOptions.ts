@@ -86,6 +86,10 @@ export class fTelnetOptions {
   // close is indistinguishable from a drop on some proxies). Users on
   // flaky links can opt in.
   public AutoReconnect = false;
+  // Doorway mode: transmit IBM PC extended keystrokes as NULL+scancode
+  // for sysop editors / drop-to-DOS. Off by default, NOT persisted
+  // (resets each load). Also toggled by host ESC[=255h / ESC[=255l.
+  public DoorwayMode = false;
   public Port = 1123;
   public ProxyHostname = '';
   public ProxyPort = 1123;

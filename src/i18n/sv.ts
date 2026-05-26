@@ -197,6 +197,7 @@ export const sv: Catalog = {
   'settings.terminal': 'Terminal',
   'settings.terminal.localecho': 'Lokalt eko',
   'settings.terminal.autoreconnect': 'Återanslut automatiskt',
+  'settings.terminal.doorway': 'Doorway-läge',
 
   // ── Auto-reconnect popup ─────────────────────────
   'reconnect.title': 'Anslutningen förlorad',

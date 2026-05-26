@@ -205,6 +205,7 @@ export const ja: Catalog = {
   'settings.terminal': 'ターミナル',
   'settings.terminal.localecho': 'ローカルエコー',
   'settings.terminal.autoreconnect': '自動再接続',
+  'settings.terminal.doorway': 'ドアウェイモード',
 
   // ── Auto-reconnect popup ─────────────────────────
   'reconnect.title': '接続が切断されました',

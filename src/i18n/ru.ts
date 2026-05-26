@@ -207,6 +207,7 @@ export const ru: Catalog = {
   'settings.terminal': 'Терминал',
   'settings.terminal.localecho': 'Локальное эхо',
   'settings.terminal.autoreconnect': 'Автоповтор подключения',
+  'settings.terminal.doorway': 'Режим Doorway',
 
   // ── Auto-reconnect popup ─────────────────────────
   'reconnect.title': 'Соединение потеряно',

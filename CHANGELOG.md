@@ -5,6 +5,56 @@ All notable changes to fTelnet-Modern are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.0.0-beta.44] — 2026-05-25
+
+Adds Doorway Mode — transmits IBM PC extended keystrokes so callers can
+use sysop full-screen editors and drop-to-DOS on the BBS.
+
+### Added
+
+  - **Doorway Mode** (Settings → Terminal toggle, OFF by default). When
+    on, extended/special keys (arrows, F1–F12, Insert/Delete/Home/End/
+    PageUp/PageDown, and Alt/Ctrl key combinations) are transmitted as
+    the IBM PC convention NULL (0x00) + BIOS scan code, so DOS
+    full-screen programs (sysop editors, drop-to-DOS) receive them
+    correctly. Plain printable keys are sent as-is. The host can also
+    toggle it via the standard `ESC[=255h` / `ESC[=255l` sequences
+    (previously parsed but unhandled). On the output side, a received
+    NULL forces the next byte to be drawn literally. Modifier
+    precedence: Alt wins over Ctrl. Not persisted — resets to off on
+    each page load. Scan-code mapping verified against the HelpPC INT
+    16h table and cross-checked against the Banana ANSI BBS doorway
+    spec.
+
+### Changed
+
+  - Settings panel row 2 layout: the Terminal group now spans two
+    columns (its right edge aligns with the Language group above),
+    replacing the former empty placeholder box. The group's three
+    options (Local Echo, Auto Reconnect, Doorway Mode) are laid out in
+    a horizontal row rather than stacked, so the box is short and sits
+    level with the Sound and Touch boxes for a streamlined row.
+  - User manual: documented the Terminal settings group — Local Echo,
+    Auto Reconnect, and Doorway Mode — and corrected a stale
+    "four languages" mention to "fifteen languages."
+
+### i18n
+
+  - New key `settings.terminal.doorway`, translated in all 15
+    languages. en.ts: 101 → 102 keys.
+
+### Tests
+
+1325 → 1347. Doorway key-encoding mappings (arrows, F-keys across all
+modifier states, editing keys, Alt+letter, Alt+digit, Alt-wins
+precedence, off-mode fallthrough); doorway enable/disable sequences and
+the NULL-literal output rule; Settings Doorway checkbox; the new
+two-row grid layout; i18n for the new key.
+
+### Bundle
+
+~773 → ~782 KB raw / ~168 KB gzipped.
+
 ## [2.0.0-beta.43] — 2026-05-24
 
 Makes Auto Reconnect an opt-in setting (default off), fixing a case

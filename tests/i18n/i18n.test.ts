@@ -556,6 +556,15 @@ describe('i18n core', () => {
       }
     });
 
+    it('translates the Doorway Mode setting (beta.44)', () => {
+      expect(t('settings.terminal.doorway', 'en')).toBe('Doorway Mode');
+      expect(t('settings.terminal.doorway', 'ja')).toBe('ドアウェイモード');
+      // every catalog defines it (no English fallback for the 14)
+      for (const lang of ['nl', 'de', 'fr', 'ru', 'uk', 'el', 'cs'] as const) {
+        expect(t('settings.terminal.doorway', lang)).not.toBe('Doorway Mode');
+      }
+    });
+
     it('translates the auto-reconnect popup (beta.41)', () => {
       expect(t('reconnect.title', 'en')).toBe('Connection lost');
       expect(t('reconnect.cancel', 'en')).toBe('Cancel');

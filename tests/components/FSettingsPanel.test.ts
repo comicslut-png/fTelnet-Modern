@@ -6,6 +6,7 @@ import type {
   SettingsMuteChangeDetail,
   SettingsLocalEchoChangeDetail,
   SettingsAutoReconnectChangeDetail,
+  SettingsDoorwayChangeDetail,
   SettingsThemeChangeDetail,
   SettingsVibrateChangeDetail,
   SettingsZModemAutoDetectChangeDetail,
@@ -333,6 +334,47 @@ describe('<f-settings-panel>', () => {
         events.push(
           (e as CustomEvent<SettingsAutoReconnectChangeDetail>).detail,
         );
+      });
+
+      checkbox.checked = true;
+      checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+      checkbox.checked = false;
+      checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+
+      expect(events).toEqual([{ enabled: true }, { enabled: false }]);
+    });
+  });
+
+  describe('doorway mode reactivity (beta.44)', () => {
+    // Terminal group now has three checkboxes: Local Echo, Auto
+    // Reconnect, Doorway Mode (in that order). Grab the third.
+    function getDoorwayCheckbox(): HTMLInputElement {
+      const fieldset = Array.from(
+        el.querySelectorAll<HTMLFieldSetElement>('fieldset'),
+      ).find((f) => f.querySelector('legend')?.textContent === 'Terminal');
+      const boxes = fieldset!.querySelectorAll<HTMLInputElement>(
+        'input[type="checkbox"]',
+      );
+      return boxes[2]!;
+    }
+
+    it('renders a Doorway Mode checkbox, off by default', () => {
+      const checkbox = getDoorwayCheckbox();
+      expect(checkbox).toBeTruthy();
+      expect(checkbox.checked).toBe(false);
+    });
+
+    it('changing doorwayMode updates the checkbox', async () => {
+      el.doorwayMode = true;
+      await el.updateComplete;
+      expect(getDoorwayCheckbox().checked).toBe(true);
+    });
+
+    it('toggling the checkbox dispatches settings-doorway-change', () => {
+      const checkbox = getDoorwayCheckbox();
+      const events: SettingsDoorwayChangeDetail[] = [];
+      el.addEventListener('settings-doorway-change', (e): void => {
+        events.push((e as CustomEvent<SettingsDoorwayChangeDetail>).detail);
       });
 
       checkbox.checked = true;
@@ -1095,20 +1137,19 @@ describe('<f-settings-panel>', () => {
     /**
      * Phase 5: panel is a two-row grid.
      *   Row 1:  Theme | Protocol | Language (wide)   — 3 columns
-     *   Row 2:  Sound | Touch | Terminal | placeholder — 4 columns
-     * (beta.41 added the Terminal/Local-Echo group, splitting the
-     * old wide row-2 placeholder into Terminal + a final placeholder.)
-     * About spans full width below. Tests verify the row/column
-     * structure, the column order, and the placeholder in row 2.
+     *   Row 2:  Sound | Touch | Terminal (wide)      — 3 columns
+     * (beta.44 widened Terminal to span 2 and removed the old empty
+     * placeholder, so Terminal's right edge aligns with Language's.)
+     * About spans full width below.
      */
     it('renders two .fTelnetSettingsPanelColumns rows', () => {
       const rows = el.querySelectorAll('.fTelnetSettingsPanelColumns');
       expect(rows.length).toBe(2);
     });
 
-    it('renders seven columns total (three in row 1, four in row 2)', () => {
+    it('renders six columns total (three in row 1, three in row 2)', () => {
       const cols = el.querySelectorAll('.fTelnetSettingsPanelColumn');
-      expect(cols.length).toBe(7);
+      expect(cols.length).toBe(6);
     });
 
     it('row 1 order is Theme | Protocol | Language', () => {
@@ -1124,26 +1165,18 @@ describe('<f-settings-panel>', () => {
       expect(legends).toEqual(['Theme', 'Protocol', 'Language']);
     });
 
-    it('row 2 order is Sound | Touch | Terminal | (placeholder)', () => {
+    it('row 2 order is Sound | Touch | Terminal (no placeholder)', () => {
       const rows = Array.from(
         el.querySelectorAll('.fTelnetSettingsPanelColumns'),
       );
       const row2Cols = Array.from(
         rows[1]!.querySelectorAll('.fTelnetSettingsPanelColumn'),
       );
-      const soundLegend = row2Cols[0]!.querySelector('legend')?.textContent?.trim();
-      const touchLegend = row2Cols[1]!.querySelector('legend')?.textContent?.trim();
-      const terminalLegend = row2Cols[2]!.querySelector('legend')?.textContent?.trim();
-      // Fourth column is the placeholder fieldset — no legend.
-      const placeholder = row2Cols[3]!.querySelector('fieldset');
-
-      expect(soundLegend).toBe('Sound');
-      expect(touchLegend).toBe('Touch');
-      expect(terminalLegend).toBe('Terminal');
-      expect(placeholder?.querySelector('legend')).toBeNull();
-      expect(
-        placeholder?.classList.contains('fTelnetSettingsPanelGroupReserved'),
-      ).toBe(true);
+      expect(row2Cols.length).toBe(3);
+      const legends = row2Cols.map(
+        (c) => c.querySelector('legend')?.textContent?.trim(),
+      );
+      expect(legends).toEqual(['Sound', 'Touch', 'Terminal']);
     });
 
     it('the Language column is the wide column in row 1', () => {
@@ -1159,18 +1192,35 @@ describe('<f-settings-panel>', () => {
       ).toBe(true);
     });
 
-    it('the placeholder in row 2 is empty and bordered', () => {
+    it('the Terminal column stays the wide column in row 2 (aligns with Language)', () => {
       const rows = Array.from(
         el.querySelectorAll('.fTelnetSettingsPanelColumns'),
       );
       const row2Cols = Array.from(
         rows[1]!.querySelectorAll('.fTelnetSettingsPanelColumn'),
       );
-      const placeholder = row2Cols[3]!.querySelector('fieldset')!;
-      expect(placeholder.children.length).toBe(0);
+      const terminalCol = row2Cols[2]!;
+      // Width unchanged from beta.44: Terminal still spans two tracks.
       expect(
-        placeholder.classList.contains('fTelnetSettingsPanelGroupReserved'),
+        terminalCol.classList.contains('fTelnetSettingsPanelColumnWide'),
       ).toBe(true);
+    });
+
+    it('the Terminal options sit in a horizontal row container', () => {
+      const rows = Array.from(
+        el.querySelectorAll('.fTelnetSettingsPanelColumns'),
+      );
+      const row2Cols = Array.from(
+        rows[1]!.querySelectorAll('.fTelnetSettingsPanelColumn'),
+      );
+      const terminalCol = row2Cols[2]!;
+      const optionRow = terminalCol.querySelector(
+        '.fTelnetSettingsPanelOptionRow',
+      );
+      expect(optionRow).not.toBeNull();
+      // All three checkboxes live inside that row.
+      const boxes = optionRow!.querySelectorAll('input[type="checkbox"]');
+      expect(boxes.length).toBe(3);
     });
 
     it('Protocol column has a "Default" sub-header above the radios', () => {

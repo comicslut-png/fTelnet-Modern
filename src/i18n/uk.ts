@@ -200,6 +200,7 @@ export const uk: Catalog = {
   'settings.terminal': 'Термінал',
   'settings.terminal.localecho': 'Локальне відлуння',
   'settings.terminal.autoreconnect': 'Автоперепідключення',
+  'settings.terminal.doorway': 'Режим Doorway',
 
   // ── Auto-reconnect popup ─────────────────────────
   'reconnect.title': 'З\'єднання втрачено',

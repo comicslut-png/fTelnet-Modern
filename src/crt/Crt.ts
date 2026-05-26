@@ -131,6 +131,7 @@ export class Crt implements AnsiTarget {
   private _atasciiEscaped = false;
   private _bareLFtoCRLF = false;
   private _c64 = false;
+  private _doorwayMode = false;
   private _localEcho = false;
   private _reportMouse = false;
   private _reportMouseSgr = false;
@@ -393,6 +394,20 @@ export class Crt implements AnsiTarget {
   }
   public get LocalEcho(): boolean {
     return this._localEcho;
+  }
+
+  /**
+   * Doorway mode. When true, OnKeyDown encodes keys as IBM PC
+   * NULL+scan-code sequences (see encodeKeyDownDoorway) instead of
+   * ANSI escapes, and a received NULL forces the next byte to be drawn
+   * literally rather than interpreted. Toggled by the user's Settings
+   * checkbox AND by the host sending ESC[=255h / ESC[=255l.
+   */
+  public set DoorwayMode(value: boolean) {
+    this._doorwayMode = value;
+  }
+  public get DoorwayMode(): boolean {
+    return this._doorwayMode;
   }
 
   public get ReportMouse(): boolean {
@@ -2148,7 +2163,9 @@ export class Crt implements AnsiTarget {
 
     let keyString = '';
 
-    if (this._atari) {
+    if (this._doorwayMode) {
+      keyString = this.encodeKeyDownDoorway(ke);
+    } else if (this._atari) {
       keyString = this.encodeKeyDownAtari(ke);
     } else if (this._c64) {
       keyString = this.encodeKeyDownC64(ke);
@@ -2370,6 +2387,128 @@ export class Crt implements AnsiTarget {
       case KeyboardKeys.UP: return '\x91';
       default: return '';
     }
+  }
+
+  /**
+   * Encode a keydown event in Doorway mode.
+   *
+   * Doorway mode (Marshall Dudley's DOORWAY.EXE convention, as
+   * documented in the Banana ANSI BBS spec) transmits IBM PC extended
+   * keys as NULL (0x00) + the BIOS INT 16h scan code (the AH byte), so
+   * a caller can drive DOS full-screen editors and drop-to-DOS.
+   *
+   * Division of labour: this handles the EXTENDED and MODIFIED keys
+   * (arrows, F-keys, editing keys, and Alt/Ctrl+key combos). Plain
+   * printable characters (letters/digits/punctuation with no Alt/Ctrl)
+   * return '' here and are sent as-is by OnKeyPress — matching the
+   * doorway rule "ASCII 1..127 are sent as is". This avoids
+   * double-sending.
+   *
+   * Modifier precedence: Alt wins over Ctrl when both are held.
+   *
+   * Scan codes verified against HelpPC's INT 16h table and
+   * cross-checked against the Banana ANSI BBS doorway examples.
+   */
+  private encodeKeyDownDoorway(ke: KeyboardEvent): string {
+    const alt = ke.altKey;
+    const ctrl = ke.ctrlKey;
+    const shift = ke.shiftKey;
+    const NUL = '\x00';
+    // Helper: NULL + scan code byte.
+    const sc = (scanCode: number): string => NUL + String.fromCharCode(scanCode);
+
+    // ---- Special / extended keys (table keyed by keyCode) ----------
+    // Each entry: [normal, shift, ctrl, alt] scan codes (the AH byte).
+    const SPECIAL: Partial<Record<number, [number, number, number, number]>> = {
+      [KeyboardKeys.F1]: [0x3b, 0x54, 0x5e, 0x68],
+      [KeyboardKeys.F2]: [0x3c, 0x55, 0x5f, 0x69],
+      [KeyboardKeys.F3]: [0x3d, 0x56, 0x60, 0x6a],
+      [KeyboardKeys.F4]: [0x3e, 0x57, 0x61, 0x6b],
+      [KeyboardKeys.F5]: [0x3f, 0x58, 0x62, 0x6c],
+      [KeyboardKeys.F6]: [0x40, 0x59, 0x63, 0x6d],
+      [KeyboardKeys.F7]: [0x41, 0x5a, 0x64, 0x6e],
+      [KeyboardKeys.F8]: [0x42, 0x5b, 0x65, 0x6f],
+      [KeyboardKeys.F9]: [0x43, 0x5c, 0x66, 0x70],
+      [KeyboardKeys.F10]: [0x44, 0x5d, 0x67, 0x71],
+      [KeyboardKeys.F11]: [0x85, 0x87, 0x89, 0x8b],
+      [KeyboardKeys.F12]: [0x86, 0x88, 0x8a, 0x8c],
+      [KeyboardKeys.HOME]: [0x47, 0x47, 0x77, 0x97],
+      [KeyboardKeys.UP]: [0x48, 0x48, 0x8d, 0x98],
+      [KeyboardKeys.PAGE_UP]: [0x49, 0x49, 0x84, 0x99],
+      [KeyboardKeys.LEFT]: [0x4b, 0x4b, 0x73, 0x9b],
+      [KeyboardKeys.RIGHT]: [0x4d, 0x4d, 0x74, 0x9d],
+      [KeyboardKeys.END]: [0x4f, 0x4f, 0x75, 0x9f],
+      [KeyboardKeys.DOWN]: [0x50, 0x50, 0x91, 0xa0],
+      [KeyboardKeys.PAGE_DOWN]: [0x51, 0x51, 0x76, 0xa1],
+      [KeyboardKeys.INSERT]: [0x52, 0x52, 0x92, 0xa2],
+      [KeyboardKeys.DELETE]: [0x53, 0x53, 0x93, 0xa3],
+    };
+
+    const special = SPECIAL[ke.keyCode];
+    if (special) {
+      const idx = alt ? 3 : ctrl ? 2 : shift ? 1 : 0;
+      return sc(special[idx]);
+    }
+
+    // ---- Keys with both a plain ASCII form and special modified forms
+    if (ke.keyCode === KeyboardKeys.TAB) {
+      if (alt) return sc(0xa5);
+      if (ctrl) return sc(0x94);
+      if (shift) return sc(0x0f);
+      return '\t'; // plain tab sent as-is
+    }
+    if (ke.keyCode === KeyboardKeys.ENTER) {
+      if (alt) return sc(0xa6);
+      if (ctrl) return '\n'; // Ctrl-Enter = LF
+      return '\r';
+    }
+    if (ke.keyCode === KeyboardKeys.BACKSPACE) {
+      if (alt) return sc(0x0e);
+      if (ctrl) return '\x7f';
+      return '\b';
+    }
+    if (ke.keyCode === KeyboardKeys.ESCAPE) {
+      return '\x1b';
+    }
+
+    // ---- Alt/Ctrl + letter/digit: scan-code forms -------------------
+    // (Plain, unmodified printable keys are NOT handled here — they
+    // fall through to OnKeyPress and are sent as-is.)
+    if (alt || ctrl) {
+      if (ke.keyCode >= 65 && ke.keyCode <= 90) {
+        const letterAltScan: Record<number, number> = {
+          65: 0x1e, 66: 0x30, 67: 0x2e, 68: 0x20, 69: 0x12, 70: 0x21,
+          71: 0x22, 72: 0x23, 73: 0x17, 74: 0x24, 75: 0x25, 76: 0x26,
+          77: 0x32, 78: 0x31, 79: 0x18, 80: 0x19, 81: 0x10, 82: 0x13,
+          83: 0x1f, 84: 0x14, 85: 0x16, 86: 0x2f, 87: 0x11, 88: 0x2d,
+          89: 0x15, 90: 0x2c,
+        };
+        if (alt) {
+          const s = letterAltScan[ke.keyCode];
+          return s !== undefined ? sc(s) : '';
+        }
+        // Ctrl+letter: standard 0x01..0x1A control codes (real ASCII
+        // control chars, sent as-is, no NULL prefix).
+        return String.fromCharCode(ke.keyCode - 64);
+      }
+      if (ke.keyCode >= 48 && ke.keyCode <= 57) {
+        if (alt) {
+          // Alt-1..Alt-9 = 0x78..0x80, Alt-0 = 0x81.
+          const digit = ke.keyCode - 48; // 0..9
+          const altDigitScan = digit === 0 ? 0x81 : 0x77 + digit;
+          return sc(altDigitScan);
+        }
+        if (ctrl) {
+          if (ke.keyCode === 50) return '\x00'; // Ctrl-2 -> NUL
+          if (ke.keyCode === 54) return '\x1e'; // Ctrl-6 -> RS
+          return '';
+        }
+      }
+    }
+
+    // Everything else: not a doorway-special key. Return '' so plain
+    // printable keys flow through OnKeyPress and are sent as-is.
+    return '';
   }
 
   /**

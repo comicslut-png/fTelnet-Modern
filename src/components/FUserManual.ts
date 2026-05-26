@@ -548,8 +548,9 @@ export class FUserManual extends LitElement {
       </p>
       <p>
         <strong>Language</strong> — Switch the menus, buttons, and
-        status messages between English, German, French, and
-        Spanish. See <strong>Language</strong> below for details.
+        status messages between fifteen languages, spanning Latin,
+        Cyrillic, Greek, and Japanese scripts. See
+        <strong>Language</strong> below for details.
       </p>
       <p>
         <strong>Sound</strong> — Mute or unmute the bell sound
@@ -559,6 +560,43 @@ export class FUserManual extends LitElement {
         <strong>Touch</strong> — On phones and tablets, adjusts
         how long the device vibrates when you tap a key on the
         on-screen keyboard.
+      </p>
+      <p>
+        <strong>Terminal</strong> — Two optional toggles:
+      </p>
+      <p>
+        <strong>Local Echo</strong> — Normally the BBS echoes back
+        the characters you type, so you see them on screen. A few
+        boards, login prompts, or door games don't, which makes it
+        look like your typing isn't registering. Turn on Local Echo
+        and fTelnet will draw your keystrokes locally so you can see
+        what you're typing. Leave it off unless you're typing blind —
+        if it's on when the BBS is also echoing, you'll see each
+        character twice. It's off by default and resets to off each
+        time you load the page.
+      </p>
+      <p>
+        <strong>Auto Reconnect</strong> — Off by default. When turned
+        on, if your connection drops unexpectedly, a small popup
+        counts down from five seconds and then reconnects you
+        automatically — handy on a flaky or mobile connection. It
+        tries up to three times, and a Cancel button lets you stop it.
+        It won't reconnect after you disconnect on purpose with the
+        Disconnect button. Leave it off if you'd rather decide for
+        yourself when to reconnect.
+      </p>
+      <p>
+        <strong>Doorway Mode</strong> — Off by default. Some BBSes let
+        you run full-screen sysop editors or drop to a DOS prompt,
+        which need the special keys (arrows, function keys, Alt and
+        Ctrl combinations, Insert/Delete/Home/End, and so on) sent in
+        the way a DOS program expects. Turn this on and fTelnet
+        transmits those keys in that format so the remote program
+        responds to them correctly. A BBS can also switch it on and
+        off for you automatically. Most callers never need it — leave
+        it off for ordinary BBS use, since while it's on, keys like
+        the function keys are passed to the BBS instead of doing their
+        usual things. It resets to off each time you load the page.
       </p>
       <p>
         <strong>About</strong> — Shows the version of fTelnet

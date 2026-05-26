@@ -89,6 +89,9 @@ export class Ansi {
   private _ansiParams: string[] = [];
   private _ansiParserState: AnsiParserState = AnsiParserState.None;
   private _ansiXY: Point = new Point(1, 1);
+  // Doorway mode: set true after a NULL is received so the next byte
+  // is drawn literally (see Write). Only consulted in doorway mode.
+  private _doorwayLiteralNext = false;
   private readonly _crt: AnsiTarget;
 
   constructor(crt: AnsiTarget) {
@@ -576,8 +579,10 @@ export class Ansi {
     }
     switch (this._ansiParams[0]) {
       case '=255':
-        // eslint-disable-next-line no-console
-        console.log('Unhandled ESC sequence: Enable DoorWay Mode');
+        // Enable DoorWay Mode — host wants extended keystrokes passed
+        // through as NULL+scancode. Flip the Crt flag; OnKeyDown picks
+        // up the doorway encoder while this is on.
+        this._crt.DoorwayMode = true;
         break;
       case '?6':
         // eslint-disable-next-line no-console
@@ -640,8 +645,8 @@ export class Ansi {
     }
     switch (this._ansiParams[0]) {
       case '=255':
-        // eslint-disable-next-line no-console
-        console.log('Unhandled ESC sequence: Disable DoorWay Mode');
+        // Disable DoorWay Mode.
+        this._crt.DoorwayMode = false;
         break;
       case '?6':
         // eslint-disable-next-line no-console
@@ -967,6 +972,19 @@ export class Ansi {
       const ch = text.charAt(i);
 
       if (this._ansiParserState === AnsiParserState.None) {
+        // Doorway-mode output rule: a received NULL (0x00) forces the
+        // NEXT byte to be drawn literally rather than interpreted (so
+        // e.g. NUL then 0x0C shows the CP437 glyph for 0x0C instead of
+        // clearing the screen). Only active while in doorway mode.
+        if (this._doorwayLiteralNext) {
+          this._doorwayLiteralNext = false;
+          buffer += ch;
+          continue;
+        }
+        if (this._crt.DoorwayMode && ch === '\x00') {
+          this._doorwayLiteralNext = true;
+          continue;
+        }
         if (ch === '\x1B') {
           this._ansiParserState = AnsiParserState.Escape;
         } else {

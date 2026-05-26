@@ -197,6 +197,7 @@ export const cs: Catalog = {
   'settings.terminal': 'Terminál',
   'settings.terminal.localecho': 'Místní echo',
   'settings.terminal.autoreconnect': 'Automatické připojení',
+  'settings.terminal.doorway': 'Režim Doorway',
 
   // ── Auto-reconnect popup ─────────────────────────
   'reconnect.title': 'Připojení ztraceno',

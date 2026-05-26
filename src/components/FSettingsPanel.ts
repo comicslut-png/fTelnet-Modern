@@ -48,6 +48,11 @@ export interface SettingsAutoReconnectChangeDetail {
   enabled: boolean;
 }
 
+/** Payload for the `settings-doorway-change` event. */
+export interface SettingsDoorwayChangeDetail {
+  enabled: boolean;
+}
+
 /** Payload for the `settings-vibrate-change` event. */
 export interface SettingsVibrateChangeDetail {
   duration: number;
@@ -117,7 +122,7 @@ export class FSettingsPanel extends LitElement {
    * tests and the panel can read the same value without needing
    * a build-time injection mechanism.
    */
-  public static readonly VERSION = '2.0.0-beta.43';
+  public static readonly VERSION = '2.0.0-beta.44';
 
   @property({ type: Boolean })
   open = false;
@@ -162,6 +167,17 @@ export class FSettingsPanel extends LitElement {
    */
   @property({ type: Boolean, attribute: 'auto-reconnect' })
   autoReconnect = false;
+
+  /**
+   * Doorway mode: when true, the terminal transmits IBM PC extended
+   * keystrokes (arrows, F-keys, Alt/Ctrl combos) as NULL+scan-code
+   * sequences so callers can use sysop full-screen editors and
+   * drop-to-DOS. Off by default and intentionally NOT persisted — it
+   * resets to off on every page load, like local echo (you wouldn't
+   * want doorway mode silently still on after a refresh).
+   */
+  @property({ type: Boolean, attribute: 'doorway-mode' })
+  doorwayMode = false;
 
   @property({ type: Number, attribute: 'vibrate-duration' })
   vibrateDuration = 25;
@@ -315,7 +331,9 @@ export class FSettingsPanel extends LitElement {
           </div>
         </div>
 
-        <!-- Row 2: Sound | Touch | Terminal | (empty placeholder) -->
+        <!-- Row 2: Sound | Touch | Terminal (spans 2, aligns with
+             Language). Terminal's three options sit in a horizontal
+             row so the box is short and level with Sound/Touch. -->
         <div class="fTelnetSettingsPanelColumns">
           <div class="fTelnetSettingsPanelColumn">
             <fieldset class="fTelnetSettingsPanelGroup">
@@ -350,32 +368,36 @@ export class FSettingsPanel extends LitElement {
             </fieldset>
           </div>
 
-          <div class="fTelnetSettingsPanelColumn">
+          <div class="fTelnetSettingsPanelColumn fTelnetSettingsPanelColumnWide">
             <fieldset class="fTelnetSettingsPanelGroup">
               <legend>${t('settings.terminal', this.language)}</legend>
-              <label class="fTelnetSettingsPanelOption">
-                <input
-                  type="checkbox"
-                  ?checked=${this.localEcho}
-                  @change=${this.handleLocalEchoChange}
-                />
-                ${t('settings.terminal.localecho', this.language)}
-              </label>
-              <label class="fTelnetSettingsPanelOption">
-                <input
-                  type="checkbox"
-                  ?checked=${this.autoReconnect}
-                  @change=${this.handleAutoReconnectChange}
-                />
-                ${t('settings.terminal.autoreconnect', this.language)}
-              </label>
+              <div class="fTelnetSettingsPanelOptionRow">
+                <label class="fTelnetSettingsPanelOption">
+                  <input
+                    type="checkbox"
+                    ?checked=${this.localEcho}
+                    @change=${this.handleLocalEchoChange}
+                  />
+                  ${t('settings.terminal.localecho', this.language)}
+                </label>
+                <label class="fTelnetSettingsPanelOption">
+                  <input
+                    type="checkbox"
+                    ?checked=${this.autoReconnect}
+                    @change=${this.handleAutoReconnectChange}
+                  />
+                  ${t('settings.terminal.autoreconnect', this.language)}
+                </label>
+                <label class="fTelnetSettingsPanelOption">
+                  <input
+                    type="checkbox"
+                    ?checked=${this.doorwayMode}
+                    @change=${this.handleDoorwayModeChange}
+                  />
+                  ${t('settings.terminal.doorway', this.language)}
+                </label>
+              </div>
             </fieldset>
-          </div>
-
-          <div class="fTelnetSettingsPanelColumn">
-            <fieldset
-              class="fTelnetSettingsPanelGroup fTelnetSettingsPanelGroupReserved"
-            ></fieldset>
           </div>
         </div>
 
@@ -566,6 +588,18 @@ export class FSettingsPanel extends LitElement {
           composed: true,
         }
       )
+    );
+  };
+
+  private handleDoorwayModeChange = (e: Event): void => {
+    const checked = (e.target as HTMLInputElement).checked;
+    this.doorwayMode = checked;
+    this.dispatchEvent(
+      new CustomEvent<SettingsDoorwayChangeDetail>('settings-doorway-change', {
+        detail: { enabled: checked },
+        bubbles: true,
+        composed: true,
+      })
     );
   };
 

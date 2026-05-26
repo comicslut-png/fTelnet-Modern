@@ -208,6 +208,7 @@ export const fi: Catalog = {
   'settings.terminal': 'Pääte',
   'settings.terminal.localecho': 'Paikallinen kaiku',
   'settings.terminal.autoreconnect': 'Yhdistä uudelleen',
+  'settings.terminal.doorway': 'Doorway-tila',
 
   // ── Auto-reconnect popup ─────────────────────────
   'reconnect.title': 'Yhteys katkesi',

@@ -89,6 +89,7 @@ export const en = {
   'settings.terminal': 'Terminal',
   'settings.terminal.localecho': 'Local Echo',
   'settings.terminal.autoreconnect': 'Auto Reconnect',
+  'settings.terminal.doorway': 'Doorway Mode',
   'settings.about': 'About',
   'settings.close': 'Close',
 

@@ -49,6 +49,20 @@ applicable.
   vibrate-duration slider, and an **About** section showing version,
   fork author, upstream attribution, and license info. All preferences
   persist in localStorage.
+- **Terminal toggles** (Settings → Terminal): three convenience
+  switches, all off by default.
+  - **Local Echo** — show your own keystrokes locally, for the rare
+    BBS or service that doesn't echo what you type.
+  - **Auto Reconnect** (new in beta.43) — on an unexpected drop, a
+    five-second countdown popup reconnects automatically (up to three
+    tries, with a Cancel button). Won't fire after you disconnect on
+    purpose.
+  - **Doorway Mode** (new in beta.44) — transmits IBM PC extended
+    keystrokes (arrows, F1–F12, Insert/Delete/Home/End/PageUp/PageDown,
+    and Alt/Ctrl combinations) as the NULL + BIOS scan-code sequences
+    that DOS programs expect, so callers can drive sysop full-screen
+    editors and drop-to-DOS. A BBS can also toggle it automatically
+    (`ESC[=255h` / `ESC[=255l`). Resets to off each page load.
 - **In-app user manual** (new in beta.3): a friendly Manual button
   on the main menu opens a floating, draggable, resizable popup
   with the complete user guide. Covers every menu button, how file
@@ -175,13 +189,13 @@ See `docs/` for stage-by-stage planning notes:
 
 ### Test coverage
 
-1325 unit tests across 57 files, run on every commit. Phase boundaries:
+1347 unit tests across 57 files, run on every commit. Phase boundaries:
 
   - End of Phase 1: 559 tests
   - End of Phase 2: 691 tests
   - End of Phase 3: 722 tests
   - End of Phase 4: 980 tests
-  - Phase 5 (in progress): 1325 tests
+  - Phase 5 (in progress): 1347 tests
 
 ## Testing against a real BBS
 
@@ -254,7 +268,7 @@ for that command, not a bug in the client.
 ```bash
 npm install              # install dependencies
 npm run dev              # start Vite dev server with hot reload (port 5173)
-npm test                 # run the full Vitest suite (1325 tests)
+npm test                 # run the full Vitest suite (1347 tests)
 npm run typecheck        # tsc --noEmit
 npm run build:all        # produce all four bundle flavors
 ```

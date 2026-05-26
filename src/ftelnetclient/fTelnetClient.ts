@@ -79,6 +79,7 @@ import {
   type SettingsMuteChangeDetail,
   type SettingsLocalEchoChangeDetail,
   type SettingsAutoReconnectChangeDetail,
+  type SettingsDoorwayChangeDetail,
   type SettingsThemeChangeDetail,
   type SettingsVibrateChangeDetail,
   type SettingsZModemAutoDetectChangeDetail,
@@ -986,6 +987,7 @@ export class fTelnetClient {
     this._SettingsPanel.muted = this._Options.MuteSounds;
     this._SettingsPanel.localEcho = this._Options.LocalEcho;
     this._SettingsPanel.autoReconnect = this._Options.AutoReconnect;
+    this._SettingsPanel.doorwayMode = this._Options.DoorwayMode;
     this._SettingsPanel.vibrateDuration = this._Options.VirtualKeyboardVibrateDuration;
     this._SettingsPanel.zmodemAutoDetect = this._Options.ZModemAutoDetect;
     this._SettingsPanel.defaultProtocol = this._Options.DefaultTransferProtocol;
@@ -1039,6 +1041,18 @@ export class fTelnetClient {
         } catch {
           // Ignore — browser without sessionStorage.
         }
+      },
+    );
+    this._SettingsPanel.addEventListener(
+      'settings-doorway-change',
+      (e: Event): void => {
+        const detail = (e as CustomEvent<SettingsDoorwayChangeDetail>).detail;
+        // Apply to the live Crt immediately. Intentionally NOT
+        // persisted — doorway mode resets to off on every page load,
+        // so it can't be silently left on after a refresh. (The host
+        // can also toggle it via ESC[=255h / ESC[=255l.)
+        this._Crt.DoorwayMode = detail.enabled;
+        this._Options.DoorwayMode = detail.enabled;
       },
     );
     this._SettingsPanel.addEventListener('settings-vibrate-change', (e: Event): void => {
@@ -3008,6 +3022,7 @@ export class fTelnetClient {
     this._SettingsPanel.muted = this._Options.MuteSounds;
     this._SettingsPanel.localEcho = this._Options.LocalEcho;
     this._SettingsPanel.autoReconnect = this._Options.AutoReconnect;
+    this._SettingsPanel.doorwayMode = this._Options.DoorwayMode;
     this._SettingsPanel.vibrateDuration = this._Options.VirtualKeyboardVibrateDuration;
     this._SettingsPanel.zmodemAutoDetect = this._Options.ZModemAutoDetect;
     this._SettingsPanel.defaultProtocol = this._Options.DefaultTransferProtocol;

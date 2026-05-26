@@ -1381,4 +1381,118 @@ describe('Crt — Delta 3c-1 foundation', () => {
       }
     });
   });
+
+  describe('Doorway mode key encoding (beta.44)', () => {
+    // Doorway sends extended keys as NULL (0x00) + BIOS scan code.
+    // Scan codes verified against HelpPC INT 16h table + Banana ANSI
+    // BBS doorway examples. PushKeyDown signature is
+    // (charCode, keyCode, ctrl, alt, shift).
+    beforeEach(() => {
+      crt.DoorwayMode = true;
+    });
+
+    const NUL = '\x00';
+
+    it('DoorwayMode getter/setter round-trips', () => {
+      crt.DoorwayMode = false;
+      expect(crt.DoorwayMode).toBe(false);
+      crt.DoorwayMode = true;
+      expect(crt.DoorwayMode).toBe(true);
+    });
+
+    // Arrows (cross-checked vs Banana: left=75, right=77, up=72, down=80)
+    it('arrows send NUL + scan code', () => {
+      crt.PushKeyDown(0, KeyboardKeys.LEFT, false, false, false);
+      expect(crt.ReadKey()?.keyString).toBe(NUL + String.fromCharCode(0x4b));
+      crt.PushKeyDown(0, KeyboardKeys.RIGHT, false, false, false);
+      expect(crt.ReadKey()?.keyString).toBe(NUL + String.fromCharCode(0x4d));
+      crt.PushKeyDown(0, KeyboardKeys.UP, false, false, false);
+      expect(crt.ReadKey()?.keyString).toBe(NUL + String.fromCharCode(0x48));
+      crt.PushKeyDown(0, KeyboardKeys.DOWN, false, false, false);
+      expect(crt.ReadKey()?.keyString).toBe(NUL + String.fromCharCode(0x50));
+    });
+
+    // F1 across all four modifier states (Banana: 59/84/94/104)
+    it('F1 plain/shift/ctrl/alt send the correct scan codes', () => {
+      crt.PushKeyDown(0, KeyboardKeys.F1, false, false, false);
+      expect(crt.ReadKey()?.keyString).toBe(NUL + String.fromCharCode(0x3b)); // 59
+      crt.PushKeyDown(0, KeyboardKeys.F1, false, false, true); // shift
+      expect(crt.ReadKey()?.keyString).toBe(NUL + String.fromCharCode(0x54)); // 84
+      crt.PushKeyDown(0, KeyboardKeys.F1, true, false, false); // ctrl
+      expect(crt.ReadKey()?.keyString).toBe(NUL + String.fromCharCode(0x5e)); // 94
+      crt.PushKeyDown(0, KeyboardKeys.F1, false, true, false); // alt
+      expect(crt.ReadKey()?.keyString).toBe(NUL + String.fromCharCode(0x68)); // 104
+    });
+
+    it('F10 and F12 send correct scan codes', () => {
+      crt.PushKeyDown(0, KeyboardKeys.F10, false, false, false);
+      expect(crt.ReadKey()?.keyString).toBe(NUL + String.fromCharCode(0x44));
+      crt.PushKeyDown(0, KeyboardKeys.F12, false, false, false);
+      expect(crt.ReadKey()?.keyString).toBe(NUL + String.fromCharCode(0x86));
+    });
+
+    // Editing keys (Banana: Insert=82, ctrl-pgdn=118, ctrl-end=117)
+    it('Insert, PageDown, and ctrl variants', () => {
+      crt.PushKeyDown(0, KeyboardKeys.INSERT, false, false, false);
+      expect(crt.ReadKey()?.keyString).toBe(NUL + String.fromCharCode(0x52)); // 82
+      crt.PushKeyDown(0, KeyboardKeys.PAGE_DOWN, true, false, false); // ctrl
+      expect(crt.ReadKey()?.keyString).toBe(NUL + String.fromCharCode(0x76)); // 118
+      crt.PushKeyDown(0, KeyboardKeys.END, true, false, false); // ctrl
+      expect(crt.ReadKey()?.keyString).toBe(NUL + String.fromCharCode(0x75)); // 117
+    });
+
+    // shift-tab = 15 (Banana), ctrl-left=115, ctrl-right=116
+    it('shift-tab and ctrl-arrows', () => {
+      crt.PushKeyDown(0, KeyboardKeys.TAB, false, false, true); // shift
+      expect(crt.ReadKey()?.keyString).toBe(NUL + String.fromCharCode(0x0f)); // 15
+      crt.PushKeyDown(0, KeyboardKeys.LEFT, true, false, false); // ctrl
+      expect(crt.ReadKey()?.keyString).toBe(NUL + String.fromCharCode(0x73)); // 115
+      crt.PushKeyDown(0, KeyboardKeys.RIGHT, true, false, false); // ctrl
+      expect(crt.ReadKey()?.keyString).toBe(NUL + String.fromCharCode(0x74)); // 116
+    });
+
+    // Alt+letter: Alt-A=0x1E, Alt-Z=0x2C
+    it('Alt+letter sends NUL + scan code (Alt-A, Alt-Z)', () => {
+      crt.PushKeyDown(0, 65, false, true, false); // Alt-A
+      expect(crt.ReadKey()?.keyString).toBe(NUL + String.fromCharCode(0x1e));
+      crt.PushKeyDown(0, 90, false, true, false); // Alt-Z
+      expect(crt.ReadKey()?.keyString).toBe(NUL + String.fromCharCode(0x2c));
+    });
+
+    // Alt+digit: Alt-1=0x78, Alt-0=0x81
+    it('Alt+digit sends NUL + scan code (Alt-1, Alt-0)', () => {
+      crt.PushKeyDown(0, 49, false, true, false); // Alt-1
+      expect(crt.ReadKey()?.keyString).toBe(NUL + String.fromCharCode(0x78));
+      crt.PushKeyDown(0, 48, false, true, false); // Alt-0
+      expect(crt.ReadKey()?.keyString).toBe(NUL + String.fromCharCode(0x81));
+    });
+
+    // Ctrl+letter stays as the real ASCII control char (no NUL prefix)
+    it('Ctrl+letter sends the ASCII control code (Ctrl-C = 0x03)', () => {
+      crt.PushKeyDown(0, 67, true, false, false); // Ctrl-C
+      expect(crt.ReadKey()?.keyString).toBe('\x03');
+    });
+
+    // Alt wins over Ctrl when both held (Alt-A scan code, not Ctrl-A)
+    it('Alt wins over Ctrl when both modifiers are held', () => {
+      crt.PushKeyDown(0, 65, true, true, false); // Ctrl+Alt+A
+      expect(crt.ReadKey()?.keyString).toBe(NUL + String.fromCharCode(0x1e));
+    });
+
+    // Enter/Backspace/Esc plain forms
+    it('Enter, Backspace, Esc plain forms', () => {
+      crt.PushKeyDown(0, KeyboardKeys.ENTER, false, false, false);
+      expect(crt.ReadKey()?.keyString).toBe('\r');
+      crt.PushKeyDown(0, KeyboardKeys.BACKSPACE, false, false, false);
+      expect(crt.ReadKey()?.keyString).toBe('\b');
+      crt.PushKeyDown(0, KeyboardKeys.ESCAPE, false, false, false);
+      expect(crt.ReadKey()?.keyString).toBe('\x1B');
+    });
+
+    it('when doorway mode is OFF, arrows use ANSI escapes (not scan codes)', () => {
+      crt.DoorwayMode = false;
+      crt.PushKeyDown(0, KeyboardKeys.UP, false, false, false);
+      expect(crt.ReadKey()?.keyString).toBe('\x1B[A');
+    });
+  });
 });

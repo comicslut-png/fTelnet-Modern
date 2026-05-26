@@ -511,6 +511,16 @@
   align-items: stretch;
 }
 
+/* The Terminal group's options laid out horizontally in one row
+   (wrapping if the box gets narrow) rather than stacked. This makes
+   the Terminal box short, so it sits level with the Sound and Touch
+   boxes on the same row. */
+.fTelnetSettingsPanelOptionRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+}
+
 /* Second row sits directly above About; keep its bottom margin so
    it doesn't crowd the About fieldset. (Both rows use the same
    class, so the margin is uniform — the About fieldset's own

@@ -57,6 +57,12 @@ export interface AnsiTarget {
   /** True iff XTerm-style SGR-encoded extended mouse reporting is enabled. */
   ReportMouseSgr: boolean;
 
+  /**
+   * Doorway mode. The ANSI parser sets this from ESC[=255h / ESC[=255l
+   * and reads it to apply the NULL-literal output rule.
+   */
+  DoorwayMode: boolean;
+
   /** Current screen size in cells (whole terminal, not window). */
   readonly ScreenCols: number;
   readonly ScreenRows: number;
