@@ -38,6 +38,7 @@ export {
   type SettingsLocalEchoChangeDetail,
   type SettingsAutoReconnectChangeDetail,
   type SettingsDoorwayChangeDetail,
+  type SettingsRipChangeDetail,
   type SettingsThemeChangeDetail,
   type SettingsVibrateChangeDetail,
   type SettingsZModemAutoDetectChangeDetail,

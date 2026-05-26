@@ -511,14 +511,25 @@
   align-items: stretch;
 }
 
-/* The Terminal group's options laid out horizontally in one row
-   (wrapping if the box gets narrow) rather than stacked. This makes
-   the Terminal box short, so it sits level with the Sound and Touch
-   boxes on the same row. */
-.fTelnetSettingsPanelOptionRow {
-  display: flex;
-  flex-wrap: wrap;
+/* The Terminal group's four options laid out in a 2x2 grid so they
+   align in two even columns/rows rather than stacking tall or wrapping
+   raggedly. */
+.fTelnetSettingsPanelOptionGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 4px 16px;
+}
+
+/* Row 2 boxes (Sound, Touch, Terminal) center their contents so the
+   short boxes look balanced next to the taller Terminal box. The grid's
+   align-items:stretch already gives them equal height; this centers the
+   text within that height, horizontally and vertically. */
+.fTelnetSettingsPanelGroupCentered {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
 }
 
 /* Second row sits directly above About; keep its bottom margin so

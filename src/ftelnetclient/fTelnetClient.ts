@@ -80,6 +80,7 @@ import {
   type SettingsLocalEchoChangeDetail,
   type SettingsAutoReconnectChangeDetail,
   type SettingsDoorwayChangeDetail,
+  type SettingsRipChangeDetail,
   type SettingsThemeChangeDetail,
   type SettingsVibrateChangeDetail,
   type SettingsZModemAutoDetectChangeDetail,
@@ -563,6 +564,18 @@ export class fTelnetClient {
       // Ignore — browser doesn't support localStorage.
     }
 
+    // RIP toggle (Path 3 — reload-with-flag). The Settings RIP
+    // checkbox reloads the page with this flag so the client boots
+    // into RIP the proven construction-time way (font + 43 rows + the
+    // RIP graph layer below), rather than a fragile mid-session switch.
+    // When the flag is present we force Emulation to 'RIP' here, before
+    // the emulation-specific setup runs. Absent (the normal case), the
+    // session is whatever the embed/default is — ANSI. The flag is
+    // cleared on disconnect, so a session always resets to non-RIP.
+    if (this.hasRipFlag()) {
+      this._Options.Emulation = 'RIP';
+    }
+
     // Emulation-specific defaults that have to be applied before
     // we build the Crt (otherwise the wrong font/size loads).
     if (this._Options.Emulation === 'Atari') {
@@ -988,6 +1001,7 @@ export class fTelnetClient {
     this._SettingsPanel.localEcho = this._Options.LocalEcho;
     this._SettingsPanel.autoReconnect = this._Options.AutoReconnect;
     this._SettingsPanel.doorwayMode = this._Options.DoorwayMode;
+    this._SettingsPanel.ripEnabled = this.hasRipFlag();
     this._SettingsPanel.vibrateDuration = this._Options.VirtualKeyboardVibrateDuration;
     this._SettingsPanel.zmodemAutoDetect = this._Options.ZModemAutoDetect;
     this._SettingsPanel.defaultProtocol = this._Options.DefaultTransferProtocol;
@@ -1053,6 +1067,22 @@ export class fTelnetClient {
         // can also toggle it via ESC[=255h / ESC[=255l.)
         this._Crt.DoorwayMode = detail.enabled;
         this._Options.DoorwayMode = detail.enabled;
+      },
+    );
+    this._SettingsPanel.addEventListener(
+      'settings-rip-change',
+      (e: Event): void => {
+        const detail = (e as CustomEvent<SettingsRipChangeDetail>).detail;
+        // RIP can't be flipped on a live page (the RIP graph layer is
+        // built at construction and its DOM setup isn't reversible), so
+        // toggling reloads the page with/without the flag. The reloaded
+        // page boots into the chosen mode the proven construction-time
+        // way. Guarded to connected===false by the disabled checkbox,
+        // but double-check here: never reload mid-session.
+        if (this._Connection !== undefined && this._Connection.connected) {
+          return;
+        }
+        this.setRipFlag(detail.enabled);
       },
     );
     this._SettingsPanel.addEventListener('settings-vibrate-change', (e: Event): void => {
@@ -2068,6 +2098,66 @@ export class fTelnetClient {
     }
   }
 
+  /**
+   * Name of the URL query flag that boots the client into RIP mode.
+   * Chosen to be unlikely to collide with a sysop's own query params.
+   */
+  private static readonly RIP_FLAG = 'ftrip';
+
+  /** True iff the RIP boot flag is present in the page URL. */
+  private hasRipFlag(): boolean {
+    try {
+      return new URLSearchParams(window.location.search).has(
+        fTelnetClient.RIP_FLAG,
+      );
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Add or remove the RIP boot flag in the URL and reload the page so
+   * the client reconstructs in the chosen mode. RIP can't be toggled on
+   * a live page (its graph layer is built at construction with
+   * non-reversible DOM setup), so a reload is the safe mechanism. Only
+   * ever called while disconnected.
+   */
+  private setRipFlag(enabled: boolean): void {
+    try {
+      const url = new URL(window.location.href);
+      if (enabled) {
+        url.searchParams.set(fTelnetClient.RIP_FLAG, '1');
+      } else {
+        url.searchParams.delete(fTelnetClient.RIP_FLAG);
+      }
+      window.location.href = url.toString();
+    } catch {
+      // Browser without URL/location support — nothing we can do.
+    }
+  }
+
+  /**
+   * Reset RIP after a session ends. Because the RIP graph layer is
+   * built at construction and mutates the DOM with no reverse path, the
+   * only clean way to return to ANSI is to reload the page without the
+   * flag — that fully tears down RIP via reconstruction. We only do
+   * this when the session was actually in RIP (flag present); a normal
+   * ANSI disconnect does nothing. This realises the "always reset after
+   * each session" rule without leaving a half-RIP page behind.
+   */
+  private resetRipAfterSession(): void {
+    try {
+      if (!this.hasRipFlag()) {
+        return;
+      }
+      const url = new URL(window.location.href);
+      url.searchParams.delete(fTelnetClient.RIP_FLAG);
+      window.location.href = url.toString();
+    } catch {
+      // Ignore — URL/location unavailable.
+    }
+  }
+
   /** RIP detection probe. Reply with the RIPscrip version banner. */
   private OnAnsiRIPDetect(): void {
     if (this._Options.Emulation === 'RIP') {
@@ -2099,6 +2189,13 @@ export class fTelnetClient {
   // ───── Connection lifecycle handlers ─────
 
   private OnConnectionClose(): void {
+    // Unlock the RIP checkbox — choosing RIP is allowed again now that
+    // we're disconnected (it takes effect via reload on the next
+    // toggle / connect).
+    if (this._SettingsPanel !== undefined) {
+      this._SettingsPanel.ripLocked = false;
+    }
+
     this._StatusBar.connectButtonText = t(
       'status.button.reconnect',
       this._Options.Language as Language,
@@ -2145,11 +2242,27 @@ export class fTelnetClient {
     ) {
       this._reconnectAttempt += 1;
       this.showReconnectDialog(this._reconnectAttempt);
+      return;
     }
+
+    // Session over and not auto-reconnecting: if we were in RIP, reset
+    // back to ANSI for the next session (reload without the flag, the
+    // only clean RIP teardown). A no-op for ANSI sessions. This is the
+    // "always reset after each session" rule. Guarded behind the
+    // auto-reconnect return above so a reconnecting RIP session stays
+    // in RIP.
+    this.resetRipAfterSession();
   }
 
   private OnConnectionConnect(): void {
     this._Crt.ClrScr();
+
+    // Lock the RIP checkbox while connected — RIP can only be chosen
+    // before connecting (changing it reloads the page). No mid-session
+    // toggling.
+    if (this._SettingsPanel !== undefined) {
+      this._SettingsPanel.ripLocked = true;
+    }
 
     // A successful connection clears the auto-reconnect attempt
     // budget, so any later unrelated drop starts fresh at attempt 1.
@@ -3023,6 +3136,7 @@ export class fTelnetClient {
     this._SettingsPanel.localEcho = this._Options.LocalEcho;
     this._SettingsPanel.autoReconnect = this._Options.AutoReconnect;
     this._SettingsPanel.doorwayMode = this._Options.DoorwayMode;
+    this._SettingsPanel.ripEnabled = this.hasRipFlag();
     this._SettingsPanel.vibrateDuration = this._Options.VirtualKeyboardVibrateDuration;
     this._SettingsPanel.zmodemAutoDetect = this._Options.ZModemAutoDetect;
     this._SettingsPanel.defaultProtocol = this._Options.DefaultTransferProtocol;

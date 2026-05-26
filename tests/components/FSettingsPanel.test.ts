@@ -7,6 +7,7 @@ import type {
   SettingsLocalEchoChangeDetail,
   SettingsAutoReconnectChangeDetail,
   SettingsDoorwayChangeDetail,
+  SettingsRipChangeDetail,
   SettingsThemeChangeDetail,
   SettingsVibrateChangeDetail,
   SettingsZModemAutoDetectChangeDetail,
@@ -375,6 +376,54 @@ describe('<f-settings-panel>', () => {
       const events: SettingsDoorwayChangeDetail[] = [];
       el.addEventListener('settings-doorway-change', (e): void => {
         events.push((e as CustomEvent<SettingsDoorwayChangeDetail>).detail);
+      });
+
+      checkbox.checked = true;
+      checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+      checkbox.checked = false;
+      checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+
+      expect(events).toEqual([{ enabled: true }, { enabled: false }]);
+    });
+  });
+
+  describe('RIP toggle reactivity (beta.45)', () => {
+    // Terminal group now has four checkboxes in a 2x2 grid: Local Echo,
+    // Auto Reconnect, Doorway Mode, RIP (in that order). Grab the fourth.
+    function getRipCheckbox(): HTMLInputElement {
+      const fieldset = Array.from(
+        el.querySelectorAll<HTMLFieldSetElement>('fieldset'),
+      ).find((f) => f.querySelector('legend')?.textContent === 'Terminal');
+      const boxes = fieldset!.querySelectorAll<HTMLInputElement>(
+        'input[type="checkbox"]',
+      );
+      return boxes[3]!;
+    }
+
+    it('renders a RIP checkbox, off by default', () => {
+      const checkbox = getRipCheckbox();
+      expect(checkbox).toBeTruthy();
+      expect(checkbox.checked).toBe(false);
+    });
+
+    it('changing ripEnabled updates the checkbox', async () => {
+      el.ripEnabled = true;
+      await el.updateComplete;
+      expect(getRipCheckbox().checked).toBe(true);
+    });
+
+    it('ripLocked disables the checkbox', async () => {
+      expect(getRipCheckbox().disabled).toBe(false);
+      el.ripLocked = true;
+      await el.updateComplete;
+      expect(getRipCheckbox().disabled).toBe(true);
+    });
+
+    it('toggling the checkbox dispatches settings-rip-change', () => {
+      const checkbox = getRipCheckbox();
+      const events: SettingsRipChangeDetail[] = [];
+      el.addEventListener('settings-rip-change', (e): void => {
+        events.push((e as CustomEvent<SettingsRipChangeDetail>).detail);
       });
 
       checkbox.checked = true;
@@ -1206,7 +1255,7 @@ describe('<f-settings-panel>', () => {
       ).toBe(true);
     });
 
-    it('the Terminal options sit in a horizontal row container', () => {
+    it('the Terminal options sit in a 2x2 grid container', () => {
       const rows = Array.from(
         el.querySelectorAll('.fTelnetSettingsPanelColumns'),
       );
@@ -1214,13 +1263,27 @@ describe('<f-settings-panel>', () => {
         rows[1]!.querySelectorAll('.fTelnetSettingsPanelColumn'),
       );
       const terminalCol = row2Cols[2]!;
-      const optionRow = terminalCol.querySelector(
-        '.fTelnetSettingsPanelOptionRow',
+      const optionGrid = terminalCol.querySelector(
+        '.fTelnetSettingsPanelOptionGrid',
       );
-      expect(optionRow).not.toBeNull();
-      // All three checkboxes live inside that row.
-      const boxes = optionRow!.querySelectorAll('input[type="checkbox"]');
-      expect(boxes.length).toBe(3);
+      expect(optionGrid).not.toBeNull();
+      // All four checkboxes (Local Echo, Auto Reconnect, Doorway, RIP)
+      // live inside that grid.
+      const boxes = optionGrid!.querySelectorAll('input[type="checkbox"]');
+      expect(boxes.length).toBe(4);
+    });
+
+    it('the Sound, Touch and Terminal boxes are all centered', () => {
+      const rows = Array.from(
+        el.querySelectorAll('.fTelnetSettingsPanelColumns'),
+      );
+      const row2 = rows[1]!;
+      const centered = row2.querySelectorAll(
+        '.fTelnetSettingsPanelGroupCentered',
+      );
+      // Sound, Touch, Terminal — all three Row-2 boxes carry the
+      // centering class so they align and center their text.
+      expect(centered.length).toBe(3);
     });
 
     it('Protocol column has a "Default" sub-header above the radios', () => {

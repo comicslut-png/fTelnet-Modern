@@ -201,6 +201,7 @@ export const pl: Catalog = {
   'settings.terminal.localecho': 'Echo lokalne',
   'settings.terminal.autoreconnect': 'Automatyczne łączenie',
   'settings.terminal.doorway': 'Tryb Doorway',
+  'settings.terminal.rip': 'RIP',
 
   // ── Auto-reconnect popup ─────────────────────────
   'reconnect.title': 'Utracono połączenie',

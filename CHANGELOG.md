@@ -5,7 +5,45 @@ All notable changes to fTelnet-Modern are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [2.0.0-beta.44] — 2026-05-25
+## [2.0.0-beta.45] — 2026-05-26
+
+Adds a user-facing RIPscrip graphics toggle, so callers can choose RIP
+mode from the Settings panel rather than needing a sysop to hard-set it
+at embed time.
+
+### Added
+
+  - **RIP toggle** (Settings → Terminal, OFF by default). A new RIP
+    checkbox in the Terminal group lets the user opt into RIPscrip
+    graphics. Because RIP is initialised at client construction (its
+    bitmap font, 43-row geometry and graphics layer), toggling the box
+    reloads the page with a URL flag (`ftrip`) so the client boots into
+    RIP the proven construction-time way — never a fragile mid-session
+    switch. Behaviour:
+      - Two distinct actions: checking RIP reloads into a RIP-ready
+        state; the user then clicks Connect. Unchecking reloads back to
+        ANSI (so a user who changes their mind before connecting can
+        simply uncheck).
+      - Disabled while connected — no mid-session toggling.
+      - Not persisted. A user-initiated disconnect from a RIP session
+        reloads back to ANSI, so every session starts fresh in ANSI
+        unless RIP is explicitly chosen. (Auto-reconnect stays in RIP.)
+
+### Changed
+
+  - Settings Terminal group now lays its four options (Local Echo, Auto
+    Reconnect, Doorway Mode, RIP) out in a 2×2 grid. The Sound, Touch
+    and Terminal boxes on row 2 are height-matched and centre their
+    contents so the row stays balanced.
+
+### Notes
+
+  - The RIP renderer itself is unchanged; this release only adds the
+    user-facing way to enter RIP mode. RIP rendering is known-good on
+    Synchronet; PCBoard RIP detection may still need work and should be
+    treated as experimental.
+
+
 
 Adds Doorway Mode — transmits IBM PC extended keystrokes so callers can
 use sysop full-screen editors and drop-to-DOS on the BBS.
@@ -25,6 +63,21 @@ use sysop full-screen editors and drop-to-DOS on the BBS.
     each page load. Scan-code mapping verified against the HelpPC INT
     16h table and cross-checked against the Banana ANSI BBS doorway
     spec.
+
+### Fixed
+
+  - **Restored the bitmap font assets to `public/fonts/`.** The 150
+    CP437/Amiga/Atari/C64/RIP glyph-sheet PNGs (plus the two RIP font
+    JSONs) from upstream fTelnet were never carried into the modern
+    repo — only the Japanese webfont was present — so the terminal's
+    default font request (`fonts/CP437_9x16.png`) 404'd in any
+    deployment served from the repo's public assets. All 150 PNGs + 2
+    JSONs are now in `public/fonts/` and flow into every build.
+  - **Added a favicon.** The repo had no `favicon.ico`, so browsers'
+    automatic root favicon request 404'd on the dev server and on
+    deployed pages. A small on-theme terminal icon (green prompt on a
+    dark field) now ships in `public/` (favicon.ico + favicon-32.png +
+    apple-touch-icon.png), referenced from the starter/test pages.
 
 ### Changed
 

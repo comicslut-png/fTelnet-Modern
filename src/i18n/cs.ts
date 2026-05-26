@@ -198,6 +198,7 @@ export const cs: Catalog = {
   'settings.terminal.localecho': 'Místní echo',
   'settings.terminal.autoreconnect': 'Automatické připojení',
   'settings.terminal.doorway': 'Režim Doorway',
+  'settings.terminal.rip': 'RIP',
 
   // ── Auto-reconnect popup ─────────────────────────
   'reconnect.title': 'Připojení ztraceno',

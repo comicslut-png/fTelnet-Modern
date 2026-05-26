@@ -565,6 +565,15 @@ describe('i18n core', () => {
       }
     });
 
+    it('translates the RIP setting (beta.45)', () => {
+      // RIP is a proper-noun acronym (RIPscrip) — intentionally kept
+      // as "RIP" in every catalog rather than localized.
+      expect(t('settings.terminal.rip', 'en')).toBe('RIP');
+      for (const lang of ['nl', 'de', 'fr', 'ru', 'uk', 'el', 'cs', 'ja'] as const) {
+        expect(t('settings.terminal.rip', lang)).toBe('RIP');
+      }
+    });
+
     it('translates the auto-reconnect popup (beta.41)', () => {
       expect(t('reconnect.title', 'en')).toBe('Connection lost');
       expect(t('reconnect.cancel', 'en')).toBe('Cancel');

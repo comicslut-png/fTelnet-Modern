@@ -209,6 +209,7 @@ export const el: Catalog = {
   'settings.terminal.localecho': 'Τοπική ηχώ',
   'settings.terminal.autoreconnect': 'Αυτόματη επανασύνδεση',
   'settings.terminal.doorway': 'Λειτουργία Doorway',
+  'settings.terminal.rip': 'RIP',
 
   // ── Auto-reconnect popup ─────────────────────────
   'reconnect.title': 'Η σύνδεση χάθηκε',

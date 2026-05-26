@@ -53,6 +53,11 @@ export interface SettingsDoorwayChangeDetail {
   enabled: boolean;
 }
 
+/** Payload for the `settings-rip-change` event. */
+export interface SettingsRipChangeDetail {
+  enabled: boolean;
+}
+
 /** Payload for the `settings-vibrate-change` event. */
 export interface SettingsVibrateChangeDetail {
   duration: number;
@@ -122,7 +127,7 @@ export class FSettingsPanel extends LitElement {
    * tests and the panel can read the same value without needing
    * a build-time injection mechanism.
    */
-  public static readonly VERSION = '2.0.0-beta.44';
+  public static readonly VERSION = '2.0.0-beta.45';
 
   @property({ type: Boolean })
   open = false;
@@ -178,6 +183,26 @@ export class FSettingsPanel extends LitElement {
    */
   @property({ type: Boolean, attribute: 'doorway-mode' })
   doorwayMode = false;
+
+  /**
+   * RIPscrip graphics. When checked, the user wants the session to run
+   * in RIP mode. Because RIP is set up at client construction (font,
+   * 43-row geometry, the RIP graph layer), toggling this reloads the
+   * page with a URL flag so the client boots into RIP the proven
+   * construction-time way — never a fragile mid-session switch. Off by
+   * default and NOT persisted; a session always starts ANSI unless the
+   * flag is present, and disconnecting clears the flag.
+   */
+  @property({ type: Boolean, attribute: 'rip-enabled' })
+  ripEnabled = false;
+
+  /**
+   * When true, the RIP checkbox is disabled (greyed out). Set while
+   * connected — RIP mode can only be chosen before connecting, since
+   * switching it reloads the page. No mid-session toggling.
+   */
+  @property({ type: Boolean, attribute: 'rip-locked' })
+  ripLocked = false;
 
   @property({ type: Number, attribute: 'vibrate-duration' })
   vibrateDuration = 25;
@@ -332,11 +357,13 @@ export class FSettingsPanel extends LitElement {
         </div>
 
         <!-- Row 2: Sound | Touch | Terminal (spans 2, aligns with
-             Language). Terminal's three options sit in a horizontal
-             row so the box is short and level with Sound/Touch. -->
+             Language). Terminal holds four options in a 2x2 grid;
+             Sound/Touch center their contents to balance the row. -->
         <div class="fTelnetSettingsPanelColumns">
           <div class="fTelnetSettingsPanelColumn">
-            <fieldset class="fTelnetSettingsPanelGroup">
+            <fieldset
+              class="fTelnetSettingsPanelGroup fTelnetSettingsPanelGroupCentered"
+            >
               <legend>${t('settings.sound', this.language)}</legend>
               <label class="fTelnetSettingsPanelOption">
                 <input
@@ -350,7 +377,9 @@ export class FSettingsPanel extends LitElement {
           </div>
 
           <div class="fTelnetSettingsPanelColumn">
-            <fieldset class="fTelnetSettingsPanelGroup">
+            <fieldset
+              class="fTelnetSettingsPanelGroup fTelnetSettingsPanelGroupCentered"
+            >
               <legend>${t('settings.touch', this.language)}</legend>
               <label class="fTelnetSettingsPanelOption">
                 ${t('settings.touch.vibrate', this.language)}
@@ -369,9 +398,11 @@ export class FSettingsPanel extends LitElement {
           </div>
 
           <div class="fTelnetSettingsPanelColumn fTelnetSettingsPanelColumnWide">
-            <fieldset class="fTelnetSettingsPanelGroup">
+            <fieldset
+              class="fTelnetSettingsPanelGroup fTelnetSettingsPanelGroupCentered"
+            >
               <legend>${t('settings.terminal', this.language)}</legend>
-              <div class="fTelnetSettingsPanelOptionRow">
+              <div class="fTelnetSettingsPanelOptionGrid">
                 <label class="fTelnetSettingsPanelOption">
                   <input
                     type="checkbox"
@@ -395,6 +426,15 @@ export class FSettingsPanel extends LitElement {
                     @change=${this.handleDoorwayModeChange}
                   />
                   ${t('settings.terminal.doorway', this.language)}
+                </label>
+                <label class="fTelnetSettingsPanelOption">
+                  <input
+                    type="checkbox"
+                    ?checked=${this.ripEnabled}
+                    ?disabled=${this.ripLocked}
+                    @change=${this.handleRipChange}
+                  />
+                  ${t('settings.terminal.rip', this.language)}
                 </label>
               </div>
             </fieldset>
@@ -596,6 +636,18 @@ export class FSettingsPanel extends LitElement {
     this.doorwayMode = checked;
     this.dispatchEvent(
       new CustomEvent<SettingsDoorwayChangeDetail>('settings-doorway-change', {
+        detail: { enabled: checked },
+        bubbles: true,
+        composed: true,
+      })
+    );
+  };
+
+  private handleRipChange = (e: Event): void => {
+    const checked = (e.target as HTMLInputElement).checked;
+    this.ripEnabled = checked;
+    this.dispatchEvent(
+      new CustomEvent<SettingsRipChangeDetail>('settings-rip-change', {
         detail: { enabled: checked },
         bubbles: true,
         composed: true,

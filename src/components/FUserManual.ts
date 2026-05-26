@@ -599,6 +599,21 @@ export class FUserManual extends LitElement {
         usual things. It resets to off each time you load the page.
       </p>
       <p>
+        <strong>RIP</strong> — Off by default. A few BBSes can send
+        graphics using an old standard called RIPscrip (think simple
+        line-drawn menus and pictures rather than text-only screens).
+        Turn this on to view them. Because the terminal has to be set up
+        for graphics before it connects, checking this box reloads the
+        page into graphics-ready mode — after it reloads, click Connect
+        as usual. If you change your mind before connecting, just
+        uncheck it and the page returns to the normal text mode. You
+        can't change it while you're connected, and it always returns to
+        normal text mode when your session ends, so the next time you
+        connect you're back to the standard display unless you turn RIP
+        on again. Most BBSes don't use RIP, so leave it off unless you
+        know the one you're calling supports it.
+      </p>
+      <p>
         <strong>About</strong> — Shows the version of fTelnet
         you're using, who made it, and where to find the source
         code.

@@ -10,6 +10,8 @@ the BBS-era aesthetic.
 
 ![ZMODEM file transfer in progress](./assets/screenshots/Zmodem.png)
 
+![RIP Support](./assets/screenshots/RIP.png)
+
 > **fTelnet-Modern** — Copyright © 2026 Tom Swartz
 > &lt;dangerbaybbs@hotmail.com&gt;
 > Based on **fTelnet** — Copyright © 2009-2026 R&M Software (Rick Parrish)
@@ -63,6 +65,12 @@ applicable.
     that DOS programs expect, so callers can drive sysop full-screen
     editors and drop-to-DOS. A BBS can also toggle it automatically
     (`ESC[=255h` / `ESC[=255l`). Resets to off each page load.
+  - **RIP** (new in beta.45) — opt into RIPscrip graphics mode. Because
+    RIP is set up when the terminal is built, checking the box reloads
+    the page into a RIP-ready state (then click Connect); unchecking
+    reloads back to ANSI. Disabled while connected, and a RIP session
+    resets to ANSI on disconnect. RIP rendering is known-good on
+    Synchronet; PCBoard support is experimental.
 - **In-app user manual** (new in beta.3): a friendly Manual button
   on the main menu opens a floating, draggable, resizable popup
   with the complete user guide. Covers every menu button, how file
@@ -189,13 +197,13 @@ See `docs/` for stage-by-stage planning notes:
 
 ### Test coverage
 
-1347 unit tests across 57 files, run on every commit. Phase boundaries:
+1353 unit tests across 57 files, run on every commit. Phase boundaries:
 
   - End of Phase 1: 559 tests
   - End of Phase 2: 691 tests
   - End of Phase 3: 722 tests
   - End of Phase 4: 980 tests
-  - Phase 5 (in progress): 1347 tests
+  - Phase 5 (in progress): 1353 tests
 
 ## Testing against a real BBS
 
@@ -268,7 +276,7 @@ for that command, not a bug in the client.
 ```bash
 npm install              # install dependencies
 npm run dev              # start Vite dev server with hot reload (port 5173)
-npm test                 # run the full Vitest suite (1347 tests)
+npm test                 # run the full Vitest suite (1353 tests)
 npm run typecheck        # tsc --noEmit
 npm run build:all        # produce all four bundle flavors
 ```
