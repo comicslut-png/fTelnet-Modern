@@ -199,6 +199,13 @@ export const sv: Catalog = {
   'settings.terminal.autoreconnect': 'Återanslut automatiskt',
   'settings.terminal.doorway': 'Doorway-läge',
   'settings.terminal.rip': 'RIP',
+  'settings.sound.mute.tip': 'Tysta terminalens signal',
+  'settings.touch.vibrate.tip': 'Vibrationslängd vid tangenttryck (ms)',
+  'settings.terminal.localecho.tip': 'Visa din egen inmatning lokalt',
+  'settings.terminal.autoreconnect.tip': 'Återanslut automatiskt vid avbrott',
+  'settings.terminal.doorway.tip': 'Skicka specialtangenter till DOS-program',
+  'settings.terminal.rip.tip': 'Aktivera RIPscrip-grafik (laddar om)',
+  'settings.protocol.autodetect.tip': 'Starta ZMODEM-överföringar automatiskt',
 
   // ── Auto-reconnect popup ─────────────────────────
   'reconnect.title': 'Anslutningen förlorad',

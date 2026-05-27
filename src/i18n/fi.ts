@@ -210,6 +210,13 @@ export const fi: Catalog = {
   'settings.terminal.autoreconnect': 'Yhdistä uudelleen',
   'settings.terminal.doorway': 'Doorway-tila',
   'settings.terminal.rip': 'RIP',
+  'settings.sound.mute.tip': 'Vaimenna päätteen merkkiääni',
+  'settings.touch.vibrate.tip': 'Värinän kesto näppäintä painettaessa (ms)',
+  'settings.terminal.localecho.tip': 'Näytä oma kirjoituksesi paikallisesti',
+  'settings.terminal.autoreconnect.tip': 'Yhdistä uudelleen automaattisesti katketessa',
+  'settings.terminal.doorway.tip': 'Lähetä erikoisnäppäimet DOS-ohjelmille',
+  'settings.terminal.rip.tip': 'Ota RIPscrip-grafiikka käyttöön (lataa uudelleen)',
+  'settings.protocol.autodetect.tip': 'Aloita ZMODEM-siirrot automaattisesti',
 
   // ── Auto-reconnect popup ─────────────────────────
   'reconnect.title': 'Yhteys katkesi',

@@ -197,13 +197,13 @@ See `docs/` for stage-by-stage planning notes:
 
 ### Test coverage
 
-1353 unit tests across 57 files, run on every commit. Phase boundaries:
+1356 unit tests across 57 files, run on every commit. Phase boundaries:
 
   - End of Phase 1: 559 tests
   - End of Phase 2: 691 tests
   - End of Phase 3: 722 tests
   - End of Phase 4: 980 tests
-  - Phase 5 (in progress): 1353 tests
+  - Phase 5 (in progress): 1356 tests
 
 ## Testing against a real BBS
 
@@ -276,7 +276,7 @@ for that command, not a bug in the client.
 ```bash
 npm install              # install dependencies
 npm run dev              # start Vite dev server with hot reload (port 5173)
-npm test                 # run the full Vitest suite (1353 tests)
+npm test                 # run the full Vitest suite (1356 tests)
 npm run typecheck        # tsc --noEmit
 npm run build:all        # produce all four bundle flavors
 ```
@@ -286,7 +286,7 @@ Output bundles land in `dist/`:
 - `ftelnet.norip.noxfer.js` — ANSI/BBS only, smallest bundle
 - `ftelnet.norip.xfer.js` — adds YMODEM + ZMODEM file transfer
 - `ftelnet.rip.noxfer.js` — adds RIPscrip graphics emulation
-- `ftelnet.rip.xfer.js` — everything (~735 KB / ~159 KB gzipped)
+- `ftelnet.rip.xfer.js` — everything (~804 KB / ~167 KB gzipped)
 
 Each comes with a source map and a minified `.min.js` variant.
 

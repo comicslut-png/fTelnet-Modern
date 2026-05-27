@@ -207,6 +207,13 @@ export const ja: Catalog = {
   'settings.terminal.autoreconnect': '自動再接続',
   'settings.terminal.doorway': 'ドアウェイモード',
   'settings.terminal.rip': 'RIP',
+  'settings.sound.mute.tip': '端末のベルを消音',
+  'settings.touch.vibrate.tip': 'キー押下時の振動時間（ミリ秒）',
+  'settings.terminal.localecho.tip': '自分の入力をローカルに表示',
+  'settings.terminal.autoreconnect.tip': '切断時に自動的に再接続',
+  'settings.terminal.doorway.tip': 'DOSプログラムに特殊キーを送信',
+  'settings.terminal.rip.tip': 'RIPscripグラフィックスを有効化（再読み込み）',
+  'settings.protocol.autodetect.tip': 'ZMODEM転送を自動開始',
 
   // ── Auto-reconnect popup ─────────────────────────
   'reconnect.title': '接続が切断されました',

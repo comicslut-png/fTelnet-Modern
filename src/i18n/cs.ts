@@ -199,6 +199,13 @@ export const cs: Catalog = {
   'settings.terminal.autoreconnect': 'Automatické připojení',
   'settings.terminal.doorway': 'Režim Doorway',
   'settings.terminal.rip': 'RIP',
+  'settings.sound.mute.tip': 'Ztlumit zvuk terminálu',
+  'settings.touch.vibrate.tip': 'Doba vibrace při stisku klávesy (ms)',
+  'settings.terminal.localecho.tip': 'Zobrazit vlastní psaní lokálně',
+  'settings.terminal.autoreconnect.tip': 'Automaticky znovu připojit při výpadku',
+  'settings.terminal.doorway.tip': 'Posílat speciální klávesy do programů DOS',
+  'settings.terminal.rip.tip': 'Zapnout grafiku RIPscrip (znovu načte)',
+  'settings.protocol.autodetect.tip': 'Automaticky spustit přenosy ZMODEM',
 
   // ── Auto-reconnect popup ─────────────────────────
   'reconnect.title': 'Připojení ztraceno',

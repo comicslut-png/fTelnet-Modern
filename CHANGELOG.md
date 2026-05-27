@@ -5,7 +5,34 @@ All notable changes to fTelnet-Modern are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [2.0.0-beta.45] — 2026-05-26
+## [2.0.0-beta.46] — 2026-05-26
+
+Cosmetic and usability polish for the Settings panel: aligned the
+Terminal options to a clean grid and added hover tooltips across the
+Sound, Touch, Terminal and Protocol groups.
+
+### Added
+
+  - **Settings tooltips.** Hovering a setting now shows a short,
+    theme-styled tooltip above it describing what the option does.
+    Covers Mute (Sound), Vibrate (Touch), Local Echo / Auto Reconnect /
+    Doorway Mode / RIP (Terminal), and Auto Detect (Protocol). The
+    tooltip is a filled rounded box with a small pointer, coloured a
+    brighter, distinguished shade of the active theme (e.g. blue on
+    Classic, inverted phosphor-green on CRT-Green, magenta on
+    Cyberpunk, firebrick on Gothic, red on Cartoon). All seven
+    descriptions are translated in every UI language.
+
+### Changed
+
+  - **Terminal options aligned to a grid.** The four Terminal options
+    (Local Echo, Auto Reconnect, Doorway Mode, RIP) now sit in a
+    four-column grid so the checkboxes form two straight vertical lines
+    and the labels line up within each column, instead of the previous
+    staggered look. The Sound, Touch and Terminal boxes remain
+    height-matched and centred.
+
+
 
 Adds a user-facing RIPscrip graphics toggle, so callers can choose RIP
 mode from the Settings panel rather than needing a sysop to hard-set it

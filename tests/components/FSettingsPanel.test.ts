@@ -1286,6 +1286,33 @@ describe('<f-settings-panel>', () => {
       expect(centered.length).toBe(3);
     });
 
+    it('every tooltip-bearing option has non-empty tooltip text', () => {
+      // Sound/Touch/Protocol single items use ...TipOption (label);
+      // Terminal options use ...Tip (span). Both carry data-tooltip.
+      const tipEls = el.querySelectorAll('[data-tooltip]');
+      // 4 Terminal + Mute + Vibrate + Auto Detect = 7 settings tooltips
+      // (the disabled language/protocol placeholders use title=, not
+      // data-tooltip, so they don't count here).
+      const settingsTips = Array.from(tipEls).filter((n) =>
+        n.classList.contains('fTelnetSettingsPanelTip') ||
+        n.classList.contains('fTelnetSettingsPanelTipOption'),
+      );
+      expect(settingsTips.length).toBe(7);
+      for (const node of settingsTips) {
+        expect(node.getAttribute('data-tooltip')!.length).toBeGreaterThan(0);
+      }
+    });
+
+    it('the RIP option tooltip describes RIPscrip', () => {
+      const ripSpan = Array.from(
+        el.querySelectorAll<HTMLElement>('.fTelnetSettingsPanelTip'),
+      ).find((s) => s.textContent?.trim() === 'RIP');
+      expect(ripSpan).toBeTruthy();
+      expect(ripSpan!.getAttribute('data-tooltip')).toBe(
+        'Enable RIPscrip graphics (reloads)',
+      );
+    });
+
     it('Protocol column has a "Default" sub-header above the radios', () => {
       const protocolFieldset = Array.from(
         el.querySelectorAll<HTMLFieldSetElement>('fieldset'),

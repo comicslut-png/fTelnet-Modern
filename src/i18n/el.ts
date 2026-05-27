@@ -210,6 +210,13 @@ export const el: Catalog = {
   'settings.terminal.autoreconnect': 'Αυτόματη επανασύνδεση',
   'settings.terminal.doorway': 'Λειτουργία Doorway',
   'settings.terminal.rip': 'RIP',
+  'settings.sound.mute.tip': 'Σίγαση του κουδουνιού του τερματικού',
+  'settings.touch.vibrate.tip': 'Διάρκεια δόνησης ανά πλήκτρο (ms)',
+  'settings.terminal.localecho.tip': 'Εμφάνιση της δικής σας πληκτρολόγησης τοπικά',
+  'settings.terminal.autoreconnect.tip': 'Αυτόματη επανασύνδεση σε διακοπή',
+  'settings.terminal.doorway.tip': 'Αποστολή ειδικών πλήκτρων σε προγράμματα DOS',
+  'settings.terminal.rip.tip': 'Ενεργοποίηση γραφικών RIPscrip (επαναφόρτωση)',
+  'settings.protocol.autodetect.tip': 'Αυτόματη έναρξη μεταφορών ZMODEM',
 
   // ── Auto-reconnect popup ─────────────────────────
   'reconnect.title': 'Η σύνδεση χάθηκε',

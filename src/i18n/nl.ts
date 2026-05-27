@@ -205,6 +205,13 @@ export const nl: Catalog = {
   'settings.terminal.autoreconnect': 'Automatisch herverbinden',
   'settings.terminal.doorway': 'Doorway-modus',
   'settings.terminal.rip': 'RIP',
+  'settings.sound.mute.tip': 'Terminalbel dempen',
+  'settings.touch.vibrate.tip': 'Trilduur bij toetsaanslag (ms)',
+  'settings.terminal.localecho.tip': 'Toon je eigen invoer lokaal',
+  'settings.terminal.autoreconnect.tip': 'Automatisch opnieuw verbinden bij verbreking',
+  'settings.terminal.doorway.tip': 'Stuur speciale toetsen naar DOS-programmas',
+  'settings.terminal.rip.tip': 'RIPscrip-grafische modus inschakelen (herlaadt)',
+  'settings.protocol.autodetect.tip': 'ZMODEM-overdrachten automatisch starten',
 
   // ── Auto-reconnect popup ─────────────────────────
   'reconnect.title': 'Verbinding verbroken',

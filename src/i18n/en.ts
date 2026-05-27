@@ -91,6 +91,13 @@ export const en = {
   'settings.terminal.autoreconnect': 'Auto Reconnect',
   'settings.terminal.doorway': 'Doorway Mode',
   'settings.terminal.rip': 'RIP',
+  'settings.sound.mute.tip': 'Silence the terminal bell',
+  'settings.touch.vibrate.tip': 'Buzz duration on key press (ms)',
+  'settings.terminal.localecho.tip': 'Show your own typing locally',
+  'settings.terminal.autoreconnect.tip': 'Reconnect automatically if dropped',
+  'settings.terminal.doorway.tip': 'Send special keys to DOS programs',
+  'settings.terminal.rip.tip': 'Enable RIPscrip graphics (reloads)',
+  'settings.protocol.autodetect.tip': 'Auto-start ZMODEM transfers',
   'settings.about': 'About',
   'settings.close': 'Close',
 

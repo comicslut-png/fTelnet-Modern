@@ -127,7 +127,7 @@ export class FSettingsPanel extends LitElement {
    * tests and the panel can read the same value without needing
    * a build-time injection mechanism.
    */
-  public static readonly VERSION = '2.0.0-beta.45';
+  public static readonly VERSION = '2.0.0-beta.46';
 
   @property({ type: Boolean })
   open = false;
@@ -308,7 +308,10 @@ export class FSettingsPanel extends LitElement {
                 <span class="fTelnetSettingsPanelPlaceholder"></span>
               </label>
               <div class="fTelnetSettingsPanelDivider"></div>
-              <label class="fTelnetSettingsPanelOption">
+              <label
+                class="fTelnetSettingsPanelOption fTelnetSettingsPanelTipOption"
+                data-tooltip=${t('settings.protocol.autodetect.tip', this.language)}
+              >
                 <input
                   type="checkbox"
                   ?checked=${this.zmodemAutoDetect}
@@ -365,7 +368,10 @@ export class FSettingsPanel extends LitElement {
               class="fTelnetSettingsPanelGroup fTelnetSettingsPanelGroupCentered"
             >
               <legend>${t('settings.sound', this.language)}</legend>
-              <label class="fTelnetSettingsPanelOption">
+              <label
+                class="fTelnetSettingsPanelOption fTelnetSettingsPanelTipOption"
+                data-tooltip=${t('settings.sound.mute.tip', this.language)}
+              >
                 <input
                   type="checkbox"
                   ?checked=${this.muted}
@@ -381,7 +387,10 @@ export class FSettingsPanel extends LitElement {
               class="fTelnetSettingsPanelGroup fTelnetSettingsPanelGroupCentered"
             >
               <legend>${t('settings.touch', this.language)}</legend>
-              <label class="fTelnetSettingsPanelOption">
+              <label
+                class="fTelnetSettingsPanelOption fTelnetSettingsPanelTipOption"
+                data-tooltip=${t('settings.touch.vibrate.tip', this.language)}
+              >
                 ${t('settings.touch.vibrate', this.language)}
                 <input
                   type="number"
@@ -403,38 +412,58 @@ export class FSettingsPanel extends LitElement {
             >
               <legend>${t('settings.terminal', this.language)}</legend>
               <div class="fTelnetSettingsPanelOptionGrid">
-                <label class="fTelnetSettingsPanelOption">
+                <label
+                  class="fTelnetSettingsPanelGridOption"
+                >
                   <input
                     type="checkbox"
                     ?checked=${this.localEcho}
                     @change=${this.handleLocalEchoChange}
                   />
-                  ${t('settings.terminal.localecho', this.language)}
+                  <span
+                    class="fTelnetSettingsPanelTip"
+                    data-tooltip=${t('settings.terminal.localecho.tip', this.language)}
+                    >${t('settings.terminal.localecho', this.language)}</span>
                 </label>
-                <label class="fTelnetSettingsPanelOption">
+                <label
+                  class="fTelnetSettingsPanelGridOption"
+                >
                   <input
                     type="checkbox"
                     ?checked=${this.autoReconnect}
                     @change=${this.handleAutoReconnectChange}
                   />
-                  ${t('settings.terminal.autoreconnect', this.language)}
+                  <span
+                    class="fTelnetSettingsPanelTip"
+                    data-tooltip=${t('settings.terminal.autoreconnect.tip', this.language)}
+                    >${t('settings.terminal.autoreconnect', this.language)}</span>
                 </label>
-                <label class="fTelnetSettingsPanelOption">
+                <label
+                  class="fTelnetSettingsPanelGridOption"
+                >
                   <input
                     type="checkbox"
                     ?checked=${this.doorwayMode}
                     @change=${this.handleDoorwayModeChange}
                   />
-                  ${t('settings.terminal.doorway', this.language)}
+                  <span
+                    class="fTelnetSettingsPanelTip"
+                    data-tooltip=${t('settings.terminal.doorway.tip', this.language)}
+                    >${t('settings.terminal.doorway', this.language)}</span>
                 </label>
-                <label class="fTelnetSettingsPanelOption">
+                <label
+                  class="fTelnetSettingsPanelGridOption"
+                >
                   <input
                     type="checkbox"
                     ?checked=${this.ripEnabled}
                     ?disabled=${this.ripLocked}
                     @change=${this.handleRipChange}
                   />
-                  ${t('settings.terminal.rip', this.language)}
+                  <span
+                    class="fTelnetSettingsPanelTip"
+                    data-tooltip=${t('settings.terminal.rip.tip', this.language)}
+                    >${t('settings.terminal.rip', this.language)}</span>
                 </label>
               </div>
             </fieldset>

@@ -78,6 +78,8 @@
 [data-theme='classic'] {
   /* Colors */
   --ft-ui-bg: white;
+  --ft-tooltip-bg: #1565c0;
+  --ft-tooltip-fg: #ffffff;
   --ft-ui-fg: black;
   --ft-ui-border: #000;
   --ft-ui-border-soft: #666;
@@ -143,6 +145,8 @@
      program of '88-'95 used this exact shade (#c0c0c0); it's
      recognizable on sight to anyone over 35. */
   --ft-ui-bg: #c0c0c0;
+  --ft-tooltip-bg: #000080;
+  --ft-tooltip-fg: #ffffff;
   --ft-ui-fg: #000000;
   --ft-ui-border: #000000;
   --ft-ui-border-soft: #808080;
@@ -511,13 +515,95 @@
   align-items: stretch;
 }
 
-/* The Terminal group's four options laid out in a 2x2 grid so they
-   align in two even columns/rows rather than stacking tall or wrapping
-   raggedly. */
+/* Terminal group options — Option 4 grid. Each option label is
+   `display: contents` so its checkbox and text become direct grid
+   cells: checkbox / label / checkbox / label across two option-columns.
+   This makes the checkboxes form two true vertical lines and the labels
+   start at the same x within each column, regardless of label width. */
 .fTelnetSettingsPanelOptionGrid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 4px 16px;
+  grid-template-columns: auto 1fr auto 1fr;
+  gap: 8px 12px;
+  align-items: center;
+  /* The Terminal box shares the centered group class with Sound/Touch
+     (for equal height), but its option grid must stay LEFT-justified:
+     labels sit immediately right of their checkboxes, not centered.
+     Override the parent's centering here. */
+  justify-items: start;
+  text-align: left;
+  align-self: stretch;
+  width: 100%;
+}
+.fTelnetSettingsPanelGridOption {
+  display: contents;
+  cursor: pointer;
+}
+.fTelnetSettingsPanelGridOption > input {
+  margin: 0;
+}
+
+/* Tooltips (Style A): a filled rounded box that appears ABOVE the
+   hovered item with a small centered pointer arrow below it. Pure CSS,
+   shown on hover. Two anchor classes: `...Tip` (on a span, used inside
+   the contents-grid Terminal options) and `...TipOption` (on a label,
+   used for the single Sound/Touch/Protocol items). Both get a relative
+   position so the absolutely-positioned tooltip anchors to them.
+   Per-theme colours are set below in each theme block; these are the
+   neutral defaults. */
+.fTelnetSettingsPanelTip,
+.fTelnetSettingsPanelTipOption {
+  position: relative;
+}
+.fTelnetSettingsPanelTip[data-tooltip]::before,
+.fTelnetSettingsPanelTip[data-tooltip]::after,
+.fTelnetSettingsPanelTipOption[data-tooltip]::before,
+.fTelnetSettingsPanelTipOption[data-tooltip]::after {
+  position: absolute;
+  left: 50%;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease-in;
+  z-index: 50;
+}
+/* The box */
+.fTelnetSettingsPanelTip[data-tooltip]::before,
+.fTelnetSettingsPanelTipOption[data-tooltip]::before {
+  content: attr(data-tooltip);
+  bottom: calc(100% + 8px);
+  transform: translateX(-50%);
+  white-space: nowrap;
+  padding: 5px 10px;
+  border-radius: 5px;
+  font: var(--ft-ui-font);
+  font-size: 12px;
+  line-height: 1.2;
+  background: var(--ft-tooltip-bg, #1565c0);
+  color: var(--ft-tooltip-fg, #ffffff);
+  box-shadow: none;
+}
+/* The pointer arrow */
+.fTelnetSettingsPanelTip[data-tooltip]::after,
+.fTelnetSettingsPanelTipOption[data-tooltip]::after {
+  content: '';
+  bottom: calc(100% + 3px);
+  width: 10px;
+  height: 10px;
+  transform: translateX(-50%) rotate(45deg);
+  background: var(--ft-tooltip-bg, #1565c0);
+}
+/* Empty tooltips draw nothing */
+.fTelnetSettingsPanelTip[data-tooltip='']::before,
+.fTelnetSettingsPanelTip[data-tooltip='']::after,
+.fTelnetSettingsPanelTipOption[data-tooltip='']::before,
+.fTelnetSettingsPanelTipOption[data-tooltip='']::after {
+  content: none;
+}
+/* Reveal on hover */
+.fTelnetSettingsPanelTip[data-tooltip]:hover::before,
+.fTelnetSettingsPanelTip[data-tooltip]:hover::after,
+.fTelnetSettingsPanelTipOption[data-tooltip]:hover::before,
+.fTelnetSettingsPanelTipOption[data-tooltip]:hover::after {
+  opacity: 1;
 }
 
 /* Row 2 boxes (Sound, Touch, Terminal) center their contents so the
@@ -1512,6 +1598,8 @@
   /* Phosphor green: bright on hot, dim on cool. #00ff00 is the
      traditional terminal green; #003000 is the dim "off" state. */
   --ft-ui-bg: #001a00;
+  --ft-tooltip-bg: #00ff00;
+  --ft-tooltip-fg: #001a00;
   --ft-ui-fg: #00ff00;
   --ft-ui-border: #00ff00;
   --ft-ui-border-soft: #006600;
@@ -1604,6 +1692,8 @@
      cyan (#00ffff) is the "info" accent. Background is a deep
      purple-black for warmth. */
   --ft-ui-bg: #0a0014;
+  --ft-tooltip-bg: #ff00aa;
+  --ft-tooltip-fg: #ffffff;
   --ft-ui-fg: #00ffff;
   --ft-ui-border: #ff00aa;
   --ft-ui-border-soft: #660044;
@@ -1704,6 +1794,8 @@
    ────────────────────────────────────────────────────────── */
 [data-theme='gothic'] {
   --ft-ui-bg: #0a0000;
+  --ft-tooltip-bg: #b22222;
+  --ft-tooltip-fg: #ffe8e8;
   --ft-ui-fg: #d4c4c4; /* off-white with a slight red tint */
   --ft-ui-border: #8b0000;
   --ft-ui-border-soft: #4a0000;
@@ -1800,6 +1892,8 @@
 [data-theme='cartoon'] {
   /* Cream/butter background; bright primary accents. */
   --ft-ui-bg: #fffacd;
+  --ft-tooltip-bg: #ff4444;
+  --ft-tooltip-fg: #ffffff;
   --ft-ui-fg: #000000;
   --ft-ui-border: #000000;
   --ft-ui-border-soft: #333333;

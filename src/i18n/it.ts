@@ -201,6 +201,13 @@ export const it: Catalog = {
   'settings.terminal.autoreconnect': 'Riconnessione auto',
   'settings.terminal.doorway': 'Modalità Doorway',
   'settings.terminal.rip': 'RIP',
+  'settings.sound.mute.tip': 'Silenzia il segnale acustico del terminale',
+  'settings.touch.vibrate.tip': 'Durata vibrazione per tasto (ms)',
+  'settings.terminal.localecho.tip': 'Mostra localmente ciò che digiti',
+  'settings.terminal.autoreconnect.tip': 'Riconnetti automaticamente se cade',
+  'settings.terminal.doorway.tip': 'Invia tasti speciali ai programmi DOS',
+  'settings.terminal.rip.tip': 'Attiva grafica RIPscrip (ricarica)',
+  'settings.protocol.autodetect.tip': 'Avvia automaticamente i trasferimenti ZMODEM',
 
   // ── Auto-reconnect popup ─────────────────────────
   'reconnect.title': 'Connessione persa',

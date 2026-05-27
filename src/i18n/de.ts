@@ -197,6 +197,13 @@ export const de: Catalog = {
   'settings.terminal.autoreconnect': 'Auto-Wiederverbindung',
   'settings.terminal.doorway': 'Doorway-Modus',
   'settings.terminal.rip': 'RIP',
+  'settings.sound.mute.tip': 'Terminal-Signalton stummschalten',
+  'settings.touch.vibrate.tip': 'Vibrationsdauer bei Tastendruck (ms)',
+  'settings.terminal.localecho.tip': 'Eigene Eingabe lokal anzeigen',
+  'settings.terminal.autoreconnect.tip': 'Bei Abbruch automatisch neu verbinden',
+  'settings.terminal.doorway.tip': 'Sondertasten an DOS-Programme senden',
+  'settings.terminal.rip.tip': 'RIPscrip-Grafik aktivieren (lädt neu)',
+  'settings.protocol.autodetect.tip': 'ZMODEM-Übertragungen automatisch starten',
 
   // ── Auto-reconnect popup ─────────────────────────
   'reconnect.title': 'Verbindung verloren',

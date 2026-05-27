@@ -574,6 +574,28 @@ describe('i18n core', () => {
       }
     });
 
+    it('translates the settings tooltips (beta.46)', () => {
+      // English baselines
+      expect(t('settings.terminal.rip.tip', 'en')).toBe(
+        'Enable RIPscrip graphics (reloads)',
+      );
+      expect(t('settings.sound.mute.tip', 'en')).toBe(
+        'Silence the terminal bell',
+      );
+      // Each tooltip is translated (differs from English) in a sample
+      // of languages — proving the catalogs carry real translations,
+      // not fallbacks.
+      for (const key of [
+        'settings.sound.mute.tip',
+        'settings.terminal.autoreconnect.tip',
+        'settings.protocol.autodetect.tip',
+      ] as const) {
+        for (const lang of ['de', 'fr', 'ja'] as const) {
+          expect(t(key, lang)).not.toBe(t(key, 'en'));
+        }
+      }
+    });
+
     it('translates the auto-reconnect popup (beta.41)', () => {
       expect(t('reconnect.title', 'en')).toBe('Connection lost');
       expect(t('reconnect.cancel', 'en')).toBe('Cancel');

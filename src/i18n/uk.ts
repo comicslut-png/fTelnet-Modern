@@ -202,6 +202,13 @@ export const uk: Catalog = {
   'settings.terminal.autoreconnect': 'Автоперепідключення',
   'settings.terminal.doorway': 'Режим Doorway',
   'settings.terminal.rip': 'RIP',
+  'settings.sound.mute.tip': 'Вимкнути звук термінала',
+  'settings.touch.vibrate.tip': 'Тривалість вібрації при натисканні (мс)',
+  'settings.terminal.localecho.tip': 'Показувати власне введення локально',
+  'settings.terminal.autoreconnect.tip': 'Автоматично перепідключатися при розриві',
+  'settings.terminal.doorway.tip': 'Надсилати спецклавіші до програм DOS',
+  'settings.terminal.rip.tip': 'Увімкнути графіку RIPscrip (перезавантажить)',
+  'settings.protocol.autodetect.tip': 'Автоматично запускати передачі ZMODEM',
 
   // ── Auto-reconnect popup ─────────────────────────
   'reconnect.title': 'З\'єднання втрачено',
