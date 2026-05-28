@@ -5,6 +5,35 @@ All notable changes to fTelnet-Modern are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.0.0-beta.47] — 2026-05-28
+
+Privacy housekeeping: removes the maintainer's email address from
+every part of the repo and re-centers the splash-screen fork credit
+now that the email is gone.
+
+### Changed
+
+  - **Splash screen** — the fork-credit line now reads simply
+    "Modernized fork by Tom Swartz" (email removed). On the ANSI and
+    RIP splashes it is true-centered on the 80-column screen (the
+    29-character string starts at column 25); the Atari and C64
+    splashes keep it left-aligned in their native 40-column fonts.
+  - **About panel** — "Tom Swartz" is now plain text rather than a
+    `mailto:` link.
+  - **Copyright notices** — the email was stripped from `NOTICE`,
+    `LICENSE`, `README.md`, `package.json` (`"author"`), and the
+    per-file source headers in `fTelnetClient.ts`, `FReconnectDialog.ts`,
+    `FDropOverlay.ts`, `FUploadConfirm.ts`, and `FConfirmDialog.ts`.
+    Name and "© 2026" are retained; attribution to Rick Parrish /
+    R&M Software is unchanged.
+
+### Notes
+
+  - No functional or i18n changes; the catalogs stay at 110 keys and
+    the suite stays at 1356 tests. The public Danger Bay BBS host
+    address in the README (`dangerbaybbs.dyndns.org`) is a connection
+    address, not contact info, and is intentionally retained.
+
 ## [2.0.0-beta.46] — 2026-05-26
 
 Cosmetic and usability polish for the Settings panel: aligned the

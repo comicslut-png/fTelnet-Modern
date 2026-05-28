@@ -8,3 +8,6 @@ coverage/
 .vscode/*
 !.vscode/settings.json
 !.vscode/extensions.json
+
+# Release apply-instructions — ships inside each delta zip, not tracked
+HOW_TO_APPLY.md

@@ -1,7 +1,7 @@
 /*
  * fTelnet-Modern — drag-and-drop overlay component
  *
- * Copyright (C) 2026 Tom Swartz <dangerbaybbs@hotmail.com>
+ * Copyright (C) 2026 Tom Swartz
  * Copyright (C) 2009-2026 R&M Software (Rick Parrish, original fTelnet)
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later

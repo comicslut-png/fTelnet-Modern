@@ -13,7 +13,6 @@ the BBS-era aesthetic.
 ![RIP Support](./assets/screenshots/RIP.png)
 
 > **fTelnet-Modern** — Copyright © 2026 Tom Swartz
-> &lt;dangerbaybbs@hotmail.com&gt;
 > Based on **fTelnet** — Copyright © 2009-2026 R&M Software (Rick Parrish)
 > Licensed under [AGPL-3.0-or-later](https://www.gnu.org/licenses/agpl-3.0.html)
 > · See [`NOTICE`](./NOTICE) and [`LICENSE`](./LICENSE) for details.

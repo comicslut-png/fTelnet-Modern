@@ -127,7 +127,7 @@ export class FSettingsPanel extends LitElement {
    * tests and the panel can read the same value without needing
    * a build-time injection mechanism.
    */
-  public static readonly VERSION = '2.0.0-beta.46';
+  public static readonly VERSION = '2.0.0-beta.47';
 
   @property({ type: Boolean })
   open = false;
@@ -479,13 +479,7 @@ export class FSettingsPanel extends LitElement {
                   <strong>fTelnet-Modern</strong> v${FSettingsPanel.VERSION}
                 </div>
                 <div class="fTelnetSettingsPanelAboutLine">
-                  Modern fork by
-                  <a
-                    href="mailto:dangerbaybbs@hotmail.com"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    >Tom Swartz</a
-                  >
+                  Modern fork by Tom Swartz
                 </div>
                 <div class="fTelnetSettingsPanelAboutLine">
                   <a

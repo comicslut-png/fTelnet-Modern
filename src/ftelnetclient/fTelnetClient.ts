@@ -3,7 +3,7 @@
   Copyright (C) 2009-2026 Rick Parrish, R&M Software
 
   fTelnet-Modern: modernized fork
-  Copyright (C) 2026 Tom Swartz <dangerbaybbs@hotmail.com>
+  Copyright (C) 2026 Tom Swartz
 
   This file is part of fTelnet-Modern.
 
@@ -1385,10 +1385,10 @@ export class fTelnetClient {
         this._Crt.Write(new Date().getFullYear().toString());
         this._Crt.Write(atob('IFImTSBTb2Z0d2FyZS6bQWxsIFJpZ2h0cyBSZXNlcnZlZJs='));
         // Fork attribution (Atari ATASCII: \x9b = EOL). Single
-        // line; plain hyphen separator since ATASCII has no box-
-        // drawing equivalent to CP437's \xc4.
+        // line, left-aligned (40-col screen). Email removed for
+        // privacy (beta.47).
         this._Crt.Write(
-          'Modernized fork by Tom Swartz - dangerbaybbs@hotmail.com\x9b\x9b'
+          'Modernized fork by Tom Swartz\x9b\x9b'
         );
       } else {
         this._Crt.Write(atob(this._Options.SplashScreen));
@@ -1402,9 +1402,10 @@ export class fTelnetClient {
         this._Crt.Write(atob('IHImbSBzT0ZUV0FSRS4NCmFMTCBySUdIVFMgckVTRVJWRUQNCg=='));
         // Fork attribution (C64 inverted case style — capital
         // letters in the source display as lowercase on a C64
-        // screen, and vice versa). Single line.
+        // screen, and vice versa). Single line, left-aligned.
+        // Email removed for privacy (beta.47).
         this._Crt.Write(
-          'mODERNIZED FORK BY tOM sWARTZ - DANGERBAYBBS@HOTMAIL.COM\r\n\r\n'
+          'mODERNIZED FORK BY tOM sWARTZ\r\n\r\n'
         );
       } else {
         this._Crt.Write(atob(this._Options.SplashScreen));
@@ -1427,7 +1428,7 @@ export class fTelnetClient {
           ' R&M Software.  All Rights Reserved\x1b[0m\r\n'
         );
         this._RIP.Parse(
-          '\x1b[11C\x1b[1;36mModernized fork by Tom Swartz \x1b[0;36m\xc4\x1b[1;36m dangerbaybbs@hotmail.com\x1b[0m\r\n'
+          '\x1b[25C\x1b[1;36mModernized fork by Tom Swartz\x1b[0m\r\n'
         );
       } else {
         this._RIP.Parse(atob(this._Options.SplashScreen));
@@ -1443,10 +1444,10 @@ export class fTelnetClient {
       //      Software. All Rights Reserved" line is preserved
       //      as a visual nod to the upstream lineage.
       //   3. Below that, Tom's fork-credit line: "Modernized fork
-      //      by Tom Swartz — dangerbaybbs@hotmail.com" so the
-      //      maintainer's name and contact are visible on the
-      //      launch screen (the splash artwork itself only shows
-      //      the project repo URL, not the author's name/email).
+      //      by Tom Swartz" so the maintainer's name is
+      //      visible on the launch screen (the splash artwork
+      //      itself only shows the project repo URL, not the
+      //      author's name). Email removed for privacy (beta.47).
       if (this._Options.SplashScreen === '') {
         // Clear screen + home cursor before rendering the splash.
         // The SPLASH1.ANS artwork assumes it's drawing on a blank
@@ -1466,11 +1467,13 @@ export class fTelnetClient {
         this._Ansi.Write(
           ' R&M Software.  All Rights Reserved\x1b[0m\r\n'
         );
-        // Tom's fork-credit line — bright cyan name/email,
-        // dim cyan CP437 box-drawing separator (\xc4). Same
-        // column alignment as R&M's line above.
+        // Tom's fork-credit line — bright cyan name. Email removed
+        // for privacy (beta.47). True-centered on the 80-col screen:
+        // the string "Modernized fork by Tom Swartz" is 29 chars, so
+        // (80-29)/2 = 25.5 → column 25. No longer column-aligned with
+        // R&M's line above; it's now centered as a standalone credit.
         this._Ansi.Write(
-          '\x1b[11C\x1b[1;36mModernized fork by Tom Swartz \x1b[0;36m\xc4\x1b[1;36m dangerbaybbs@hotmail.com\x1b[0m\r\n'
+          '\x1b[25C\x1b[1;36mModernized fork by Tom Swartz\x1b[0m\r\n'
         );
       } else {
         this._Ansi.Write(atob(this._Options.SplashScreen));
