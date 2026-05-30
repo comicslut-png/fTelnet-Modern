@@ -75,6 +75,7 @@ export const fr: Catalog = {
   'status.button.connect': 'Se connecter',
   'status.button.reconnect': 'Se reconnecter',
   'status.button.retry': 'Réessayer',
+  'status.button.disconnect': 'Se déconnecter',
 
   // ── Settings panel ──────────────────────────────────────────
   'settings.title': 'Paramètres',

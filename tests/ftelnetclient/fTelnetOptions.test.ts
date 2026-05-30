@@ -5,6 +5,8 @@ describe('fTelnetOptions', () => {
   it('initializes with sensible defaults', () => {
     const opts = new fTelnetOptions();
     expect(opts.AllowModernScrollback).toBe(true);
+    expect(opts.AllowMenu).toBe(true);
+    expect(opts.AllowResize).toBe(true);
     expect(opts.BareLFtoCRLF).toBe(false);
     expect(opts.BitsPerSecond).toBe(57600);
     expect(opts.ConnectionType).toBe('telnet');
@@ -69,5 +71,21 @@ describe('fTelnetOptions', () => {
     a.Hostname = 'a.bbs';
     expect(a.Hostname).toBe('a.bbs');
     expect(b.Hostname).toBe('bbs.ftelnet.ca');
+  });
+
+  it('embed-mode options can be flipped off independently (beta.48)', () => {
+    // AllowMenu and AllowResize are embed-time-only options for
+    // sysops dropping fTelnet-Modern into an existing page. Both
+    // default true (full-page deployment); a sysop sets either or
+    // both false in their embed HTML before constructing the client.
+    const opts = new fTelnetOptions();
+    opts.AllowMenu = false;
+    opts.AllowResize = false;
+    expect(opts.AllowMenu).toBe(false);
+    expect(opts.AllowResize).toBe(false);
+    // They're independent — flipping one doesn't affect the other.
+    const opts2 = new fTelnetOptions();
+    opts2.AllowMenu = false;
+    expect(opts2.AllowResize).toBe(true);
   });
 });

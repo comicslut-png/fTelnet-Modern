@@ -82,6 +82,7 @@ export const cs: Catalog = {
   'status.button.connect': 'Připojit',
   'status.button.reconnect': 'Připojit znovu',
   'status.button.retry': 'Zkusit znovu',
+  'status.button.disconnect': 'Odpojit',
 
   // ── Settings panel ──────────────────────────────────────────
   'settings.title': 'Nastavení',

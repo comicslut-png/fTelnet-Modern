@@ -87,6 +87,7 @@ export const nl: Catalog = {
   'status.button.connect': 'Verbinden',
   'status.button.reconnect': 'Opnieuw verbinden',
   'status.button.retry': 'Opnieuw proberen',
+  'status.button.disconnect': 'Verbinding verbreken',
 
   // ── Settings panel ──────────────────────────────────────────
   'settings.title': 'Instellingen',

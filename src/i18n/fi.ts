@@ -92,6 +92,7 @@ export const fi: Catalog = {
   'status.button.connect': 'Yhdistä',
   'status.button.reconnect': 'Yhdistä uudelleen',
   'status.button.retry': 'Yritä uudelleen',
+  'status.button.disconnect': 'Katkaise yhteys',
 
   // ── Settings panel ──────────────────────────────────────────
   'settings.title': 'Asetukset',

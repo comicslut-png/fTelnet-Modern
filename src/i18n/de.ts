@@ -77,6 +77,7 @@ export const de: Catalog = {
   'status.button.connect': 'Verbinden',
   'status.button.reconnect': 'Erneut verbinden',
   'status.button.retry': 'Erneut versuchen',
+  'status.button.disconnect': 'Trennen',
 
   // ── Settings panel (best-effort; review pending) ────────────
   'settings.title': 'Einstellungen',

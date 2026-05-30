@@ -37,6 +37,10 @@ Options.Port = 23;
 Options.ProxyHostname = 'p-us-east.ftelnet.ca';
 Options.ProxyPort = 80;
 Options.ProxyPortSecure = 443;
+Options.AllowMenu   = true;
+Options.AllowResize = true;
+Options.ScreenColumns = 80;
+Options.ScreenRows    = 25;
 
 const Client = new fTelnetClient('fTelnetContainer', Options);
 

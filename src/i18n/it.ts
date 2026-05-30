@@ -83,6 +83,7 @@ export const it: Catalog = {
   'status.button.connect': 'Connetti',
   'status.button.reconnect': 'Riconnetti',
   'status.button.retry': 'Riprova',
+  'status.button.disconnect': 'Disconnetti',
 
   // ── Settings panel ──────────────────────────────────────────
   'settings.title': 'Impostazioni',

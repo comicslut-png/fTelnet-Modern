@@ -596,6 +596,24 @@ describe('i18n core', () => {
       }
     });
 
+    it('translates the status-bar Disconnect label (beta.48)', () => {
+      // English baseline
+      expect(t('status.button.disconnect', 'en')).toBe('Disconnect');
+      // The bar's "Disconnect" label was deliberately taken from the
+      // existing menu.disconnect translations so the bar and menu
+      // read identically in every language. Spot-check a few.
+      expect(t('status.button.disconnect', 'de')).toBe(t('menu.disconnect', 'de'));
+      expect(t('status.button.disconnect', 'fr')).toBe(t('menu.disconnect', 'fr'));
+      expect(t('status.button.disconnect', 'ja')).toBe(t('menu.disconnect', 'ja'));
+      // And it's translated (not falling back to English) in non-Latin
+      // scripts.
+      for (const lang of ['ru', 'el', 'ja'] as const) {
+        expect(t('status.button.disconnect', lang)).not.toBe(
+          t('status.button.disconnect', 'en'),
+        );
+      }
+    });
+
     it('translates the auto-reconnect popup (beta.41)', () => {
       expect(t('reconnect.title', 'en')).toBe('Connection lost');
       expect(t('reconnect.cancel', 'en')).toBe('Cancel');

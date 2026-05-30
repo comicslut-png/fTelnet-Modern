@@ -84,6 +84,7 @@ export const pl: Catalog = {
   'status.button.connect': 'Połącz',
   'status.button.reconnect': 'Połącz ponownie',
   'status.button.retry': 'Spróbuj ponownie',
+  'status.button.disconnect': 'Rozłącz',
 
   // ── Settings panel ──────────────────────────────────────────
   'settings.title': 'Ustawienia',

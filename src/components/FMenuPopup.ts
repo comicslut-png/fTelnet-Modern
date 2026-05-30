@@ -88,6 +88,11 @@ export interface ScreenSizeChangeDetail {
  *     View Scrollback Buffer row. Phase 1's original gated this
  *     on `!_UseModernScrollback` since modern scrollback uses
  *     native scrolling. Parent computes the bool.
+ *   - `showScreenSize` (boolean, default true) — render the
+ *     screen-size selector row at the bottom. fTelnetClient sets
+ *     this from `Options.AllowResize`; embed deployments with
+ *     `AllowResize = false` get the row hidden so users can't
+ *     pick a different size from the menu.
  *   - `currentScreenSize` (string, default "80x25") — the
  *     currently-selected screen-size dropdown value, formatted
  *     as "WxH".
@@ -147,6 +152,28 @@ export class FMenuPopup extends LitElement {
 
   @property({ type: Boolean, attribute: 'show-scrollback' })
   showScrollback = false;
+
+  /**
+   * Whether the screen-size selector row is rendered at the bottom
+   * of the menu. Defaults TRUE (the historical behavior — every
+   * Menu drop-down has offered a screen-size picker since Rick's
+   * original).
+   *
+   * Set FALSE to drop the row entirely. fTelnetClient sets this
+   * from `Options.AllowResize`: when a sysop embeds the client
+   * with `AllowResize = false` they expect "no path to changing
+   * size, full stop" — both the auto-resize-on-window-change AND
+   * the user-initiated picker. Hiding the row (rather than
+   * disabling the `<select>`) avoids the visual confusion of a
+   * dead UI control.
+   *
+   * Note: unlike `showCopyPaste` / `showScrollback` (which default
+   * FALSE — caller opts in), this defaults TRUE because the
+   * picker is the historical default and the option exists to
+   * SUBTRACT it from embed deployments.
+   */
+  @property({ type: Boolean, attribute: 'show-screen-size' })
+  showScreenSize = true;
 
   @property({ type: String, attribute: 'current-screen-size' })
   currentScreenSize = '80x25';
@@ -288,7 +315,8 @@ export class FMenuPopup extends LitElement {
               >
             </td>
           </tr>
-          <tr>
+          ${this.showScreenSize
+            ? html`<tr>
             <td colspan="2">
               <select @change=${this.handleScreenSizeChange}>
                 ${this.supportedScreenSizes.map(
@@ -313,7 +341,8 @@ export class FMenuPopup extends LitElement {
                 )}
               </select>
             </td>
-          </tr>
+          </tr>`
+            : ''}
         </table>
       </div>
     `;
@@ -324,21 +353,31 @@ export class FMenuPopup extends LitElement {
    * popup so its BOTTOM edge sits at the click point (pageY),
    * extending UPWARD from there. Implementation:
    *
-   *   position: fixed              (escape any parent stacking)
+   *   position: absolute           (document-relative, so pageX/pageY
+   *                                from the click event line up with
+   *                                top/left — and the popup rides the
+   *                                page scroll together with the
+   *                                canvas, staying visually anchored
+   *                                to it)
    *   left: pageX
    *   top: pageY
    *   transform: translateY(-100%) (shift up by popup's own height,
-   *                                computed by the browser at
-   *                                paint time — no JS measurement
-   *                                step required, works on first
-   *                                render)
+   *                                computed by the browser at paint
+   *                                time — no JS measurement step
+   *                                required, works on first render)
    *
-   * This replaces the old `top = pageY - clientHeight` formula,
-   * which depended on reading the element's own clientHeight after
-   * render. On first open clientHeight was 0 (no prior layout) so
-   * the popup would appear AT the click point and extend DOWN
-   * (off-screen, requiring scroll). The translateY(-100%) trick
-   * is the bulletproof CSS-only solution.
+   * Originally `position: fixed` was used to escape parent stacking
+   * contexts, but `fixed` is viewport-relative while `pageX/pageY`
+   * are document-relative — once the user scrolled, the mismatch
+   * left the popup `scrollY` pixels off from the click point. Using
+   * `absolute` matches the coordinate systems and lets the popup
+   * scroll with the canvas naturally (both sit on the document).
+   *
+   * The `translateY(-100%)` trick replaces an older
+   * `top = pageY - clientHeight` formula that depended on reading
+   * `clientHeight` after render; on first open `clientHeight` was 0
+   * so the popup appeared AT the click point and extended DOWN
+   * off-screen. The CSS-only shift is bulletproof.
    *
    * Phase 5 polish: z-index lives in ftelnet.css under
    * `.fTelnetMenuButtons`.
@@ -349,7 +388,7 @@ export class FMenuPopup extends LitElement {
     }
     return (
       'display: block;' +
-      ' position: fixed;' +
+      ' position: absolute;' +
       ` left: ${this.pageX}px;` +
       ` top: ${this.pageY}px;` +
       ' transform: translateY(-100%);'

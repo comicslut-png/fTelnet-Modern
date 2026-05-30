@@ -81,6 +81,7 @@ export const sv: Catalog = {
   'status.button.connect': 'Anslut',
   'status.button.reconnect': 'Återanslut',
   'status.button.retry': 'Försök igen',
+  'status.button.disconnect': 'Koppla från',
 
   // ── Settings panel ──────────────────────────────────────────
   'settings.title': 'Inställningar',

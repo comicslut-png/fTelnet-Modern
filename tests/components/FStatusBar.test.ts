@@ -36,9 +36,15 @@ describe('<f-status-bar>', () => {
     it('has sensible defaults for all reactive properties', () => {
       expect(el.statusText).toBe('Not connected');
       expect(el.connectButtonText).toBe('Connect');
-      // beta.17: connect button hidden by default (initial idle
-      // state shows Menu only; Reconnect/Retry reappear later).
-      expect(el.connectButtonVisible).toBe(false);
+      // Bar button is visible by default so the primary "Connect"
+      // action is one click away in the initial idle state. The
+      // client hides it only briefly during the in-flight
+      // "Connecting…" phase to prevent double-clicks.
+      expect(el.connectButtonVisible).toBe(true);
+      // Menu button visible by default; embed deployments set this
+      // false via `Options.AllowMenu = false` to hide the menu
+      // drop-down entirely (beta.48).
+      expect(el.menuButtonVisible).toBe(true);
       expect(el.state).toBe('idle');
       expect(el.widthPx).toBe(0);
     });
@@ -46,9 +52,9 @@ describe('<f-status-bar>', () => {
     it('renders inner divs with the legacy CSS classes', () => {
       expect(el.querySelector('.fTelnetStatusBar')).not.toBeNull();
       expect(el.querySelector('.fTelnetMenuButton')).not.toBeNull();
-      // The connect button element is still rendered (just hidden
-      // via inline display:none by default) so reconnect/retry can
-      // reveal it without re-rendering structure.
+      // The connect button is rendered and visible by default;
+      // inline display:none is applied only while connecting
+      // (an in-flight state controlled by the parent).
       expect(el.querySelector('.fTelnetConnectButton')).not.toBeNull();
       expect(el.querySelector('.fTelnetStatusBarLabel')).not.toBeNull();
     });
@@ -57,14 +63,14 @@ describe('<f-status-bar>', () => {
       expect(el.querySelector('.fTelnetMenuButton')?.textContent?.trim()).toBe('Menu');
     });
 
-    it('hides the connect button by default (initial state = Menu only)', () => {
+    it('shows the connect button by default (Connect is one click away)', () => {
       const btn = el.querySelector<HTMLElement>('.fTelnetConnectButton');
-      expect(btn?.getAttribute('style')).toContain('display: none');
+      // Either no inline style or an explicit style without display:none.
+      const style = btn?.getAttribute('style') ?? '';
+      expect(style).not.toContain('display: none');
     });
 
-    it('the connect button still carries its text for when it is revealed', () => {
-      // Hidden, but the label is "Connect" until reconnect/retry
-      // change it — confirms we didn't break the text binding.
+    it('the connect button shows its "Connect" text by default', () => {
       expect(el.querySelector('.fTelnetConnectButton')?.textContent?.trim()).toBe('Connect');
     });
 
@@ -114,7 +120,11 @@ describe('<f-status-bar>', () => {
   });
 
   describe('connectButtonText reactivity', () => {
-    it.each(['Connect', 'Reconnect', 'Retry Connection'])(
+    // The four labels the bar's action button cycles through:
+    // Connect (idle), Disconnect (while connected), Reconnect (after
+    // a drop), Retry Connection (after a failed/security-error
+    // attempt). All four are pushed by fTelnetClient based on state.
+    it.each(['Connect', 'Disconnect', 'Reconnect', 'Retry Connection'])(
       'updates the connect button text when set to %s',
       async (text) => {
         el.connectButtonText = text;
@@ -139,6 +149,37 @@ describe('<f-status-bar>', () => {
       await el.updateComplete;
       const btn = el.querySelector<HTMLElement>('.fTelnetConnectButton');
       const style = btn?.getAttribute('style') ?? '';
+      expect(style).not.toContain('display: none');
+    });
+  });
+
+  describe('menuButtonVisible reactivity (embed mode, beta.48)', () => {
+    it('setting false hides the menu button via inline display:none', async () => {
+      el.menuButtonVisible = false;
+      await el.updateComplete;
+      const btn = el.querySelector<HTMLElement>('.fTelnetMenuButton');
+      expect(btn?.getAttribute('style')).toContain('display: none');
+    });
+
+    it('toggling visible removes the display:none', async () => {
+      el.menuButtonVisible = false;
+      await el.updateComplete;
+      el.menuButtonVisible = true;
+      await el.updateComplete;
+      const btn = el.querySelector<HTMLElement>('.fTelnetMenuButton');
+      const style = btn?.getAttribute('style') ?? '';
+      expect(style).not.toContain('display: none');
+    });
+
+    it('hiding the menu leaves the connect button untouched (primary action still reachable)', async () => {
+      // Embed mode hides the menu but MUST keep Connect interactive,
+      // or embedded users would have no way to start a session. The
+      // two visibility flags are independent.
+      el.menuButtonVisible = false;
+      el.connectButtonVisible = true;
+      await el.updateComplete;
+      const connect = el.querySelector<HTMLElement>('.fTelnetConnectButton');
+      const style = connect?.getAttribute('style') ?? '';
       expect(style).not.toContain('display: none');
     });
   });

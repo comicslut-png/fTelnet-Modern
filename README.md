@@ -50,6 +50,18 @@ applicable.
   vibrate-duration slider, and an **About** section showing version,
   fork author, upstream attribution, and license info. All preferences
   persist in localStorage.
+- **Status-bar Connect / Disconnect** (restored in beta.48): the primary
+  action is always one click away on the bar — reads "Connect" while
+  idle, "Disconnect" while connected, "Reconnect" / "Retry Connection"
+  after a drop or failed attempt. The Menu button (and everything in
+  the drop-down) is unchanged.
+- **Embed-mode options** (new in beta.48): two `Options.*` knobs for
+  dropping fTelnet-Modern into an existing page rather than running
+  full-page. `Options.AllowMenu = false` hides the Menu button (Connect
+  stays interactive) so embedded visitors can't reach Settings/Copy/
+  Paste/Upload/Download; `Options.AllowResize = false` locks the
+  canvas at its embed-time dimensions. Both default true. A worked
+  example ships as `index-embed.html` in the starter package.
 - **Terminal toggles** (Settings → Terminal): three convenience
   switches, all off by default.
   - **Local Echo** — show your own keystrokes locally, for the rare
@@ -196,13 +208,13 @@ See `docs/` for stage-by-stage planning notes:
 
 ### Test coverage
 
-1356 unit tests across 57 files, run on every commit. Phase boundaries:
+1365 unit tests across 57 files, run on every commit. Phase boundaries:
 
   - End of Phase 1: 559 tests
   - End of Phase 2: 691 tests
   - End of Phase 3: 722 tests
   - End of Phase 4: 980 tests
-  - Phase 5 (in progress): 1356 tests
+  - Phase 5 (in progress): 1365 tests
 
 ## Testing against a real BBS
 
@@ -275,7 +287,7 @@ for that command, not a bug in the client.
 ```bash
 npm install              # install dependencies
 npm run dev              # start Vite dev server with hot reload (port 5173)
-npm test                 # run the full Vitest suite (1356 tests)
+npm test                 # run the full Vitest suite (1365 tests)
 npm run typecheck        # tsc --noEmit
 npm run build:all        # produce all four bundle flavors
 ```

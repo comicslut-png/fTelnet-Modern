@@ -5,6 +5,102 @@ All notable changes to fTelnet-Modern are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.0.0-beta.48] — 2026-05-30
+
+Connect-button restoration, menu-popup scroll fix, and the first
+embed-mode options for sysops dropping fTelnet-Modern into an
+existing page.
+
+### Added
+
+  - **Connect button is back on the status bar** as the primary
+    action, alongside the existing Menu button. State-aware: reads
+    "Connect" while idle, switches to "Disconnect" while connected
+    (one click hangs up with a confirm prompt, matching the menu's
+    Disconnect entry), and to "Reconnect" / "Retry Connection" after
+    a drop or failed attempt. Hidden only briefly during the
+    "Connecting…" in-flight phase to prevent double-clicks. The
+    earlier rationale for hiding it (force menu discovery) didn't
+    survive contact with real users — the primary action should
+    always be one click away. The Connect/Disconnect entries in the
+    menu drop-down remain available for users who prefer them there.
+    New i18n key `status.button.disconnect`, translated in all 15
+    languages (matching the existing `menu.disconnect` wording).
+  - **Embed-mode options for sysops.** Two new `Options.*` knobs
+    for dropping fTelnet-Modern into a constrained slot on an
+    existing page rather than running as a full-page terminal:
+      - `Options.AllowMenu` (default `true`) — set false to hide
+        the Menu button entirely. Embedded visitors keep the Connect
+        button (so they can always start/end a session) but can't
+        reach Settings, Copy/Paste, Upload/Download, Keyboard, Full
+        Screen, etc. No backdoor paths: when the Menu button is
+        hidden, the menu popup and the settings panel are
+        unreachable.
+      - `Options.AllowResize` (default `true`) — set false to fully
+        lock the BBS screen size. Gates BOTH the auto-resize when
+        the browser window changes size (plumbed through to the
+        Crt's existing `AllowDynamicFontResize`) AND the
+        user-initiated screen-size picker in the Menu drop-down
+        (the row is hidden entirely so there's no dead UI to
+        confuse anyone). The intent is "no path to changing size,
+        full stop."
+    Both default true so existing deployments are unchanged. Names
+    match the original fTelnet's embed-API conventions.
+  - **`index-embed.html`** in the starter package — a worked example
+    of an embed deployment (mock BBS-listing host page, fixed 720×400
+    fTelnet slot, both embed options set false), so sysops can see a
+    real embed before adapting one for their own site.
+
+### Fixed
+
+  - **Menu popup now tracks the canvas through page scroll.** The
+    drop-down menu used `position: fixed` but was positioned with
+    `pageX/pageY` (document-relative coordinates) — a mismatch that
+    worked at `scrollY = 0` and drifted off the canvas by `scrollY`
+    pixels once the user scrolled. Switched to `position: absolute`
+    so the coordinate systems match; the popup now scrolls with the
+    page in lockstep with the canvas, exactly as expected. The
+    Settings panel (a centered modal by design) is unchanged.
+
+### Changed
+
+  - **Status-bar action-button label cycles through four states**
+    (was three): Connect → Disconnect → Reconnect → Retry Connection.
+    Disconnect is the new state, added with this release; the others
+    are unchanged.
+
+### Starter package
+
+  - `README.txt` — new **EMBED MODE** section explaining both
+    options, when to use each, and a worked example. New
+    troubleshooting entry for "The Menu button is gone / I can't
+    reach Settings anymore" — for the sysop who sets `AllowMenu`
+    false, forgets, and thinks the build is broken.
+  - `index-embed.html` — new file, ships alongside `index.html`.
+
+### Tests
+
+1356 → 1365 (+9 net):
+  - FStatusBar: extended default-state assertion; flipped two
+    visibility assertions; extended the label-reactivity `it.each`
+    to cover the Disconnect state; new 3-test `menuButtonVisible`
+    reactivity block (including a regression guard that hiding the
+    menu doesn't accidentally hide the connect button).
+  - FMenuPopup: flipped the `position: fixed` assertion to
+    `absolute`; added a regression-guard test confirming `pageX/pageY`
+    land verbatim without scroll math.
+  - fTelnetOptions: added the two new defaults to the defaults list,
+    plus a focused embed-mode independence test.
+  - i18n: new translated-value test for `status.button.disconnect`
+    across en/de/fr/ja/ru/el, confirming the bar's Disconnect label
+    matches the menu's word-for-word per language.
+
+### i18n
+
+110 → 111 keys. New `status.button.disconnect` in all 15 catalogs;
+translations identical to the existing `menu.disconnect` so the bar
+and menu read the same per language.
+
 ## [2.0.0-beta.47] — 2026-05-28
 
 Privacy housekeeping: removes the maintainer's email address from

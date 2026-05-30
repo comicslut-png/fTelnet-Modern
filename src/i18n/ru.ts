@@ -90,6 +90,7 @@ export const ru: Catalog = {
   'status.button.connect': 'Подключиться',
   'status.button.reconnect': 'Переподключить',
   'status.button.retry': 'Повторить',
+  'status.button.disconnect': 'Отключиться',
 
   // ── Settings panel ──────────────────────────────────────────
   'settings.title': 'Настройки',

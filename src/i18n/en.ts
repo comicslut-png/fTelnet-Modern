@@ -73,6 +73,7 @@ export const en = {
   'status.button.connect': 'Connect',
   'status.button.reconnect': 'Reconnect',
   'status.button.retry': 'Retry Connection',
+  'status.button.disconnect': 'Disconnect',
 
   // ── Settings panel ──────────────────────────────────────────
   'settings.title': 'Settings',

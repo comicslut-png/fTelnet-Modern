@@ -83,6 +83,7 @@ export const uk: Catalog = {
   'status.button.connect': 'Підключитися',
   'status.button.reconnect': 'Перепідключитися',
   'status.button.retry': 'Повторити',
+  'status.button.disconnect': 'Відключитися',
 
   // ── Settings panel ──────────────────────────────────────────
   'settings.title': 'Налаштування',

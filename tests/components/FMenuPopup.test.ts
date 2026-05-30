@@ -101,6 +101,10 @@ describe('<f-menu-popup>', () => {
       expect(el.pageY).toBe(0);
       expect(el.showCopyPaste).toBe(false);
       expect(el.showScrollback).toBe(false);
+      // showScreenSize defaults TRUE (the historical Menu has always
+      // shown a screen-size picker); embed deployments set this
+      // false via `Options.AllowResize = false` to hide the row.
+      expect(el.showScreenSize).toBe(true);
       expect(el.currentScreenSize).toBe('80x25');
       // Default supportedScreenSizes is the standard 15-entry list
       expect(el.supportedScreenSizes.length).toBe(15);
@@ -298,20 +302,47 @@ describe('<f-menu-popup>', () => {
     });
 
     it('positions top at click point with translateY(-100%) for above-anchoring', async () => {
-      // Phase 5 polish: positioning model uses
-      // `top: pageY; transform: translateY(-100%)` instead of
-      // the old `top: pageY - clientHeight`. The CSS transform
-      // shifts the popup up by its own measured height at paint
-      // time, so it works on first render without needing a JS
-      // measurement pass.
+      // The positioning model uses `top: pageY; transform:
+      // translateY(-100%)` so the CSS transform shifts the popup up
+      // by its own measured height at paint time — no JS measurement
+      // pass needed. `position: absolute` matches the document-
+      // relative coordinate system that `pageX/pageY` use, so the
+      // popup scrolls with the page (and therefore with the canvas)
+      // naturally; under the old `fixed` value, a scrolled page made
+      // the popup drift off the click point by scrollY pixels.
       el.open = true;
       el.pageY = 500;
       await el.updateComplete;
       const inner = el.querySelector<HTMLElement>('.fTelnetMenuButtons');
       const style = inner?.getAttribute('style') ?? '';
-      expect(style).toContain('position: fixed');
+      expect(style).toContain('position: absolute');
       expect(style).toContain('top: 500px');
       expect(style).toContain('translateY(-100%)');
+    });
+
+    it('uses position: absolute so pageX/pageY (document coords) anchor the popup to the canvas through page scroll', async () => {
+      // Regression guard against the pre-fix behavior: when this was
+      // `position: fixed`, the document-relative pageX/pageY were
+      // assigned to top/left, which is viewport-relative under
+      // `fixed`. Once the user scrolled, the mismatch dragged the
+      // popup off the click point by scrollY pixels. The fix is the
+      // coordinate-system match — `absolute` — which lets the popup
+      // ride the page scroll in lockstep with the canvas.
+      el.open = true;
+      el.pageX = 123;
+      el.pageY = 456;
+      await el.updateComplete;
+      const inner = el.querySelector<HTMLElement>('.fTelnetMenuButtons');
+      const style = inner?.getAttribute('style') ?? '';
+      // The popup must NOT use position: fixed.
+      expect(style).not.toContain('position: fixed');
+      // It MUST use position: absolute.
+      expect(style).toContain('position: absolute');
+      // And the document-relative click coords must land verbatim
+      // (no scrollY/scrollX correction in the math — `absolute` does
+      // the right thing on its own).
+      expect(style).toContain('left: 123px');
+      expect(style).toContain('top: 456px');
     });
 
     it('omits left/top when closed', async () => {
@@ -425,6 +456,30 @@ describe('<f-menu-popup>', () => {
       select!.dispatchEvent(new Event('change', { bubbles: true }));
 
       expect(captured).toEqual({ columns: 132, rows: 43 });
+    });
+
+    it('hides the screen-size row entirely when showScreenSize=false (embed mode, beta.48)', async () => {
+      // Embed deployments with Options.AllowResize=false expect a
+      // complete size lock — the menu's screen-size picker MUST go
+      // away too, not just the window-resize auto-scaling.
+      el.showScreenSize = false;
+      await el.updateComplete;
+      // The entire <select> is gone — not just disabled, but the
+      // whole row removed from the DOM, so there's no dead UI.
+      const select = el.querySelector<HTMLSelectElement>('select');
+      expect(select).toBeNull();
+    });
+
+    it('re-shows the screen-size row when showScreenSize flips back to true', async () => {
+      el.showScreenSize = false;
+      await el.updateComplete;
+      expect(el.querySelector('select')).toBeNull();
+      el.showScreenSize = true;
+      await el.updateComplete;
+      const select = el.querySelector<HTMLSelectElement>('select');
+      expect(select).not.toBeNull();
+      // And it's the same 15-option list, not a degraded one.
+      expect(Array.from(select?.options ?? []).length).toBe(15);
     });
 
     it('localizes the option labels (English default)', () => {

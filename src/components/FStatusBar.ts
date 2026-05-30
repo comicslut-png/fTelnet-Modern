@@ -45,10 +45,15 @@ export interface MenuClickDetail {
  *     content. The parent (fTelnetClient) sets this to messages
  *     like "Connecting to bbs.example.com:23 via proxy.example.com".
  *   - `connectButtonText` (string, default "Connect") — also set
- *     to "Reconnect" after disconnect and "Retry Connection"
- *     after a security error.
- *   - `connectButtonVisible` (boolean, default true) — hidden
- *     while connecting, shown when disconnected or in error.
+ *     to "Disconnect" while connected, "Reconnect" after a drop,
+ *     and "Retry Connection" after a security error.
+ *   - `connectButtonVisible` (boolean, default true) — hidden only
+ *     during the brief "Connecting…" in-flight phase; otherwise
+ *     shown so the bar's primary action button is always one click
+ *     away.
+ *   - `menuButtonVisible` (boolean, default true) — set false in
+ *     embed deployments (via `Options.AllowMenu = false`) to hide
+ *     the Menu button entirely.
  *   - `backgroundColor` (string, default '') — the inline
  *     `background-color` for the bar. Empty string means "use
  *     the CSS default" (blue). The parent sets 'blue' during
@@ -61,8 +66,10 @@ export interface MenuClickDetail {
  *   - `menu-click` (CustomEvent<MenuClickDetail>) — Menu button
  *     clicked. The detail carries the original click coordinates
  *     so the parent can position its popup.
- *   - `connect-click` — Connect / Reconnect / Retry Connection
- *     button clicked. No payload — the action is in the name.
+ *   - `connect-click` — Connect / Disconnect / Reconnect / Retry
+ *     Connection button clicked. No payload — the action is in the
+ *     name. The parent decides what to do based on the current
+ *     connection state (calling Connect or Disconnect).
  *
  * Both events `bubbles: true, composed: true`.
  *
@@ -106,26 +113,36 @@ export class FStatusBar extends LitElement {
   connectButtonText = 'Connect';
 
   /**
-   * Whether the status-bar action button (Connect / Reconnect /
-   * Retry Connection) is shown.
+   * Whether the status-bar action button (Connect / Disconnect /
+   * Reconnect / Retry Connection) is shown.
    *
-   * Phase 5 (beta.17): defaults to FALSE so the INITIAL idle state
-   * shows no Connect button — only the Menu button. This is
-   * deliberate: long-time users reflexively clicked "Connect" and
-   * never discovered the menu (Settings, Language, etc.). Starting
-   * with Menu as the only option forces both new and returning
-   * users to go through it, where Connect now lives alongside the
-   * other options.
-   *
-   * The button still REAPPEARS as "Reconnect" after a disconnect
-   * and "Retry Connection" after a failed attempt (the client sets
-   * this true in OnConnectionClose / OnConnectionSecurityError), so
-   * the convenient one-click reconnect path is preserved for users
-   * who were already connected — only the initial reflex-Connect is
-   * removed.
+   * Defaults to TRUE so the initial idle state shows a Connect button
+   * directly on the bar — the same one-click entry point users expect
+   * from a terminal client. The button is state-aware: it reads
+   * "Connect" while idle, switches to "Disconnect" while connected,
+   * and to "Reconnect" / "Retry Connection" after a drop or failed
+   * attempt (fTelnetClient updates the text in OnConnectionConnect /
+   * OnConnectionClose / OnConnectionSecurityError). It is hidden only
+   * during the brief "Connecting…" in-flight phase to prevent
+   * double-clicks. Connect / Disconnect remain available in the menu
+   * popup too; the bar button is just the primary path.
    */
   @property({ type: Boolean, attribute: 'connect-button-visible' })
-  connectButtonVisible = false;
+  connectButtonVisible = true;
+
+  /**
+   * Whether the Menu button is shown on the status bar.
+   *
+   * Defaults to TRUE. When set to FALSE (embed deployments via
+   * `Options.AllowMenu = false`) the button is hidden entirely
+   * rather than greyed out — embedded users see only the Connect
+   * button and the status label, and have no way to reach the menu
+   * drop-down (Settings, Copy/Paste, Upload/Download, Keyboard,
+   * Full Screen). The Connect button on the bar remains interactive
+   * regardless, so the primary action is always available.
+   */
+  @property({ type: Boolean, attribute: 'menu-button-visible' })
+  menuButtonVisible = true;
 
   /**
    * Semantic connection state. Drives the background color and
@@ -166,6 +183,7 @@ export class FStatusBar extends LitElement {
         <a
           class="fTelnetMenuButton"
           href="#"
+          style=${this.menuButtonVisible ? '' : 'display: none;'}
           @click=${this.handleMenuClick}
           >${t('menu.button', this.language)}</a
         >
@@ -219,9 +237,10 @@ export class FStatusBar extends LitElement {
   };
 
   /**
-   * Connect button click handler. No payload — the action is
-   * binary, the button text varies but the meaning ("user wants
-   * to start a connection") is the same.
+   * Status-bar action button click handler. No payload — the action
+   * is implicit. The button text varies (Connect / Disconnect /
+   * Reconnect / Retry Connection) and the parent decides the action
+   * from the current connection state.
    */
   private handleConnectClick = (e: MouseEvent): void => {
     e.preventDefault();

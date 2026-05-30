@@ -90,6 +90,7 @@ export const el: Catalog = {
   'status.button.connect': 'Σύνδεση',
   'status.button.reconnect': 'Επανασύνδεση',
   'status.button.retry': 'Επανάληψη',
+  'status.button.disconnect': 'Αποσύνδεση',
 
   // ── Settings panel ──────────────────────────────────────────
   'settings.title': 'Ρυθμίσεις',

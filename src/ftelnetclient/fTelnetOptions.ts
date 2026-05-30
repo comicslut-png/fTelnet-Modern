@@ -36,6 +36,51 @@ import { DetectMobileBrowser } from '../common/index.js';
  */
 export class fTelnetOptions {
   public AllowModernScrollback = true;
+  /**
+   * Whether the **Menu** button is shown on the status bar.
+   *
+   * Defaults to `true` for full-page deployments (the normal sysop
+   * landing page). Set to `false` for embed deployments where the
+   * sysop wants the terminal dropped into an existing page without
+   * exposing the menu drop-down (Settings, Copy/Paste, Upload/
+   * Download, Keyboard, Full Screen, etc.). When `false` the Menu
+   * button is hidden entirely (no greyed-out / non-interactive
+   * stub) so the bar shows only the Connect button and the status
+   * label.
+   *
+   * The Connect/Disconnect button on the bar remains interactive
+   * regardless, so embedded users always have the primary action
+   * available — they just can't reach the secondary tools. This is
+   * an embed-time-only option, not a runtime user toggle; users
+   * cannot re-enable the menu from inside the page.
+   *
+   * Matches the original fTelnet's `AllowMenu` option for API
+   * familiarity across deployments.
+   */
+  public AllowMenu = true;
+  /**
+   * Whether the terminal's size can change from its initial
+   * dimensions.
+   *
+   * Defaults to `true`: the BBS canvas's font scales when the
+   * browser window resizes (largest font that still fits), AND
+   * the user can pick a different screen size (80x25, 80x43,
+   * 132x37, etc.) from the Menu drop-down's size selector.
+   *
+   * Set to `false` for embed deployments that want the terminal
+   * locked to its embed-time dimensions. This gates BOTH paths:
+   *   - the auto-resize-on-window-change (plumbed through to
+   *     `Crt.AllowDynamicFontResize`), and
+   *   - the user-initiated screen-size selector in the Menu
+   *     drop-down (the selector row is hidden when locked, so
+   *     there is no UI to surprise the user).
+   * The intent is "no path to changing size, full stop." This is
+   * an embed-time-only option, not a runtime user toggle.
+   *
+   * Matches the original fTelnet's `AllowResize` option for API
+   * familiarity across deployments.
+   */
+  public AllowResize = true;
   public BareLFtoCRLF = false;
   public BitsPerSecond = 57600;
   public ConnectionType = 'telnet';

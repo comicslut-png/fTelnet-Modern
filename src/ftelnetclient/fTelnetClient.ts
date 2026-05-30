@@ -714,6 +714,7 @@ export class fTelnetClient {
         }
       });
     });
+    this._Crt.AllowDynamicFontResize = this._Options.AllowResize;
     this._Crt.Atari = this._Options.Emulation === 'Atari';
     this._Crt.BareLFtoCRLF = this._Options.BareLFtoCRLF;
     this._Crt.C64 = this._Options.Emulation === 'C64';
@@ -843,6 +844,11 @@ export class fTelnetClient {
     // are reactive property writes on this one component.
     this._StatusBar = document.createElement('f-status-bar') as FStatusBar;
     this._StatusBar.language = this._Options.Language as Language;
+    // Embed-time option: a sysop dropping fTelnet-Modern into an
+    // existing page can set `Options.AllowMenu = false` to hide the
+    // Menu button entirely, leaving only the Connect button and the
+    // status label on the bar. Defaults true (full deployment).
+    this._StatusBar.menuButtonVisible = this._Options.AllowMenu;
     // Localize the initial idle-state labels (the component's raw
     // defaults are English; push the active language's versions).
     this._StatusBar.statusText = t(
@@ -860,7 +866,16 @@ export class fTelnetClient {
       this.OnMenuButtonClick({ pageX: detail.pageX, pageY: detail.pageY });
     });
     this._StatusBar.addEventListener('connect-click', (): void => {
-      this.Connect();
+      // State-aware dispatch: when already connected the bar's button
+      // reads "Disconnect," so a click means disconnect (with prompt,
+      // same as the menu's Disconnect entry). Otherwise the button
+      // is Connect / Reconnect / Retry Connection — all variations on
+      // "start a connection."
+      if (this._Connection !== undefined && this._Connection.connected) {
+        this.Disconnect(true);
+      } else {
+        this.Connect();
+      }
     });
     this._fTelnetContainer.appendChild(this._StatusBar);
 
@@ -914,6 +929,11 @@ export class fTelnetClient {
     this._MenuButtons = document.createElement('f-menu-popup') as FMenuPopup;
     this._MenuButtons.showCopyPaste = !DetectMobileBrowser.IsMobile;
     this._MenuButtons.showScrollback = !this._UseModernScrollback;
+    // Embed deployments with Options.AllowResize = false expect a
+    // complete size lock — not just the browser-window auto-resize
+    // gated by Crt.AllowDynamicFontResize, but the user-initiated
+    // screen-size picker in the menu too. Hide the row when locked.
+    this._MenuButtons.showScreenSize = this._Options.AllowResize;
     this._MenuButtons.currentScreenSize = CurrentScreenSize;
     this._MenuButtons.supportedScreenSizes = SupportedScreenSizes;
     this._MenuButtons.transferProtocol = this._Options.DefaultTransferProtocol;
@@ -2299,6 +2319,16 @@ export class fTelnetClient {
       this._StatusBar.state = 'active';
       this._ClientContainer.style.opacity = '1.0';
     }
+
+    // The bar's action button switches to "Disconnect" while a session
+    // is active, so clicking it (handled by the state-aware listener)
+    // hangs up. The button was hidden during the "Connecting…" phase
+    // to prevent double-clicks; show it again now.
+    this._StatusBar.connectButtonText = t(
+      'status.button.disconnect',
+      this._Options.Language as Language,
+    );
+    this._StatusBar.connectButtonVisible = true;
 
     if (this._Options.ConnectionType === 'rlogin') {
       // rlogin handshake: NUL-separated (client username, server

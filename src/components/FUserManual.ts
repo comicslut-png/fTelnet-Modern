@@ -377,8 +377,13 @@ export class FUserManual extends LitElement {
 
       <h2 data-anchor="connect-disconnect">Connect / Disconnect</h2>
       <p>
-        These two buttons are how you start and end your session
-        with the BBS.
+        These two actions are how you start and end your session
+        with the BBS. You'll find them in two places: a button on
+        the status bar at the bottom of the page (the same button
+        changes label from <strong>Connect</strong> to
+        <strong>Disconnect</strong> depending on whether you're
+        already connected), and as entries in the Menu drop-down.
+        Either works.
       </p>
       <p>
         <strong>Connect</strong> dials in. The sysop running this

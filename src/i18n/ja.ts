@@ -88,6 +88,7 @@ export const ja: Catalog = {
   'status.button.connect': '接続',
   'status.button.reconnect': '再接続',
   'status.button.retry': '再試行',
+  'status.button.disconnect': '切断',
 
   // ── Settings panel ──────────────────────────────────────────
   'settings.title': '設定',
